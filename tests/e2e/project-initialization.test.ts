@@ -14,6 +14,8 @@ describe('E2E: プロジェクト初期化フロー', () => {
   const testProjectDir = path.join(process.cwd(), '.takumi');
 
   beforeAll(async () => {
+    // .takumiディレクトリを事前に作成
+    await fs.mkdir(testProjectDir, { recursive: true });
     db = await createTestDatabase();
   });
 

@@ -12,11 +12,22 @@ import path from 'path';
  * テスト用データベース作成
  */
 export async function createTestDatabase(): Promise<Kysely<Database>> {
-  const testDbPath = path.join(process.cwd(), '.takumi', 'test.db');
+  // .takumiディレクトリ確認・作成
+  const takumiDir = path.join(process.cwd(), '.takumi');
+  if (!fs.existsSync(takumiDir)) {
+    fs.mkdirSync(takumiDir, { recursive: true });
+  }
+
+  // ユニークなDBファイル名を生成
+  const testDbPath = path.join(takumiDir, `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.db`);
 
   // 既存のテストDBを削除
   if (fs.existsSync(testDbPath)) {
-    fs.unlinkSync(testDbPath);
+    try {
+      fs.unlinkSync(testDbPath);
+    } catch {
+      // 削除失敗は無視
+    }
   }
 
   const db = createDatabase({ databasePath: testDbPath });
@@ -28,12 +39,27 @@ export async function createTestDatabase(): Promise<Kysely<Database>> {
 /**
  * テスト用データベースクリーンアップ
  */
-export async function cleanupTestDatabase(db: Kysely<Database>): Promise<void> {
-  await db.destroy();
+export async function cleanupTestDatabase(db: Kysely<Database> | null): Promise<void> {
+  if (!db) return;
 
-  const testDbPath = path.join(process.cwd(), '.takumi', 'test.db');
-  if (fs.existsSync(testDbPath)) {
-    fs.unlinkSync(testDbPath);
+  try {
+    await db.destroy();
+  } catch (error) {
+    // destroy失敗は無視
+  }
+
+  // test-*.dbファイルをクリーンアップ
+  const takumiDir = path.join(process.cwd(), '.takumi');
+  if (fs.existsSync(takumiDir)) {
+    const files = fs.readdirSync(takumiDir);
+    files.filter(f => f.startsWith('test-') && f.endsWith('.db')).forEach(f => {
+      const filepath = path.join(takumiDir, f);
+      try {
+        fs.unlinkSync(filepath);
+      } catch {
+        // 削除失敗は無視
+      }
+    });
   }
 }
 

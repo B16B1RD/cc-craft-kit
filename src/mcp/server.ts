@@ -13,6 +13,17 @@ import { initProjectTool } from './tools/init-project.js';
 import { createSpecTool } from './tools/create-spec.js';
 import { listSpecsTool } from './tools/list-specs.js';
 import { getSpecTool } from './tools/get-spec.js';
+import { initGitHubTool, createGitHubIssueTool } from './tools/github-init.js';
+import {
+  syncSpecToGitHubTool,
+  syncGitHubToSpecTool,
+  addSpecToProjectTool,
+} from './tools/github-sync-spec.js';
+import {
+  recordProgressTool,
+  recordErrorSolutionTool,
+  recordTipTool,
+} from './tools/github-knowledge.js';
 
 /**
  * Takumi MCPサーバー
@@ -47,6 +58,16 @@ class TakumiMCPServer {
       createSpecTool,
       listSpecsTool,
       getSpecTool,
+      // GitHub統合ツール
+      initGitHubTool,
+      createGitHubIssueTool,
+      syncSpecToGitHubTool,
+      syncGitHubToSpecTool,
+      addSpecToProjectTool,
+      // ナレッジベースツール
+      recordProgressTool,
+      recordErrorSolutionTool,
+      recordTipTool,
     ];
 
     tools.forEach((tool) => {

@@ -11,7 +11,7 @@ export type SpecPhase = 'requirements' | 'design' | 'tasks' | 'implementation' |
 export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'review' | 'done';
 
 // GitHub同期対象エンティティ
-export type GitHubEntityType = 'spec' | 'task';
+export type GitHubEntityType = 'spec' | 'task' | 'issue' | 'project';
 
 /**
  * Specs テーブル - 仕様書管理
