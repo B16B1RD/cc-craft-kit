@@ -8,6 +8,7 @@ export default {
       'ts-jest',
       {
         useESM: true,
+        tsconfig: 'tsconfig.test.json',
       },
     ],
   },
@@ -29,4 +30,5 @@ export default {
       statements: 80,
     },
   },
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
 };

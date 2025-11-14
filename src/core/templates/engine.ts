@@ -1,10 +1,6 @@
 import Handlebars from 'handlebars';
 import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 /**
  * テンプレート変数の型定義
@@ -64,8 +60,9 @@ export class TemplateEngine {
   private compiledTemplates: Map<string, HandlebarsTemplateDelegate> = new Map();
 
   constructor(templatesDir?: string) {
+    // テンプレートディレクトリのデフォルトパス
     this.templatesDir =
-      templatesDir || path.join(__dirname, '../../../templates');
+      templatesDir || path.join(process.cwd(), 'templates');
     this.registerHelpers();
   }
 
