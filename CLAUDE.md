@@ -179,38 +179,38 @@ export class YourService {
 
 ### TypeScript
 
-- **strict mode有効**: すべての型チェックを厳格に実施
-- **`any`型の禁止**: `unknown`または具体的な型定義を使用（現在`any`型は 0 個）
-- **命名規則**: camelCase（変数・関数）、PascalCase（クラス・型・インターフェース）
-- **インデント**: 2 スペース
+- strict mode を有効にして、すべての型チェックを厳格に実施すること
+- `any`型は禁止。`unknown`または具体的な型定義を使用すること（現在`any`型は 0 個）
+- camelCase（変数・関数）、PascalCase（クラス・型・インターフェース）の命名規則に従うこと
+- インデントは 2 スペースを使用すること
 
 ### ファイル構成
 
-- **1ファイル1責務**: 単一責任の原則に従う
-- **exportの整理**: `index.ts`で公開 API を明示的にエクスポート
-- **相対パス**: モジュール内は相対パス、外部は絶対パス（`.js`拡張子必須）
+- 単一責任の原則に従い、1 ファイル 1 責務とすること
+- `index.ts`で公開 API を明示的にエクスポートして、モジュールを整理すること
+- モジュール内は相対パス、外部は絶対パス（`.js`拡張子必須）を使用すること
 
 ### エラーハンドリング
 
-- **カスタムエラークラス**: `src/core/errors/`の標準エラーを使用
-- **センシティブ情報の保護**: エラーメッセージにトークン等を含めない
-- **ログレベル**: `debug` → `info` → `warn` → `error`を適切に使い分け
+- `src/core/errors/`の標準エラークラスを使用すること
+- エラーメッセージにはトークンなどのセンシティブ情報を含めないこと
+- ログレベルは `debug` → `info` → `warn` → `error` を適切に使い分けること
 
 ### セキュリティ
 
-- **入力バリデーション**: すべての MCP ツール引数は Zod スキーマで検証
-- **SQL インジェクション対策**: Kysely のパラメータ化クエリのみ使用
-- **XSS対策**: HTML 出力時はサニタイゼーション必須
-- **認証情報**: 環境変数（`.env`）で管理、コードに直接記述しない
+- すべての MCP ツール引数は Zod スキーマで検証すること
+- SQL インジェクション対策として、Kysely のパラメータ化クエリのみを使用すること
+- HTML 出力時は必ずサニタイゼーションを実施すること
+- 認証情報は環境変数（`.env`）で管理し、コードに直接記述しないこと
 
 ## テスト戦略
 
 ### 単体テスト
 
-- **ファイル配置**: `tests/`ディレクトリに`src/`と同じ構造で配置
-- **命名規則**: `*.test.ts`
-- **モック**: データベース、GitHub API はモック化
-- **カバレッジ目標**: 80%以上
+- テストファイルは `tests/`ディレクトリに`src/`と同じ構造で配置すること
+- ファイル名は `*.test.ts` とすること
+- データベース、GitHub API は必ずモック化すること
+- カバレッジ目標は 80%以上を目指すこと
 
 ### E2Eテスト
 
@@ -231,8 +231,8 @@ export class YourService {
 
 ### REST API vs GraphQL API
 
-- **REST API**: Issue、PR、Milestone の基本操作
-- **GraphQL API**: Projects v2 の操作（REST で非対応のため）
+- REST API で Issue、PR、Milestone を操作する
+- GraphQL API で Projects v2 を操作する（REST では非対応のため）
 
 ### 双方向同期
 
@@ -251,11 +251,11 @@ Takumi は仕様書と GitHub Issue の双方向同期をサポートします�
 
 ### Issue ナレッジベース化
 
-Issue は単なるタスク管理ではなく、以下の情報を統合記録します。
+Issue は単なるタスク管理ではなく、以下の情報を統合記録する。
 
-- **進捗記録**: 作業ログ、完了タスク
-- **エラー解決策**: 遭遇したエラーと解決方法
-- **Tips**: 作業中に得た知見
+- 作業ログや完了タスクなどの進捗を記録
+- 遭遇したエラーと解決方法を記録
+- 作業中に得た知見を Tips として記録
 
 これにより、Issue が開発ナレッジベースとして機能します。
 
@@ -275,8 +275,8 @@ interface TakumiPlugin {
 
 ### 公式プラグイン
 
-- **Backlog統合プラグイン**: `src/plugins/backlog/`
-- **Slack通知プラグイン**: `src/plugins/slack/`
+- Backlog 統合プラグインは `src/plugins/backlog/` にある
+- Slack 通知プラグインは `src/plugins/slack/` にある
 
 新しいプラグインを追加する場合は、`src/plugins/<plugin-name>/`以下に配置し、`PluginRegistry`に登録してください。
 
@@ -307,7 +307,7 @@ eventBus.on('spec:created', async (spec) => {
 });
 ```
 
-**注意**: リスナー内でエラーが発生しても、他のリスナーに影響を与えないように try-catch で囲んでください。
+リスナー内でエラーが発生しても、他のリスナーに影響を与えないように try-catch で囲む必要があります。
 
 ## トラブルシューティング
 
@@ -324,9 +324,9 @@ eventBus.on('spec:created', async (spec) => {
 
 ### GitHub API エラー
 
-- **401 Unauthorized**: トークンが無効 → `.env`の GITHUB_TOKEN を再設定
-- **403 Forbidden**: スコープ不足 → Fine-grained PAT に`repo`, `project`スコープを追加
-- **404 Not Found**: リポジトリ・Project が存在しない → owner/repo を確認
+- 401 Unauthorized が出た場合、トークンが無効。`.env`の GITHUB_TOKEN を再設定すること
+- 403 Forbidden が出た場合、スコープが不足。Fine-grained PAT に`repo`, `project`スコープを追加すること
+- 404 Not Found が出た場合、リポジトリ・Project が存在しない。owner/repo を確認すること
 
 ## 参考ドキュメント
 
