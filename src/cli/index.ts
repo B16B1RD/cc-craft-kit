@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import 'dotenv/config';
 import 'reflect-metadata';
 import { parseArgs } from 'node:util';
 import { readFileSync } from 'node:fs';
