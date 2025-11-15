@@ -55,34 +55,19 @@ LOG_LEVEL=info
    - `project` - Projects v2 へのアクセス
 4. トークンをコピーして`.env`に貼り付け
 
-## ステップ3: MCPサーバー設定
+## ステップ3: グローバルインストール (オプション)
 
-Claude Code CLI の設定ファイルに、Takumi MCP サーバーを追加します。
-
-`~/.config/claude/claude_desktop_config.json` (または適切なパス)を編集してください。
-
-```json
-{
-  "mcpServers": {
-    "takumi": {
-      "command": "node",
-      "args": ["/absolute/path/to/takumi/dist/mcp/server.js"]
-    }
-  }
-}
-```
-
-注意: `path/to/takumi`を実際の Takumi プロジェクトの絶対パスに置き換えてください。
-
-## ステップ4: Claude Code CLI再起動
-
-設定を反映するため、Claude Code CLI を再起動します。
+takumi コマンドをグローバルに利用可能にします。
 
 ```bash
-# Claude Code CLIを再起動
+# グローバルリンク (開発時)
+npm link
+
+# または npm インストール (公開後)
+npm install -g takumi
 ```
 
-## ステップ5: プロジェクト初期化
+## ステップ4: プロジェクト初期化
 
 Claude Code CLI 内で、Takumi プロジェクトを初期化します。
 
@@ -96,9 +81,17 @@ Claude Code CLI 内で、Takumi プロジェクトを初期化します。
 - `.takumi/config.json` - プロジェクト設定
 - `.takumi/takumi.db` - SQLite データベース
 
-## ステップ6: 最初の仕様書作成
+## ステップ5: 最初の仕様書作成
 
 新しい仕様書を作成します。
+
+### CLI コマンド使用
+
+```bash
+takumi spec create "ユーザー認証機能" "メール/パスワード認証とOAuth2.0対応"
+```
+
+### Claude Code スラッシュコマンド使用
 
 ```bash
 /takumi:spec-create "ユーザー認証機能" "メール/パスワード認証とOAuth2.0対応"
@@ -114,9 +107,17 @@ Claude Code が以下の質問をします。
 
 回答すると、Requirements 定義書が自動生成されます。
 
-## ステップ7: 仕様書の一覧確認
+## ステップ6: 仕様書の一覧確認
 
 作成した仕様書を確認します。
+
+### CLI コマンド
+
+```bash
+takumi spec list
+```
+
+### スラッシュコマンド
 
 ```bash
 /takumi:spec-list
@@ -125,12 +126,21 @@ Claude Code が以下の質問をします。
 フェーズでフィルタリングも可能です。
 
 ```bash
+takumi spec list requirements
 /takumi:spec-list requirements
 ```
 
-## ステップ8: プロジェクト状況確認
+## ステップ7: プロジェクト状況確認
 
 プロジェクト全体の状況を確認します。
+
+### CLI コマンド
+
+```bash
+takumi status
+```
+
+### スラッシュコマンド
 
 ```bash
 /takumi:status
@@ -162,14 +172,14 @@ Week 4 以降の GitHub 統合機能を使用して、以下が自動化され�
 
 ## トラブルシューティング
 
-### MCPサーバーが起動しない
+### CLI が起動しない
 
 ```bash
 # ビルドを確認
 npm run build
 
-# MCPサーバーを直接起動してエラー確認
-npm run mcp:dev
+# CLI を直接起動してエラー確認
+npm run dev
 ```
 
 ### データベースエラー
@@ -182,13 +192,23 @@ npm run db:migrate
 
 ### スラッシュコマンドが認識されない
 
-1. Claude Code CLI の設定ファイルを確認
-2. MCP サーバーのパスが正しいか確認
-3. Claude Code CLI を再起動
+1. `.claude/commands/takumi/` ディレクトリが存在するか確認
+2. カスタムスラッシュコマンドファイル (*.md) が正しく配置されているか確認
+3. Claude Code を再起動
+
+### コマンドが見つからないエラー
+
+グローバルインストールを行ってください。
+
+```bash
+npm link
+# または
+npm install -g takumi
+```
 
 ## さらに学ぶ
 
-- [MCPツールAPIリファレンス](./MCP_TOOLS.md)
+- [MCP からの移行ガイド](./MIGRATION_FROM_MCP.md)
 - [テンプレートカスタマイズガイド](./TEMPLATES.md)
 - [アーキテクチャドキュメント](./ARCHITECTURE.md)
 

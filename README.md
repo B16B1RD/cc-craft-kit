@@ -275,8 +275,8 @@ npm run test:watch
 
 - [x] プロジェクト初期化
 - [x] Kysely + SQLite セットアップ
-- [x] MCP サーバー骨組み
-- [x] 基本 MCP ツール (`init_project`, `create_spec`, `list_specs`, `get_spec`)
+- [x] CLI インターフェース実装
+- [x] 基本 CLI コマンド (`init`, `spec create/list/get`, `status`)
 - [x] テンプレートエンジン統合 (Handlebars)
 - [x] E2E テスト実装
 
@@ -351,7 +351,7 @@ MIT License - 詳細は [LICENSE](LICENSE) を参照してください。
 
 - **Kiro AI** - 仕様駆動 IDE のパイオニア
 - **cc-sdd** - 構造化ワークフローの実装
-- **spec-workflow-mcp** - MCP サーバーアーキテクチャ
+- **spec-workflow-mcp** - 仕様駆動開発のアイデア
 - **GitHub Spec Kit** - constitution.md コンセプト
 
 また、以下の哲学・手法を実装に反映しています。

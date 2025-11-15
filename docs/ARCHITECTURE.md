@@ -19,9 +19,9 @@ Takumi は**モジュラーモノリス**パターンを採用した、拡張可
 │           └──────────────────┴─────────────────┘          │
 │                              │                            │
 └──────────────────────────────┼────────────────────────────┘
-                               │ MCP Protocol
+                               │ Shell Command
 ┌──────────────────────────────┼────────────────────────────┐
-│                    Takumi MCP Server                      │
+│                      Takumi CLI                           │
 │  ┌─────────────────────────────────────────────────────┐  │
 │  │              Core Modules (Modular Monolith)        │  │
 │  │  ┌────────────┐  ┌────────────┐  ┌─────────────┐    │  │
@@ -38,11 +38,11 @@ Takumi は**モジュラーモノリス**パターンを採用した、拡張可
 │  └─────────────────────────────────────────────────────┘  │
 │                                                           │
 │  ┌─────────────────────────────────────────────────────┐  │
-│  │           MCP Tools (Zod Schemas)                   │  │
-│  │  • takumi:init_project                              │  │
-│  │  • takumi:create_spec                               │  │
-│  │  • takumi:list_specs                                │  │
-│  │  • takumi:get_spec                                  │  │
+│  │           CLI Commands                              │  │
+│  │  • takumi init                                      │  │
+│  │  • takumi spec create/list/get/phase                │  │
+│  │  • takumi github init/issue/sync/project            │  │
+│  │  • takumi knowledge progress/error/tip              │  │
 │  └─────────────────────────────────────────────────────┘  │
 └───────────────────────────────────────────────────────────┘
                               │
@@ -57,18 +57,18 @@ Takumi は**モジュラーモノリス**パターンを採用した、拡張可
 
 ## コアコンポーネント
 
-### 1. MCP Server
+### 1. CLI Interface
 
-MCP サーバーは、Claude Code と Takumi の中核機能を橋渡しします。
+CLI は、Claude Code と Takumi の中核機能を橋渡しします。
 
 **責務:**
 
-- MCP ツールの登録・管理
-- リクエストハンドリング
+- CLI コマンドのルーティング
+- 引数パース・バリデーション
 - エラーハンドリング
-- グレースフルシャットダウン
+- 出力フォーマッティング
 
-**実装:** `src/mcp/server.ts`
+**実装:** `src/cli/index.ts`
 
 ### 2. Database Layer
 
@@ -155,21 +155,21 @@ interface TakumiPlugin {
 ### 1. 仕様書作成フロー
 
 ```text
-1. User: MCPツール呼び出し
+1. User: CLI コマンド実行 (takumi spec create)
    ↓
-2. MCP Server: リクエスト受信
+2. CLI: コマンドルーティング
    ↓
-3. create-spec.ts: バリデーション
+3. spec/create.ts: 引数バリデーション
    ↓
-4. Database: specs テーブルへINSERT
+4. Database: specs テーブルへ INSERT
    ↓
 5. Event Bus: 'spec:created' イベント発火
    ↓
 6. Listeners:
-   - GitHub Client: Issue作成
+   - GitHub Client: Issue 作成
    - Logger: ログ記録
    ↓
-7. Response: 成功レスポンス返却
+7. Response: 成功メッセージ出力
 ```
 
 ### 2. GitHub同期フロー
