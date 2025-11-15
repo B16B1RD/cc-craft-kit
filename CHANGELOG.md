@@ -7,11 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2.0] - 2025-11-15
-
 ### Added
 
-#### Phase 2: GitHub 統合 (Week 3-4) - 完了
+#### Phase 2: GitHub 統合 (Week 3-4) - 実装完了（動作確認待ち）
 
 - GitHub REST API 統合
 - GitHub GraphQL API 統合 (Projects v2)
@@ -26,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `takumi:record_progress` - 進捗記録
   - `takumi:record_error_solution` - エラー解決策記録
 
-#### Phase 3: サブエージェント + スキル (Week 7-10) - 完了
+#### Phase 3: サブエージェント + スキル (Week 7-10) - 実装完了（動作確認待ち）
 
 **7 つのコアサブエージェント実装**:
 
@@ -40,10 +38,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **5 つのコアスキル実装**:
 
-1. RequirementsDocGenerator - 要件定義書自動生成
+1. RequirementsDocGenerator - 要件定義書の自動生成
 2. ArchitectureDiagramGenerator - アーキテクチャ図生成
 3. CodeQualityAnalyzer - コード品質解析（389 行）
-4. TestCoverageReporter - テストカバレッジレポート
+4. TestCoverageReporter - テストカバレッジ レポート
 5. GitHubIssueSync - GitHub Issue 同期スキル
 
 **ワークフローシステム**:
@@ -57,13 +55,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `tests/core/subagents/requirements-analyzer.test.ts`
 - `tests/core/workflow/event-bus.test.ts`
 
-#### Phase 4: プラグインシステム (Week 11-14) - 完了
+#### Phase 4: プラグインシステム (Week 11-14) - 実装完了（動作確認待ち）
 
 **プラグインアーキテクチャ**:
 
-- プラグインインターフェース定義（`src/core/plugins/types.ts`）
-- プラグインレジストリ実装（189 行）
-- プラグインローダー実装（動的読み込み、ホットリロード対応）
+- プラグイン インターフェース定義（`src/core/plugins/types.ts`）
+- プラグイン レジストリ実装（189 行）
+- プラグイン ローダー実装（動的読み込み、ホットリロード対応）
 
 **公式プラグイン**:
 
@@ -71,40 +69,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - `takumi:backlog_create_issue` - Backlog 課題作成
    - `takumi:backlog_sync_spec` - 仕様書→Backlog 同期
    - `takumi:backlog_get_issues` - 課題一覧取得
-   - イベントハンドラー（spec:created, spec:approved, task:completed）
+   - イベント ハンドラー（spec:created, spec:approved, task:completed）
 2. Slack 通知プラグイン
    - Slack Webhook 通知
    - Slack Blocks API 対応
 
-#### Phase 5: 最適化・セキュリティ (Week 15+) - 完了
+#### Phase 5: 最適化・セキュリティ (Week 15+) - 実装完了（動作確認待ち）
 
-**エラーハンドリング**:
+**エラー ハンドリング**:
 
-- 統一エラーハンドリングシステム（362 行）
-- 7 種類のカスタムエラークラス
+- 統一エラー ハンドリング システム（362 行）
+- 7 種類のカスタム エラー クラス
   - TakumiError, DatabaseError, ValidationError, GitHubError
   - PluginError, ConfigurationError, WorkflowError
-- エラーコード管理（E001〜E999）
+- エラー コード管理（E001〜E999）
 - センシティブ情報のマスキング
 
 **パフォーマンス最適化**:
 
-- TTL 付きキャッシュシステム（256 行）
+- TTL 付きキャッシュ システム（256 行）
 - LRU 削除戦略
-- パフォーマンスプロファイラー実装
-- キャッシュヒット率計測
+- パフォーマンス プロファイラー実装
+- キャッシュ ヒット率計測
 
 **セキュリティ**:
 
-- セキュリティバリデーター（314 行）
+- セキュリティ バリデーター（314 行）
 - 12 種類の検証機能:
   - SQL インジェクション検出
   - XSS 防止
-  - パストラバーサル防止
-  - コマンドインジェクション防止
+  - パス トラバーサル防止
+  - コマンド インジェクション防止
   - センシティブ情報検出
   - 入力サニタイゼーション
-  - ファイルパス検証
+  - ファイル パス検証
   - URL 検証
   - レート制限
   - CSRF 対策
@@ -127,36 +125,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - TypeScript strict mode 有効化
-- ESLint グローバルオブジェクト拡張（performance, URL 等）
+- ESLint グローバル オブジェクト拡張（performance, URL 等）
 - Jest DB 競合回避設定（maxWorkers: 1）
-- データベーススキーマに`testing`フェーズ追加
+- データベース スキーマに`testing`フェーズ追加
 
-### Technical Details
+### v0.1.0 リリース条件
+
+以下が完了後、v0.1.0 として初回リリース予定。
+
+- [ ] すべてのユニット テストが成功すること
+- [ ] GitHub Projects との統合テストが成功すること
+- [ ] 実際の開発フローでの動作確認が完了すること
+- [ ] ドキュメントが最新の状態に更新されていること
+
+### Technical Details（実装状況）
 
 #### 実装状況
 
-| Phase                     | 状態 | 実装率 |
-| ------------------------- | ---- | ------ |
-| Phase 1: 基盤構築         | ✅   | 100%   |
-| Phase 2: GitHub統合       | ✅   | 100%   |
-| Phase 3: サブエージェント | ✅   | 100%   |
-| Phase 4: プラグイン       | ✅   | 100%   |
-| Phase 5: 最適化           | ✅   | 100%   |
+| Phase                     | 状態 | 実装率 | テスト状況 |
+| ------------------------- | ---- | ------ | ---------- |
+| Phase 1: 基盤構築         | ✅   | 100%   | ✅         |
+| Phase 2: GitHub 統合      | ✅   | 100%   | 🔄 待機中  |
+| Phase 3: サブエージェント | ✅   | 100%   | 🔄 待機中  |
+| Phase 4: プラグイン       | ✅   | 100%   | 🔄 待機中  |
+| Phase 5: 最適化           | ✅   | 100%   | 🔄 待機中  |
 
 #### 品質指標
 
 - TypeScript strict mode: ✓
 - `any`型: 0 個
-- テスト: 全 27 テスト成功
 - ESLint warnings: 0 個
-- textlint warnings: 0 個
-- セキュリティチェック: 12 種類実装
+- textlint warnings: 修正中
+- セキュリティ チェック: 12 種類実装
 
 #### アーキテクチャ
 
-- モジュラーモノリスパターン
+- モジュラー モノリス パターン
 - イベント駆動アーキテクチャ（EventEmitter2）
-- プラグインシステム（Registry + Loader）
+- プラグイン システム（Registry + Loader）
 - 依存性注入（TSyringe）
 - Story-to-Done パイプライン
 
