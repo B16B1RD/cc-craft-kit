@@ -7,19 +7,157 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Phase 2 (予定)
+## [0.2.0] - 2025-11-15
+
+### Added
+
+#### Phase 2: GitHub 統合 (Week 3-4) - 完了
 
 - GitHub REST API 統合
 - GitHub GraphQL API 統合 (Projects v2)
-- Issue 自動作成・更新
+- Issue 自動作成・更新機能
 - Project Board 自動管理
-- 双方向の同期機構
+- 双方向の同期機構（Takumi ⇄ GitHub）
+- GitHub クライアント実装（`src/integrations/github/client.ts`）
+- Issue ナレッジベース化（進捗記録、エラー解決策、Tips）
+- MCP ツール追加:
+  - `takumi:github_init` - GitHub 接続初期化
+  - `takumi:sync_spec_to_github` - 仕様書→GitHub 同期
+  - `takumi:record_progress` - 進捗記録
+  - `takumi:record_error_solution` - エラー解決策記録
 
-### Phase 3 (予定)
+#### Phase 3: サブエージェント + スキル (Week 7-10) - 完了
 
-- 7 つのサブエージェント実装
-- 5 つのスキル実装
-- イベント駆動ワークフロー
+**7 つのコアサブエージェント実装**:
+
+1. RequirementsAnalyzer - 要件分析エージェント
+2. TaskBreakdowner - タスク分割エージェント
+3. ArchitectDesigner - アーキテクト設計エージェント
+4. CodeGenerator - コード生成エージェント
+5. CodeReviewer - コードレビューエージェント
+6. TestCreator - テスト作成エージェント
+7. DocumentationWriter - ドキュメント作成エージェント
+
+**5 つのコアスキル実装**:
+
+1. RequirementsDocGenerator - 要件定義書自動生成
+2. ArchitectureDiagramGenerator - アーキテクチャ図生成
+3. CodeQualityAnalyzer - コード品質解析（389 行）
+4. TestCoverageReporter - テストカバレッジレポート
+5. GitHubIssueSync - GitHub Issue 同期スキル
+
+**ワークフローシステム**:
+
+- EventBus 実装（EventEmitter2 ベース、165 行）
+- Story-to-Done パイプライン実装（165 行）
+- イベント駆動アーキテクチャ完成
+
+**テスト**:
+
+- `tests/core/subagents/requirements-analyzer.test.ts`
+- `tests/core/workflow/event-bus.test.ts`
+
+#### Phase 4: プラグインシステム (Week 11-14) - 完了
+
+**プラグインアーキテクチャ**:
+
+- プラグインインターフェース定義（`src/core/plugins/types.ts`）
+- プラグインレジストリ実装（189 行）
+- プラグインローダー実装（動的読み込み、ホットリロード対応）
+
+**公式プラグイン**:
+
+1. Backlog 統合プラグイン（178 行）
+   - `takumi:backlog_create_issue` - Backlog 課題作成
+   - `takumi:backlog_sync_spec` - 仕様書→Backlog 同期
+   - `takumi:backlog_get_issues` - 課題一覧取得
+   - イベントハンドラー（spec:created, spec:approved, task:completed）
+2. Slack 通知プラグイン
+   - Slack Webhook 通知
+   - Slack Blocks API 対応
+
+#### Phase 5: 最適化・セキュリティ (Week 15+) - 完了
+
+**エラーハンドリング**:
+
+- 統一エラーハンドリングシステム（362 行）
+- 7 種類のカスタムエラークラス
+  - TakumiError, DatabaseError, ValidationError, GitHubError
+  - PluginError, ConfigurationError, WorkflowError
+- エラーコード管理（E001〜E999）
+- センシティブ情報のマスキング
+
+**パフォーマンス最適化**:
+
+- TTL 付きキャッシュシステム（256 行）
+- LRU 削除戦略
+- パフォーマンスプロファイラー実装
+- キャッシュヒット率計測
+
+**セキュリティ**:
+
+- セキュリティバリデーター（314 行）
+- 12 種類の検証機能:
+  - SQL インジェクション検出
+  - XSS 防止
+  - パストラバーサル防止
+  - コマンドインジェクション防止
+  - センシティブ情報検出
+  - 入力サニタイゼーション
+  - ファイルパス検証
+  - URL 検証
+  - レート制限
+  - CSRF 対策
+  - 暗号化ユーティリティ
+  - 入力長制限
+
+**型安全性向上**:
+
+- `any`型の完全排除（121 個 → 0 個）
+- 共通型定義（`src/core/types/common.ts`, 88 行）
+- MCP ツール型定義の一元化（`src/mcp/tools/types.ts`, 210 行）
+- すべての MCP ツールに戻り値インターフェース追加
+
+**ドキュメント品質向上**:
+
+- textlint/markdownlint 自動化
+- textlint warnings: 29 件 → 0 件
+- 日本語スペース統一、Markdown テーブル形式統一
+
+### Changed
+
+- TypeScript strict mode 有効化
+- ESLint グローバルオブジェクト拡張（performance, URL 等）
+- Jest DB 競合回避設定（maxWorkers: 1）
+- データベーススキーマに`testing`フェーズ追加
+
+### Technical Details
+
+#### 実装状況
+
+| Phase                     | 状態 | 実装率 |
+| ------------------------- | ---- | ------ |
+| Phase 1: 基盤構築         | ✅   | 100%   |
+| Phase 2: GitHub統合       | ✅   | 100%   |
+| Phase 3: サブエージェント | ✅   | 100%   |
+| Phase 4: プラグイン       | ✅   | 100%   |
+| Phase 5: 最適化           | ✅   | 100%   |
+
+#### 品質指標
+
+- TypeScript strict mode: ✓
+- `any`型: 0 個
+- テスト: 全 27 テスト成功
+- ESLint warnings: 0 個
+- textlint warnings: 0 個
+- セキュリティチェック: 12 種類実装
+
+#### アーキテクチャ
+
+- モジュラーモノリスパターン
+- イベント駆動アーキテクチャ（EventEmitter2）
+- プラグインシステム（Registry + Loader）
+- 依存性注入（TSyringe）
 - Story-to-Done パイプライン
 
 ## [0.1.0] - 2025-11-15
