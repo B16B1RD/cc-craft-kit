@@ -21,21 +21,15 @@ argument-hint: "<project-name> [description]"
 ## 使用例
 
 ```bash
-/takumi:init my-awesome-app "革新的なWebアプリケーション"
+/takumi:init my-awesome-app
 ```
 
 ---
 
-MCP ツール `takumi:init_project` を呼び出してプロジェクトを初期化してください。
+以下のコマンドを実行してプロジェクトを初期化してください:
 
-引数は以下の通りです。
+```bash
+takumi init "$1"
+```
 
-- projectName: $1
-- description: $2 (指定されている場合)
-
-初期化が完了したら、以下の情報を表示してください。
-
-- プロジェクト名
-- 作成されたディレクトリパス
-- 設定ファイルの内容
-- 次のステップ（仕様書作成の方法）
+初期化が完了したら、結果を要約して表示してください。

@@ -1,15 +1,20 @@
 import { Kysely, Migrator, FileMigrationProvider } from 'kysely';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * マイグレーションプロバイダー作成
  */
 export function createMigrationProvider(): FileMigrationProvider {
-  // マイグレーションフォルダのパスを動的に取得
-  // ビルド後は dist/core/database/migrations
-  // ソースは src/core/database/migrations
-  const migrationsPath = path.join(process.cwd(), 'src', 'core', 'database', 'migrations');
+  // マイグレーションフォルダのパスを現在のファイルからの相対パスで取得
+  // dist/core/database/migrator.js の場合 → dist/core/database/migrations
+  // src/core/database/migrator.ts の場合 → src/core/database/migrations
+  const migrationsPath = path.join(__dirname, 'migrations');
 
   return new FileMigrationProvider({
     fs,

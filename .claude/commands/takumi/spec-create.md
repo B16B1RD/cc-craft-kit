@@ -26,24 +26,10 @@ argument-hint: "<spec-name> [description]"
 
 ---
 
-MCP ツール `takumi:create_spec` を呼び出して仕様書を作成してください。
+以下のコマンドを実行して仕様書を作成してください:
 
-引数は以下の通りです。
+```bash
+takumi spec create "$1" "$2"
+```
 
-- name: $1
-- description: $2 (指定されている場合)
-
-作成が完了したら、以下の情報を表示してください。
-
-- 仕様書 ID
-- 仕様書名
-- 現在のフェーズ (requirements)
-- 次のステップ（Requirements 定義の方法）
-
-また、ユーザーに対して Requirements 定義に必要な情報を質問してください。
-
-- 機能概要
-- 対象ユーザー
-- 受け入れ基準
-- 制約条件
-- 依存関係
+作成が完了したら、結果を要約して表示し、次のステップ（Requirements 定義）を案内してください。

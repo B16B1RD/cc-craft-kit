@@ -1,0 +1,39 @@
+---
+description: "GitHub統合を初期化します"
+argument-hint: "<owner> <repo>"
+---
+
+# GitHub統合初期化
+
+GitHubリポジトリとの連携を設定します。
+
+## 引数
+
+- `$1` (必須): GitHubオーナー名（ユーザー名または組織名）
+- `$2` (必須): リポジトリ名
+
+## 実行内容
+
+1. `.takumi/config.json`にGitHub情報を保存
+2. GITHUB_TOKEN環境変数の確認
+3. 必要な権限のチェック
+
+## 環境変数
+
+- `GITHUB_TOKEN`: Fine-grained Personal Access Token（Issues: Read/Write、Projects: Read/Write）
+
+## 使用例
+
+```bash
+/takumi:github-init myorg myrepo
+```
+
+---
+
+以下のコマンドを実行してGitHub統合を初期化してください:
+
+```bash
+takumi github init "$1" "$2"
+```
+
+初期化が完了したら、次のアクション（Issue作成、同期設定など）を案内してください。

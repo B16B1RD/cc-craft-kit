@@ -1,0 +1,36 @@
+---
+description: "エラー解決策をGitHub Issueに記録します"
+argument-hint: "<spec-id> <error> <solution>"
+---
+
+# エラー解決策記録
+
+遭遇したエラーと解決策をGitHub Issueコメントに記録し、ナレッジベース化します。
+
+## 引数
+
+- `$1` (必須): 仕様書ID（部分一致可、最低8文字）
+- `$2` (必須): エラー内容
+- `$3` (必須): 解決策
+
+## 実行内容
+
+1. エラーと解決策をフォーマット
+2. GitHub Issueにコメントを追加
+3. データベースにログ記録
+
+## 使用例
+
+```bash
+/takumi:knowledge-error f6621295 "CORS エラーが発生" "Access-Control-Allow-Origin ヘッダーを追加"
+```
+
+---
+
+以下のコマンドを実行してエラー解決策を記録してください:
+
+```bash
+takumi knowledge error "$1" "$2" "$3"
+```
+
+記録が完了したら、Issue URLと次のアクション（追加の記録など）を案内してください。

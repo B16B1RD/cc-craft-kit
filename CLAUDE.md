@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## プロジェクト概要
 
 Takumi（匠）は、Claude Code 上で仕様駆動開発（SDD）、本質的 TDD、GitHub Projects/Issues 完全連携を実現する開発支援ツールキット。
-MCP サーバー、カスタムスラッシュコマンド、サブエージェント、スキルの統合により、開発ワークフローを革新します。
+CLI、カスタムスラッシュコマンド、サブエージェント、スキルの統合により、開発ワークフローを革新します。
 
 ## よく使うコマンド
 
@@ -54,14 +54,17 @@ npm run textlint
 npm run textlint:fix
 ```
 
-### MCPサーバー
+### CLI実行
 
 ```bash
-# MCPサーバー開発モード
-npm run mcp:dev
+# CLI開発モード（ホットリロード）
+npm run dev
 
-# MCPサーバーをビルドして起動
-npm run mcp:build
+# ビルド後にCLI実行
+npm run build && npm start
+
+# グローバルインストール後
+takumi --help
 ```
 
 ### データベース
@@ -81,7 +84,7 @@ Takumi は**モジュラーモノリス**アーキテクチャを採用し、将
 
 ```text
 ┌─────────────────────────────────────┐
-│      MCP Server (src/mcp/)          │  ← Claude Codeとの統合
+│      CLI Interface (src/cli/)       │  ← コマンドライン統合
 ├─────────────────────────────────────┤
 │   Integrations (src/integrations/)  │  ← GitHub統合（REST/GraphQL）
 ├─────────────────────────────────────┤
@@ -129,35 +132,48 @@ EventEmitter2 を使用したイベント駆動設計により、モジュール
 - `tasks.status` - ステータス検索用
 - `github_sync.entity_id` - 同期レコード検索用
 
-### MCPツール一覧
+### CLIコマンド一覧
 
 **プロジェクト管理:**
 
-- `takumi:init_project` - プロジェクト初期化
-- `takumi:create_spec` - 仕様書作成
-- `takumi:list_specs` - 仕様書一覧
-- `takumi:get_spec` - 仕様書取得
+- `takumi init <name> [description]` - プロジェクト初期化
+- `takumi status` - プロジェクト状況表示
+- `takumi spec create <name> [description]` - 仕様書作成
+- `takumi spec list [phase] [--limit=N]` - 仕様書一覧
+- `takumi spec get <spec-id>` - 仕様書取得
+- `takumi spec phase <spec-id> <phase>` - フェーズ更新
 
 **GitHub統合:**
 
-- `takumi:github_init` - GitHub 接続初期化
-- `takumi:github_create_issue` - Issue 作成
-- `takumi:sync_spec_to_github` - 仕様書→GitHub 同期
-- `takumi:sync_github_to_spec` - GitHub→仕様書同期
-- `takumi:add_spec_to_project` - Project ボードに Spec 追加
+- `takumi github init <owner> <repo>` - GitHub 接続初期化
+- `takumi github issue create <spec-id>` - Issue 作成
+- `takumi github sync to-github <spec-id>` - 仕様書→GitHub 同期
+- `takumi github sync from-github <spec-id>` - GitHub→仕様書同期
+- `takumi github project add <spec-id> <project-number>` - Project ボードに Spec 追加
 
 **ナレッジベース:**
 
-- `takumi:record_progress` - 進捗記録
-- `takumi:record_error_solution` - エラー解決策記録
-- `takumi:record_tip` - Tips 記録
+- `takumi knowledge progress <spec-id> <message>` - 進捗記録
+- `takumi knowledge error <spec-id> <error> <solution>` - エラー解決策記録
+- `takumi knowledge tip <spec-id> <category> <tip>` - Tips 記録
 
 ### カスタムスラッシュコマンド
 
+すべてのスラッシュコマンドは対応する CLI コマンドを呼び出します。
+
 - `/takumi:init <project-name> [description]` - プロジェクト初期化
+- `/takumi:status` - プロジェクト状況表示
 - `/takumi:spec-create <name> [description]` - 仕様書作成
 - `/takumi:spec-list [phase] [limit]` - 仕様書一覧
-- `/takumi:status` - プロジェクト状況表示
+- `/takumi:spec-get <spec-id>` - 仕様書詳細表示
+- `/takumi:spec-phase <spec-id> <phase>` - フェーズ更新
+- `/takumi:github-init <owner> <repo>` - GitHub統合初期化
+- `/takumi:github-issue-create <spec-id>` - Issue作成
+- `/takumi:github-sync <direction> <spec-id>` - GitHub同期
+- `/takumi:github-project-add <spec-id> <project-number>` - Project追加
+- `/takumi:knowledge-progress <spec-id> <message>` - 進捗記録
+- `/takumi:knowledge-error <spec-id> <error> <solution>` - エラー解決策記録
+- `/takumi:knowledge-tip <spec-id> <category> <tip>` - Tips記録
 
 ### 依存性注入（DI）
 
@@ -198,7 +214,7 @@ export class YourService {
 
 ### セキュリティ
 
-- すべての MCP ツール引数は Zod スキーマで検証すること
+- すべての CLI コマンド引数は適切に検証すること（Zod スキーマ等）
 - SQL インジェクション対策として、Kysely のパラメータ化クエリのみを使用すること
 - HTML 出力時は必ずサニタイゼーションを実施すること
 - 認証情報は環境変数（`.env`）で管理し、コードに直接記述しないこと
@@ -311,11 +327,11 @@ eventBus.on('spec:created', async (spec) => {
 
 ## トラブルシューティング
 
-### MCPサーバーが起動しない
+### CLIが起動しない
 
 1. `npm run build`でビルドエラーがないか確認
 2. `.env`ファイルが正しく設定されているか確認
-3. `npm run mcp:dev`で詳細なエラーログを確認
+3. `npm run dev`で詳細なエラーログを確認
 
 ### データベースエラー
 
@@ -331,5 +347,5 @@ eventBus.on('spec:created', async (spec) => {
 ## 参考ドキュメント
 
 - [ARCHITECTURE.md](./docs/ARCHITECTURE.md) - 詳細なアーキテクチャ設計
-- [MCP_TOOLS.md](./docs/MCP_TOOLS.md) - MCP ツール API リファレンス
+- [MIGRATION_FROM_MCP.md](./docs/MIGRATION_FROM_MCP.md) - MCP からの移行ガイド
 - [QUICK_START.md](./docs/QUICK_START.md) - クイックスタートガイド
