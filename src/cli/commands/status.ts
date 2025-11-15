@@ -66,7 +66,11 @@ export async function showStatus(
   console.log(formatHeading('Project', 2, options.color));
   console.log(formatKeyValue('Name', config.project.name, options.color));
   console.log(
-    formatKeyValue('Initialized', new Date(config.project.initialized_at).toLocaleString(), options.color)
+    formatKeyValue(
+      'Initialized',
+      new Date(config.project.initialized_at).toLocaleString(),
+      options.color
+    )
   );
   console.log(formatKeyValue('Directory', takumiDir, options.color));
   console.log('');
@@ -74,14 +78,20 @@ export async function showStatus(
   // GitHub 連携状態
   if (config.github) {
     console.log(formatHeading('GitHub Integration', 2, options.color));
-    console.log(formatKeyValue('Repository', `${config.github.owner}/${config.github.repo}`, options.color));
+    console.log(
+      formatKeyValue('Repository', `${config.github.owner}/${config.github.repo}`, options.color)
+    );
     console.log(
       formatKeyValue('Project ID', config.github.project_id || '(not set)', options.color)
     );
-    console.log(formatKeyValue('Token', config.github.token ? '✓ Configured' : '✗ Not set', options.color));
+    // 環境変数GITHUB_TOKENの存在をチェック
+    const hasToken = !!process.env.GITHUB_TOKEN;
+    console.log(formatKeyValue('Token', hasToken ? '✓ Configured' : '✗ Not set', options.color));
     console.log('');
   } else {
-    console.log(formatInfo('GitHub is not configured. Run "takumi github init" to set up.', options.color));
+    console.log(
+      formatInfo('GitHub is not configured. Run "takumi github init" to set up.', options.color)
+    );
     console.log('');
   }
 
