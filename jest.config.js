@@ -4,6 +4,7 @@ export default {
   roots: ['<rootDir>/src', '<rootDir>/tests'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   testPathIgnorePatterns: ['/node_modules/', '/tests/integrations/github/'],
+  maxWorkers: 1, // テストを順次実行してDB競合を回避
   transform: {
     '^.+\\.ts$': [
       'ts-jest',

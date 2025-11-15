@@ -21,6 +21,10 @@ export default [
         Buffer: 'readonly',
         __dirname: 'readonly',
         __filename: 'readonly',
+        performance: 'readonly',
+        URL: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
       },
     },
     plugins: {
