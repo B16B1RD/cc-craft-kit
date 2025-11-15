@@ -5,7 +5,13 @@ import type { ColumnType, Generated, Insertable, Selectable, Updateable } from '
  */
 
 // 仕様書フェーズ
-export type SpecPhase = 'requirements' | 'design' | 'tasks' | 'implementation' | 'completed';
+export type SpecPhase =
+  | 'requirements'
+  | 'design'
+  | 'tasks'
+  | 'implementation'
+  | 'testing'
+  | 'completed';
 
 // タスクステータス
 export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'review' | 'done';

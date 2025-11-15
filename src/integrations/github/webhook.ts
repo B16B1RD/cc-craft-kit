@@ -5,11 +5,7 @@ import crypto from 'crypto';
 /**
  * Webhook イベント種別
  */
-export type WebhookEventType =
-  | 'issues'
-  | 'issue_comment'
-  | 'project_card'
-  | 'milestone';
+export type WebhookEventType = 'issues' | 'issue_comment' | 'project_card' | 'milestone';
 
 /**
  * Webhook ペイロード
@@ -152,7 +148,7 @@ export class GitHubWebhookHandler {
   /**
    * Issue クローズ処理
    */
-  private async handleIssueClosed(specId: string, issue: any): Promise<void> {
+  private async handleIssueClosed(specId: string, issue: { number: number }): Promise<void> {
     await this.db
       .updateTable('specs')
       .set({
@@ -181,7 +177,7 @@ export class GitHubWebhookHandler {
   /**
    * Issue 再オープン処理
    */
-  private async handleIssueReopened(specId: string, issue: any): Promise<void> {
+  private async handleIssueReopened(specId: string, issue: { number: number }): Promise<void> {
     await this.db
       .updateTable('specs')
       .set({
@@ -210,7 +206,7 @@ export class GitHubWebhookHandler {
   /**
    * Issue 編集処理
    */
-  private async handleIssueEdited(specId: string, issue: any): Promise<void> {
+  private async handleIssueEdited(specId: string, issue: { title: string }): Promise<void> {
     // タイトルから仕様名を抽出
     const match = issue.title.match(/^\[.*?\]\s*(.+)$/);
     const name = match ? match[1] : issue.title;
@@ -228,27 +224,22 @@ export class GitHubWebhookHandler {
   /**
    * Issue ラベル追加処理
    */
-  private async handleIssueLabeled(specId: string, issue: any): Promise<void> {
+  private async handleIssueLabeled(
+    specId: string,
+    issue: { labels: Array<{ name: string }> }
+  ): Promise<void> {
     // フェーズラベルをチェック
-    const phaseLabel = issue.labels.find((l: any) =>
-      l.name.startsWith('phase:')
-    );
+    const phaseLabel = issue.labels.find((l) => l.name.startsWith('phase:'));
 
     if (phaseLabel) {
       const phase = phaseLabel.name.replace('phase:', '');
-      const validPhases = [
-        'requirements',
-        'design',
-        'tasks',
-        'implementation',
-        'completed',
-      ];
+      const validPhases = ['requirements', 'design', 'tasks', 'implementation', 'completed'];
 
       if (validPhases.includes(phase)) {
         await this.db
           .updateTable('specs')
           .set({
-            phase: phase as any,
+            phase: phase as 'requirements' | 'design' | 'tasks' | 'implementation' | 'completed',
             updated_at: new Date().toISOString(),
           })
           .where('id', '=', specId)

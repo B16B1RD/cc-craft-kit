@@ -3,10 +3,50 @@ import { initGitHubClient } from '../../integrations/github/client.js';
 import fs from 'fs/promises';
 import path from 'path';
 
+interface InitGitHubParams {
+  token: string;
+  saveToConfig?: boolean;
+}
+
+interface InitGitHubResult {
+  success: boolean;
+  user?: {
+    login: string;
+    id: number;
+    type: string;
+  };
+  message?: string;
+  error?: string;
+}
+
+interface CreateGitHubIssueParams {
+  owner: string;
+  repo: string;
+  title: string;
+  body?: string;
+  labels?: string[];
+  assignees?: string[];
+  milestone?: number;
+}
+
+interface CreateGitHubIssueResult {
+  success: boolean;
+  issue?: {
+    number: number;
+    title: string;
+    url: string;
+    state: string;
+    createdAt: string;
+  };
+  error?: string;
+}
+
 /**
  * GitHub認証初期化ツール
  */
-export const initGitHubTool: Tool & { handler: (params: any) => Promise<any> } = {
+export const initGitHubTool: Tool & {
+  handler: (params: InitGitHubParams) => Promise<InitGitHubResult>;
+} = {
   name: 'takumi:init_github',
   description: 'GitHub Personal Access Tokenを使用してGitHub統合を初期化します。',
   inputSchema: {
@@ -24,7 +64,7 @@ export const initGitHubTool: Tool & { handler: (params: any) => Promise<any> } =
     required: ['token'],
   },
 
-  async handler(args: any) {
+  async handler(args: InitGitHubParams): Promise<InitGitHubResult> {
     try {
       // GitHub クライアント初期化
       const client = initGitHubClient({ token: args.token });
@@ -68,7 +108,9 @@ export const initGitHubTool: Tool & { handler: (params: any) => Promise<any> } =
 /**
  * GitHub Issue作成ツール
  */
-export const createGitHubIssueTool: Tool & { handler: (params: any) => Promise<any> } = {
+export const createGitHubIssueTool: Tool & {
+  handler: (params: CreateGitHubIssueParams) => Promise<CreateGitHubIssueResult>;
+} = {
   name: 'takumi:create_github_issue',
   description: 'GitHub Issueを直接作成します。',
   inputSchema: {
@@ -85,7 +127,7 @@ export const createGitHubIssueTool: Tool & { handler: (params: any) => Promise<a
     required: ['owner', 'repo', 'title'],
   },
 
-  async handler(args: any) {
+  async handler(args: CreateGitHubIssueParams): Promise<CreateGitHubIssueResult> {
     try {
       const { GitHubIssues } = await import('../../integrations/github/issues.js');
       const { getGitHubClient } = await import('../../integrations/github/client.js');

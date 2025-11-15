@@ -21,7 +21,7 @@ export function createMigrationProvider(): FileMigrationProvider {
 /**
  * マイグレーター作成
  */
-export function createMigrator(db: Kysely<any>): Migrator {
+export function createMigrator<T>(db: Kysely<T>): Migrator {
   return new Migrator({
     db,
     provider: createMigrationProvider(),
@@ -31,7 +31,7 @@ export function createMigrator(db: Kysely<any>): Migrator {
 /**
  * マイグレーション実行
  */
-export async function migrateToLatest(db: Kysely<any>): Promise<void> {
+export async function migrateToLatest<T>(db: Kysely<T>): Promise<void> {
   const migrator = createMigrator(db);
 
   const { error, results } = await migrator.migrateToLatest();
@@ -55,7 +55,7 @@ export async function migrateToLatest(db: Kysely<any>): Promise<void> {
 /**
  * マイグレーションロールバック
  */
-export async function migrateDown(db: Kysely<any>): Promise<void> {
+export async function migrateDown<T>(db: Kysely<T>): Promise<void> {
   const migrator = createMigrator(db);
 
   const { error, results } = await migrator.migrateDown();

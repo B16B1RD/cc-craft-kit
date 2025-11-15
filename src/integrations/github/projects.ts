@@ -3,12 +3,7 @@ import { GitHubClient } from './client.js';
 /**
  * Project V2 フィールド型
  */
-export type ProjectFieldType =
-  | 'TEXT'
-  | 'NUMBER'
-  | 'DATE'
-  | 'SINGLE_SELECT'
-  | 'ITERATION';
+export type ProjectFieldType = 'TEXT' | 'NUMBER' | 'DATE' | 'SINGLE_SELECT' | 'ITERATION';
 
 /**
  * Project V2 作成パラメータ
@@ -67,7 +62,7 @@ export interface ProjectItemResponse {
       id: string;
       name: string;
     };
-    value: any;
+    value: unknown;
   }>;
 }
 
@@ -105,7 +100,7 @@ export class GitHubProjects {
 
     const result = await this.client.query<{
       createProjectV2: { projectV2: ProjectResponse };
-    }>(mutation, params);
+    }>(mutation, { ...params } as Record<string, unknown>);
 
     return result.createProjectV2.projectV2;
   }
@@ -179,7 +174,7 @@ export class GitHubProjects {
 
     const result = await this.client.query<{
       addProjectV2ItemById: { item: ProjectItemResponse };
-    }>(mutation, params);
+    }>(mutation, { ...params } as Record<string, unknown>);
 
     return result.addProjectV2ItemById.item;
   }
@@ -187,9 +182,7 @@ export class GitHubProjects {
   /**
    * Project V2 アイテムフィールド更新
    */
-  async updateItemField(
-    params: UpdateProjectItemFieldParams
-  ): Promise<{ id: string }> {
+  async updateItemField(params: UpdateProjectItemFieldParams): Promise<{ id: string }> {
     const mutation = `
       mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: ProjectV2FieldValue!) {
         updateProjectV2ItemFieldValue(input: {
@@ -243,11 +236,7 @@ export class GitHubProjects {
   /**
    * Issue の Node ID 取得
    */
-  async getIssueNodeId(
-    owner: string,
-    repo: string,
-    issueNumber: number
-  ): Promise<string> {
+  async getIssueNodeId(owner: string, repo: string, issueNumber: number): Promise<string> {
     const query = `
       query($owner: String!, $repo: String!, $number: Int!) {
         repository(owner: $owner, name: $repo) {

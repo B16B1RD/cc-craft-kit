@@ -166,22 +166,41 @@ export class GitHubIssues {
   /**
    * Issue レスポンスマッピング
    */
-  private mapIssueResponse(data: any): IssueResponse {
+  private mapIssueResponse(data: {
+    id: number;
+    number: number;
+    title: string;
+    body?: string | null;
+    state: string;
+    html_url: string;
+    created_at: string;
+    updated_at: string;
+    labels: Array<
+      string | { id?: number; name?: string; color?: string | null; description?: string | null }
+    >;
+    assignees?: Array<{ id: number; login: string }> | null;
+    milestone: { id: number; number: number; title: string } | null;
+  }): IssueResponse {
     return {
       id: data.id,
       number: data.number,
       title: data.title,
-      body: data.body,
+      body: data.body ?? null,
       state: data.state,
       html_url: data.html_url,
       created_at: data.created_at,
       updated_at: data.updated_at,
-      labels: data.labels.map((label: any) => ({
-        id: label.id,
-        name: label.name,
-        color: label.color,
-      })),
-      assignees: data.assignees.map((assignee: any) => ({
+      labels: data.labels.map((label) => {
+        if (typeof label === 'string') {
+          return { id: 0, name: label, color: '' };
+        }
+        return {
+          id: label.id ?? 0,
+          name: label.name ?? '',
+          color: label.color ?? '',
+        };
+      }),
+      assignees: (data.assignees ?? []).map((assignee) => ({
         id: assignee.id,
         login: assignee.login,
       })),

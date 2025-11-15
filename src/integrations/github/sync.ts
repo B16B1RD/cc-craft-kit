@@ -188,7 +188,13 @@ export class GitHubSyncService {
   /**
    * Issue本文生成
    */
-  private buildIssueBody(spec: any): string {
+  private buildIssueBody(spec: {
+    id: string;
+    description?: string | null;
+    phase: string;
+    created_at: string | Date;
+    updated_at: string | Date;
+  }): string {
     return `
 ## 仕様概要
 
@@ -248,7 +254,7 @@ ${spec.description || '説明なし'}
     github_issue_id: number;
     sync_direction: 'to_github' | 'from_github';
     status: 'success' | 'error';
-    details: Record<string, any>;
+    details: Record<string, unknown>;
   }): Promise<void> {
     const { randomUUID } = await import('crypto');
     await this.db

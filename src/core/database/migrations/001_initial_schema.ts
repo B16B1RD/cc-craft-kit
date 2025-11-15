@@ -3,7 +3,7 @@ import { Kysely, sql } from 'kysely';
 /**
  * 初期スキーママイグレーション
  */
-export async function up(db: Kysely<any>): Promise<void> {
+export async function up(db: Kysely<unknown>): Promise<void> {
   // Specs テーブル
   await db.schema
     .createTable('specs')
@@ -14,20 +14,12 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn('github_issue_id', 'integer')
     .addColumn('github_project_id', 'text')
     .addColumn('github_milestone_id', 'integer')
-    .addColumn('created_at', 'text', (col) =>
-      col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`)
-    )
-    .addColumn('updated_at', 'text', (col) =>
-      col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`)
-    )
+    .addColumn('created_at', 'text', (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
+    .addColumn('updated_at', 'text', (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
     .execute();
 
   // Specs インデックス
-  await db.schema
-    .createIndex('specs_phase_idx')
-    .on('specs')
-    .column('phase')
-    .execute();
+  await db.schema.createIndex('specs_phase_idx').on('specs').column('phase').execute();
 
   await db.schema
     .createIndex('specs_github_issue_id_idx')
@@ -39,9 +31,7 @@ export async function up(db: Kysely<any>): Promise<void> {
   await db.schema
     .createTable('tasks')
     .addColumn('id', 'text', (col) => col.primaryKey())
-    .addColumn('spec_id', 'text', (col) =>
-      col.notNull().references('specs.id').onDelete('cascade')
-    )
+    .addColumn('spec_id', 'text', (col) => col.notNull().references('specs.id').onDelete('cascade'))
     .addColumn('title', 'text', (col) => col.notNull())
     .addColumn('description', 'text')
     .addColumn('status', 'text', (col) => col.notNull().defaultTo('todo'))
@@ -49,26 +39,14 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn('github_issue_id', 'integer')
     .addColumn('github_issue_number', 'integer')
     .addColumn('assignee', 'text')
-    .addColumn('created_at', 'text', (col) =>
-      col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`)
-    )
-    .addColumn('updated_at', 'text', (col) =>
-      col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`)
-    )
+    .addColumn('created_at', 'text', (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
+    .addColumn('updated_at', 'text', (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
     .execute();
 
   // Tasks インデックス
-  await db.schema
-    .createIndex('tasks_spec_id_idx')
-    .on('tasks')
-    .column('spec_id')
-    .execute();
+  await db.schema.createIndex('tasks_spec_id_idx').on('tasks').column('spec_id').execute();
 
-  await db.schema
-    .createIndex('tasks_status_idx')
-    .on('tasks')
-    .column('status')
-    .execute();
+  await db.schema.createIndex('tasks_status_idx').on('tasks').column('status').execute();
 
   await db.schema
     .createIndex('tasks_github_issue_id_idx')
@@ -86,29 +64,15 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn('level', 'text', (col) => col.notNull().defaultTo('info'))
     .addColumn('message', 'text', (col) => col.notNull())
     .addColumn('metadata', 'text')
-    .addColumn('timestamp', 'text', (col) =>
-      col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`)
-    )
+    .addColumn('timestamp', 'text', (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
     .execute();
 
   // Logs インデックス
-  await db.schema
-    .createIndex('logs_task_id_idx')
-    .on('logs')
-    .column('task_id')
-    .execute();
+  await db.schema.createIndex('logs_task_id_idx').on('logs').column('task_id').execute();
 
-  await db.schema
-    .createIndex('logs_spec_id_idx')
-    .on('logs')
-    .column('spec_id')
-    .execute();
+  await db.schema.createIndex('logs_spec_id_idx').on('logs').column('spec_id').execute();
 
-  await db.schema
-    .createIndex('logs_timestamp_idx')
-    .on('logs')
-    .column('timestamp')
-    .execute();
+  await db.schema.createIndex('logs_timestamp_idx').on('logs').column('timestamp').execute();
 
   // GitHubSync テーブル
   await db.schema
@@ -118,9 +82,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn('entity_id', 'text', (col) => col.notNull())
     .addColumn('github_id', 'text', (col) => col.notNull())
     .addColumn('github_number', 'integer')
-    .addColumn('last_synced_at', 'text', (col) =>
-      col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`)
-    )
+    .addColumn('last_synced_at', 'text', (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
     .addColumn('sync_status', 'text', (col) => col.notNull().defaultTo('pending'))
     .addColumn('error_message', 'text')
     .execute();
@@ -142,7 +104,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 /**
  * ロールバック
  */
-export async function down(db: Kysely<any>): Promise<void> {
+export async function down(db: Kysely<unknown>): Promise<void> {
   await db.schema.dropTable('github_sync').execute();
   await db.schema.dropTable('logs').execute();
   await db.schema.dropTable('tasks').execute();

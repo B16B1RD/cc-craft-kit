@@ -93,7 +93,7 @@ class TakumiMCPServer {
       }
 
       // ツールハンドラー実行
-      const handler = (tool as any).handler;
+      const handler = (tool as { handler?: (args: unknown) => Promise<unknown> }).handler;
       if (!handler) {
         throw new Error(`Tool ${request.params.name} has no handler`);
       }
@@ -109,8 +109,7 @@ class TakumiMCPServer {
           ],
         };
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error occurred';
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         return {
           content: [
             {

@@ -11,7 +11,51 @@ const GetSpecSchema = z.object({
 
 type GetSpecParams = z.infer<typeof GetSpecSchema>;
 
-export const getSpecTool: Tool & { handler: (params: GetSpecParams) => Promise<any> } = {
+interface GetSpecResult {
+  success: boolean;
+  spec: {
+    id: string;
+    name: string;
+    description: string | null;
+    phase: string;
+    githubIssueId: number | null;
+    githubProjectId: string | null;
+    githubMilestoneId: number | null;
+    createdAt: string;
+    updatedAt: string;
+  };
+  tasks: Array<{
+    id: string;
+    title: string;
+    description: string | null;
+    status: string;
+    priority: number;
+    githubIssueId: number | null;
+    githubIssueNumber: number | null;
+    assignee: string | null;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  githubSync: {
+    githubId: number;
+    githubNumber: number;
+    lastSyncedAt: string;
+    syncStatus: string;
+    errorMessage: string | null;
+  } | null;
+  stats: {
+    totalTasks: number;
+    tasksByStatus: {
+      todo: number;
+      inProgress: number;
+      blocked: number;
+      review: number;
+      done: number;
+    };
+  };
+}
+
+export const getSpecTool: Tool & { handler: (params: GetSpecParams) => Promise<GetSpecResult> } = {
   name: 'takumi:get_spec',
   description: '指定したIDの仕様書詳細を取得します。関連するタスクも含みます。',
   inputSchema: {
@@ -25,7 +69,7 @@ export const getSpecTool: Tool & { handler: (params: GetSpecParams) => Promise<a
     required: ['id'],
   },
 
-  async handler(params: GetSpecParams) {
+  async handler(params: GetSpecParams): Promise<GetSpecResult> {
     const validated = GetSpecSchema.parse(params);
     const db = getDatabase();
 
@@ -67,8 +111,8 @@ export const getSpecTool: Tool & { handler: (params: GetSpecParams) => Promise<a
         githubIssueId: spec.github_issue_id,
         githubProjectId: spec.github_project_id,
         githubMilestoneId: spec.github_milestone_id,
-        createdAt: spec.created_at,
-        updatedAt: spec.updated_at,
+        createdAt: spec.created_at.toISOString(),
+        updatedAt: spec.updated_at.toISOString(),
       },
       tasks: tasks.map((task) => ({
         id: task.id,
@@ -79,14 +123,14 @@ export const getSpecTool: Tool & { handler: (params: GetSpecParams) => Promise<a
         githubIssueId: task.github_issue_id,
         githubIssueNumber: task.github_issue_number,
         assignee: task.assignee,
-        createdAt: task.created_at,
-        updatedAt: task.updated_at,
+        createdAt: task.created_at.toISOString(),
+        updatedAt: task.updated_at.toISOString(),
       })),
       githubSync: githubSync
         ? {
-            githubId: githubSync.github_id,
-            githubNumber: githubSync.github_number,
-            lastSyncedAt: githubSync.last_synced_at,
+            githubId: Number(githubSync.github_id),
+            githubNumber: githubSync.github_number ?? 0,
+            lastSyncedAt: githubSync.last_synced_at.toISOString(),
             syncStatus: githubSync.sync_status,
             errorMessage: githubSync.error_message,
           }

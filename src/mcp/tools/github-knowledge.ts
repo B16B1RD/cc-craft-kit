@@ -4,12 +4,69 @@ import { getGitHubClient } from '../../integrations/github/client.js';
 import { GitHubIssues } from '../../integrations/github/issues.js';
 import { GitHubKnowledgeBase } from '../../integrations/github/knowledge-base.js';
 
+interface RecordProgressParams {
+  specId: string;
+  owner: string;
+  repo: string;
+  summary: string;
+  details: string;
+  completedTasks?: string[];
+  nextSteps?: string[];
+}
+
+interface RecordProgressResult {
+  success: boolean;
+  commentId?: number;
+  issueUrl?: string;
+  message?: string;
+  error?: string;
+}
+
+interface RecordErrorSolutionParams {
+  specId: string;
+  owner: string;
+  repo: string;
+  errorDescription: string;
+  solution: string;
+  rootCause?: string;
+  relatedIssues?: number[];
+}
+
+interface RecordErrorSolutionResult {
+  success: boolean;
+  commentId?: number;
+  issueUrl?: string;
+  message?: string;
+  error?: string;
+}
+
+interface RecordTipParams {
+  specId: string;
+  owner: string;
+  repo: string;
+  title: string;
+  content: string;
+  category?: string;
+  tags?: string[];
+}
+
+interface RecordTipResult {
+  success: boolean;
+  commentId?: number;
+  issueUrl?: string;
+  message?: string;
+  error?: string;
+}
+
 /**
  * 進捗記録ツール
  */
-export const recordProgressTool: Tool & { handler: (params: any) => Promise<any> } = {
+export const recordProgressTool: Tool & {
+  handler: (params: RecordProgressParams) => Promise<RecordProgressResult>;
+} = {
   name: 'takumi:record_progress',
-  description: '仕様書の進捗をGitHub Issueに記録します。コンテキスト圧迫を減らすためのナレッジベース機能です。',
+  description:
+    '仕様書の進捗をGitHub Issueに記録します。コンテキスト圧迫を減らすためのナレッジベース機能です。',
   inputSchema: {
     type: 'object',
     properties: {
@@ -18,13 +75,17 @@ export const recordProgressTool: Tool & { handler: (params: any) => Promise<any>
       repo: { type: 'string', description: 'リポジトリ名' },
       summary: { type: 'string', description: '進捗の要約' },
       details: { type: 'string', description: '進捗の詳細' },
-      completedTasks: { type: 'array', items: { type: 'string' }, description: '完了したタスクリスト' },
+      completedTasks: {
+        type: 'array',
+        items: { type: 'string' },
+        description: '完了したタスクリスト',
+      },
       nextSteps: { type: 'array', items: { type: 'string' }, description: '次のステップ' },
     },
     required: ['specId', 'owner', 'repo', 'summary', 'details'],
   },
 
-  async handler(args: any) {
+  async handler(args: RecordProgressParams): Promise<RecordProgressResult> {
     try {
       const db = getDatabase();
       const client = getGitHubClient();
@@ -65,7 +126,9 @@ export const recordProgressTool: Tool & { handler: (params: any) => Promise<any>
 /**
  * エラー解決記録ツール
  */
-export const recordErrorSolutionTool: Tool & { handler: (params: any) => Promise<any> } = {
+export const recordErrorSolutionTool: Tool & {
+  handler: (params: RecordErrorSolutionParams) => Promise<RecordErrorSolutionResult>;
+} = {
   name: 'takumi:record_error_solution',
   description: 'エラーとその解決方法をGitHub Issueに記録します。同じエラーの再発時に参照できます。',
   inputSchema: {
@@ -77,12 +140,16 @@ export const recordErrorSolutionTool: Tool & { handler: (params: any) => Promise
       errorDescription: { type: 'string', description: 'エラーの説明' },
       solution: { type: 'string', description: '解決方法' },
       rootCause: { type: 'string', description: '根本原因' },
-      relatedIssues: { type: 'array', items: { type: 'number' }, description: '関連Issue番号リスト' },
+      relatedIssues: {
+        type: 'array',
+        items: { type: 'number' },
+        description: '関連Issue番号リスト',
+      },
     },
     required: ['specId', 'owner', 'repo', 'errorDescription', 'solution'],
   },
 
-  async handler(args: any) {
+  async handler(args: RecordErrorSolutionParams): Promise<RecordErrorSolutionResult> {
     try {
       const db = getDatabase();
       const client = getGitHubClient();
@@ -123,7 +190,9 @@ export const recordErrorSolutionTool: Tool & { handler: (params: any) => Promise
 /**
  * Tips記録ツール
  */
-export const recordTipTool: Tool & { handler: (params: any) => Promise<any> } = {
+export const recordTipTool: Tool & {
+  handler: (params: RecordTipParams) => Promise<RecordTipResult>;
+} = {
   name: 'takumi:record_tip',
   description: '開発中に得たTipsやベストプラクティスをGitHub Issueに記録します。',
   inputSchema: {
@@ -140,7 +209,7 @@ export const recordTipTool: Tool & { handler: (params: any) => Promise<any> } = 
     required: ['specId', 'owner', 'repo', 'title', 'content'],
   },
 
-  async handler(args: any) {
+  async handler(args: RecordTipParams): Promise<RecordTipResult> {
     try {
       const db = getDatabase();
       const client = getGitHubClient();

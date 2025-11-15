@@ -1,4 +1,4 @@
-import Handlebars from 'handlebars';
+import Handlebars, { type TemplateDelegate } from 'handlebars';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -57,12 +57,11 @@ export interface TasksTemplateVars {
  */
 export class TemplateEngine {
   private templatesDir: string;
-  private compiledTemplates: Map<string, HandlebarsTemplateDelegate> = new Map();
+  private compiledTemplates: Map<string, TemplateDelegate> = new Map();
 
   constructor(templatesDir?: string) {
     // テンプレートディレクトリのデフォルトパス
-    this.templatesDir =
-      templatesDir || path.join(process.cwd(), 'templates');
+    this.templatesDir = templatesDir || path.join(process.cwd(), 'templates');
     this.registerHelpers();
   }
 
@@ -92,7 +91,7 @@ export class TemplateEngine {
     });
 
     // 条件付きヘルパー
-    Handlebars.registerHelper('eq', (a: any, b: any) => {
+    Handlebars.registerHelper('eq', (a: unknown, b: unknown) => {
       return a === b;
     });
 
@@ -106,7 +105,7 @@ export class TemplateEngine {
   /**
    * テンプレートをロードしてコンパイル
    */
-  private async loadTemplate(templateName: string): Promise<HandlebarsTemplateDelegate> {
+  private async loadTemplate(templateName: string): Promise<TemplateDelegate> {
     if (this.compiledTemplates.has(templateName)) {
       return this.compiledTemplates.get(templateName)!;
     }
@@ -146,7 +145,7 @@ export class TemplateEngine {
   /**
    * カスタムテンプレートレンダリング
    */
-  async renderCustom(templateName: string, vars: any): Promise<string> {
+  async renderCustom(templateName: string, vars: Record<string, unknown>): Promise<string> {
     const template = await this.loadTemplate(templateName);
     return template(vars);
   }

@@ -13,7 +13,29 @@ const ListSpecsSchema = z.object({
 
 type ListSpecsParams = z.infer<typeof ListSpecsSchema>;
 
-export const listSpecsTool: Tool & { handler: (params: ListSpecsParams) => Promise<any> } = {
+interface ListSpecsResult {
+  success: boolean;
+  specs: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    phase: string;
+    githubIssueId: number | null;
+    githubProjectId: string | null;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
+
+export const listSpecsTool: Tool & {
+  handler: (params: ListSpecsParams) => Promise<ListSpecsResult>;
+} = {
   name: 'takumi:list_specs',
   description: '仕様書の一覧を取得します。フェーズでフィルタリング可能です。',
   inputSchema: {
@@ -38,7 +60,7 @@ export const listSpecsTool: Tool & { handler: (params: ListSpecsParams) => Promi
     },
   },
 
-  async handler(params: ListSpecsParams) {
+  async handler(params: ListSpecsParams): Promise<ListSpecsResult> {
     const validated = ListSpecsSchema.parse(params);
     const db = getDatabase();
 
@@ -73,8 +95,8 @@ export const listSpecsTool: Tool & { handler: (params: ListSpecsParams) => Promi
         phase: spec.phase,
         githubIssueId: spec.github_issue_id,
         githubProjectId: spec.github_project_id,
-        createdAt: spec.created_at,
-        updatedAt: spec.updated_at,
+        createdAt: spec.created_at.toISOString(),
+        updatedAt: spec.updated_at.toISOString(),
       })),
       pagination: {
         total: count,

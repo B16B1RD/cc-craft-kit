@@ -39,7 +39,7 @@ export class GitHubClient {
   /**
    * GraphQL クエリ実行
    */
-  async query<T = any>(query: string, variables?: Record<string, any>): Promise<T> {
+  async query<T = unknown>(query: string, variables?: Record<string, unknown>): Promise<T> {
     return this.graphqlClient<T>(query, variables);
   }
 

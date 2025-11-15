@@ -13,7 +13,21 @@ const CreateSpecSchema = z.object({
 
 type CreateSpecParams = z.infer<typeof CreateSpecSchema>;
 
-export const createSpecTool: Tool & { handler: (params: CreateSpecParams) => Promise<any> } = {
+interface CreateSpecResult {
+  success: boolean;
+  message: string;
+  spec: {
+    id: string;
+    name: string;
+    description: string | null;
+    phase: string;
+    createdAt: string;
+  };
+}
+
+export const createSpecTool: Tool & {
+  handler: (params: CreateSpecParams) => Promise<CreateSpecResult>;
+} = {
   name: 'takumi:create_spec',
   description: '新しい仕様書を作成します。Requirements フェーズから開始されます。',
   inputSchema: {
@@ -31,7 +45,7 @@ export const createSpecTool: Tool & { handler: (params: CreateSpecParams) => Pro
     required: ['name'],
   },
 
-  async handler(params: CreateSpecParams) {
+  async handler(params: CreateSpecParams): Promise<CreateSpecResult> {
     const validated = CreateSpecSchema.parse(params);
     const db = getDatabase();
 

@@ -14,7 +14,27 @@ const InitProjectSchema = z.object({
 
 type InitProjectParams = z.infer<typeof InitProjectSchema>;
 
-export const initProjectTool: Tool & { handler: (params: InitProjectParams) => Promise<any> } = {
+interface InitProjectResult {
+  success: boolean;
+  message: string;
+  config: {
+    name: string;
+    description: string;
+    githubRepo: string | null;
+    createdAt: string;
+    version: string;
+  };
+  paths: {
+    projectDir: string;
+    specsDir: string;
+    configFile: string;
+    database: string;
+  };
+}
+
+export const initProjectTool: Tool & {
+  handler: (params: InitProjectParams) => Promise<InitProjectResult>;
+} = {
   name: 'takumi:init_project',
   description: 'Takumiプロジェクトを初期化します。.takumiディレクトリとデータベースを作成します。',
   inputSchema: {
@@ -36,7 +56,7 @@ export const initProjectTool: Tool & { handler: (params: InitProjectParams) => P
     required: ['projectName'],
   },
 
-  async handler(params: InitProjectParams) {
+  async handler(params: InitProjectParams): Promise<InitProjectResult> {
     // バリデーション
     const validated = InitProjectSchema.parse(params);
 
@@ -55,10 +75,7 @@ export const initProjectTool: Tool & { handler: (params: InitProjectParams) => P
       version: '0.1.0',
     };
 
-    await fs.writeFile(
-      path.join(projectDir, 'config.json'),
-      JSON.stringify(config, null, 2)
-    );
+    await fs.writeFile(path.join(projectDir, 'config.json'), JSON.stringify(config, null, 2));
 
     return {
       success: true,
