@@ -9,12 +9,12 @@ argument-hint: "<spec-id> <phase>"
 
 ## 引数
 
-- `$1` (必須): 仕様書ID（部分一致可、最低8文字）
+- `$1` (必須): 仕様書 ID（部分一致可、最低 8 文字）
 - `$2` (必須): 新しいフェーズ (requirements/design/tasks/implementation/completed)
 
 ## 実行内容
 
-1. データベースとMarkdownファイルのフェーズ更新
+1. データベースと Markdown ファイルのフェーズ更新
 2. 更新日時の記録
 3. フェーズ固有のガイダンス表示
 

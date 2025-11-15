@@ -167,13 +167,13 @@ EventEmitter2 を使用したイベント駆動設計により、モジュール
 - `/takumi:spec-list [phase] [limit]` - 仕様書一覧
 - `/takumi:spec-get <spec-id>` - 仕様書詳細表示
 - `/takumi:spec-phase <spec-id> <phase>` - フェーズ更新
-- `/takumi:github-init <owner> <repo>` - GitHub統合初期化
-- `/takumi:github-issue-create <spec-id>` - Issue作成
-- `/takumi:github-sync <direction> <spec-id>` - GitHub同期
-- `/takumi:github-project-add <spec-id> <project-number>` - Project追加
+- `/takumi:github-init <owner> <repo>` - GitHub 統合初期化
+- `/takumi:github-issue-create <spec-id>` - Issue 作成
+- `/takumi:github-sync <direction> <spec-id>` - GitHub 同期
+- `/takumi:github-project-add <spec-id> <project-number>` - Project 追加
 - `/takumi:knowledge-progress <spec-id> <message>` - 進捗記録
 - `/takumi:knowledge-error <spec-id> <error> <solution>` - エラー解決策記録
-- `/takumi:knowledge-tip <spec-id> <category> <tip>` - Tips記録
+- `/takumi:knowledge-tip <spec-id> <category> <tip>` - Tips 記録
 
 ### 依存性注入（DI）
 

@@ -4,11 +4,11 @@ Claude Code 上で**仕様駆動開発（SDD）**、**GitHub Projects/Issues 完
 
 ## 🎯 コンセプト
 
-Takumi（匠）は、CLIベースのシンプルなアーキテクチャで、開発ワークフローを革新します。
+Takumi（匠）は、CLI ベースのシンプルなアーキテクチャで、開発ワークフローを革新します。
 
 ### 核心的特徴
 
-- **CLI中心設計**: 複雑なMCPサーバー不要、シンプルなコマンドラインツール
+- **CLI中心設計**: 複雑な MCP サーバー不要、シンプルなコマンドラインツール
 - **GitHub 完全統合**: Projects v2、Issue、Milestone の自動管理
 - **Issue ナレッジベース化**: 課題管理＋途中経過＋エラー対策＋Tips の統合記録
 - **仕様駆動開発**: Requirements → Design → Tasks → Implementation の構造化ワークフロー

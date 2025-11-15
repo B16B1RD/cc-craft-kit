@@ -5,24 +5,24 @@ argument-hint: "<spec-id> <project-number>"
 
 # GitHub Project追加
 
-仕様書に紐づくIssueをGitHub Projects v2ボードに追加します。
+仕様書に紐づく Issue を GitHub Projects v2 ボードに追加します。
 
 ## 引数
 
-- `$1` (必須): 仕様書ID（部分一致可、最低8文字）
-- `$2` (必須): Project番号
+- `$1` (必須): 仕様書 ID（部分一致可、最低 8 文字）
+- `$2` (必須): Project 番号
 
 ## 前提条件
 
-- 仕様書にGitHub Issueが紐づいていること
-- GITHUB_TOKENにProjects権限があること
+- 仕様書に GitHub Issue が紐づいていること
+- GITHUB_TOKEN に Projects 権限があること
 
 ## 実行内容
 
-1. 仕様書に紐づくIssueを取得
-2. Project IDを取得
-3. IssueをProjectに追加
-4. データベースにProject IDを記録
+1. 仕様書に紐づく Issue を取得
+2. Project ID を取得
+3. Issue を Project に追加
+4. データベースに Project ID を記録
 
 ## 使用例
 
@@ -32,10 +32,10 @@ argument-hint: "<spec-id> <project-number>"
 
 ---
 
-以下のコマンドを実行してProjectに追加してください:
+以下のコマンドを実行して Project に追加してください:
 
 ```bash
 takumi github project add "$1" "$2"
 ```
 
-追加が完了したら、Project URLと次のアクション（カンバンボードでの管理など）を案内してください。
+追加が完了したら、Project URL と次のアクション（カンバンボードでの管理など）を案内してください。

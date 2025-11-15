@@ -5,17 +5,17 @@ argument-hint: "<spec-id>"
 
 # GitHub Issue作成
 
-仕様書の内容を元にGitHub Issueを作成します。
+仕様書の内容を元に GitHub Issue を作成します。
 
 ## 引数
 
-- `$1` (必須): 仕様書ID（部分一致可、最低8文字）
+- `$1` (必須): 仕様書 ID（部分一致可、最低 8 文字）
 
 ## 実行内容
 
-1. 仕様書のMarkdownファイルをIssue bodyとして使用
+1. 仕様書の Markdown ファイルを Issue body として使用
 2. フェーズに応じたラベルを自動付与
-3. データベースにIssue番号を記録
+3. データベースに Issue 番号を記録
 4. 同期ログの作成
 
 ## 使用例
@@ -26,10 +26,10 @@ argument-hint: "<spec-id>"
 
 ---
 
-以下のコマンドを実行してGitHub Issueを作成してください:
+以下のコマンドを実行して GitHub Issue を作成してください:
 
 ```bash
 takumi github issue create "$1"
 ```
 
-Issue作成が完了したら、Issue URLと次のアクション（同期、Project追加など）を案内してください。
+Issue 作成が完了したら、Issue URL と次のアクション（同期、Project 追加など）を案内してください。

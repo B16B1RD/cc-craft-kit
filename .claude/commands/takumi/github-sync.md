@@ -5,22 +5,22 @@ argument-hint: "<direction> <spec-id>"
 
 # GitHub同期
 
-仕様書とGitHub Issueの双方向同期を行います。
+仕様書と GitHub Issue の双方向同期を行います。
 
 ## 引数
 
 - `$1` (必須): 同期方向（to-github または from-github）
-- `$2` (必須): 仕様書ID（部分一致可、最低8文字）
+- `$2` (必須): 仕様書 ID（部分一致可、最低 8 文字）
 
 ## 実行内容
 
 ### to-github（仕様書→GitHub）
-- 仕様書の内容でIssueを更新
-- Issue未作成の場合は新規作成
+- 仕様書の内容で Issue を更新
+- Issue 未作成の場合は新規作成
 
 ### from-github（GitHub→仕様書）
-- Issueのステータスを仕様書に反映
-- Issueクローズ時に仕様書をcompletedに移行
+- Issue のステータスを仕様書に反映
+- Issue クローズ時に仕様書を completed に移行
 
 ## 使用例
 
