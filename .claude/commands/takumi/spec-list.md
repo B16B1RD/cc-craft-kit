@@ -14,7 +14,7 @@ argument-hint: "[phase] [limit]"
 
 ## 使用例
 
-```
+```bash
 /takumi:spec-list
 /takumi:spec-list requirements
 /takumi:spec-list design 50
@@ -22,23 +22,24 @@ argument-hint: "[phase] [limit]"
 
 ---
 
-MCPツール `takumi:list_specs` を呼び出して仕様書一覧を取得してください。
+MCP ツール `takumi:list_specs` を呼び出して仕様書一覧を取得してください。
 
-引数:
+引数は以下の通りです。
+
 - phase: $1 (指定されている場合)
 - limit: $2 (指定されている場合、デフォルト: 20)
 - offset: 0
 
-仕様書一覧を以下の形式で表示してください:
+仕様書一覧を以下の形式で表示してください。
 
 ## 仕様書一覧
 
-| ID (省略形) | 名前 | フェーズ | 作成日時 | GitHub Issue |
-|------------|------|---------|---------|--------------|
-| xxx-xxx... | 仕様書A | requirements | 2025-11-15 | #123 |
-| yyy-yyy... | 仕様書B | design | 2025-11-14 | #124 |
+| ID (省略形) | 名前    | フェーズ      | 作成日時   | GitHub Issue |
+| ----------- | ------- | ------------- | ---------- | ------------ |
+| xxx-xxx...  | 仕様書A | requirements  | 2025-11-15 | #123         |
+| yyy-yyy...  | 仕様書B | design        | 2025-11-14 | #124         |
 
-**総数:** X件
-**表示:** Y件
+**総数:** X 件。
+**表示:** Y 件。
 
-各仕様書の詳細を見るには: `/takumi:spec-get <id>`
+各仕様書の詳細を見るには `/takumi:spec-get <id>` を実行してください。

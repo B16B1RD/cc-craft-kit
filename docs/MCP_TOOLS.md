@@ -1,27 +1,27 @@
 # MCPツール APIリファレンス
 
-Takumi MCPサーバーが提供するツールのリファレンスドキュメントです。
+Takumi MCP サーバーが提供するツールのリファレンスドキュメントです。
 
 ## 目次
 
-- [takumi:init_project](#takumiinit_project)
-- [takumi:create_spec](#takumicreate_spec)
-- [takumi:list_specs](#takumilist_specs)
-- [takumi:get_spec](#takumiget_spec)
+- [takumi:init_project](#takumiinit_project-1)
+- [takumi:create_spec](#takumicreate_spec-1)
+- [takumi:list_specs](#takumilist_specs-1)
+- [takumi:get_spec](#takumiget_spec-1)
 
 ---
 
 ## takumi:init_project
 
-Takumiプロジェクトを初期化します。`.takumi`ディレクトリとデータベースを作成します。
+Takumi プロジェクトを初期化します。`.takumi`ディレクトリとデータベースを作成します。
 
 ### パラメータ
 
-| 名前 | 型 | 必須 | 説明 |
-|-----|-----|-----|------|
-| `projectName` | string | ✓ | プロジェクト名 |
-| `description` | string | | プロジェクトの説明 |
-| `githubRepo` | string | | GitHubリポジトリ (owner/repo形式) |
+| 名前            | 型     | 必須 | 説明                           |
+| --------------- | ------ | ---- | ------------------------------ |
+| `projectName`   | string | ✓    | プロジェクト名                 |
+| `description`   | string |      | プロジェクトの説明             |
+| `githubRepo`    | string |      | GitHubリポジトリ (owner/repo形式) |
 
 ### レスポンス
 
@@ -60,14 +60,14 @@ const result = await invoke('takumi:init_project', {
 
 ## takumi:create_spec
 
-新しい仕様書を作成します。Requirementsフェーズから開始されます。
+新しい仕様書を作成します。Requirements フェーズから開始されます。
 
 ### パラメータ
 
-| 名前 | 型 | 必須 | 説明 |
-|-----|-----|-----|------|
-| `name` | string | ✓ | 仕様書名 |
-| `description` | string | | 仕様書の説明 |
+| 名前          | 型     | 必須 | 説明           |
+| ------------- | ------ | ---- | -------------- |
+| `name`        | string | ✓    | 仕様書名       |
+| `description` | string |      | 仕様書の説明   |
 
 ### レスポンス
 
@@ -104,11 +104,11 @@ console.log(`仕様書ID: ${result.spec.id}`);
 
 ### パラメータ
 
-| 名前 | 型 | 必須 | 説明 | デフォルト |
-|-----|-----|-----|------|----------|
-| `phase` | enum | | フィルタリングするフェーズ | なし |
-| `limit` | number | | 取得件数 (1-100) | 20 |
-| `offset` | number | | オフセット | 0 |
+| 名前     | 型     | 必須 | 説明                       | デフォルト |
+| -------- | ------ | ---- | -------------------------- | ---------- |
+| `phase`  | enum   |      | フィルタリングするフェーズ | なし       |
+| `limit`  | number |      | 取得件数 (1-100)           | 20         |
+| `offset` | number |      | オフセット                 | 0          |
 
 #### phase の値
 
@@ -166,13 +166,13 @@ const page2 = await invoke('takumi:list_specs', {
 
 ## takumi:get_spec
 
-指定したIDの仕様書詳細を取得します。関連するタスクも含みます。
+指定した ID の仕様書詳細を取得します。関連するタスクも含みます。
 
 ### パラメータ
 
-| 名前 | 型 | 必須 | 説明 |
-|-----|-----|-----|------|
-| `id` | string (UUID) | ✓ | 仕様書ID |
+| 名前  | 型            | 必須 | 説明     |
+| ----- | ------------- | ---- | -------- |
+| `id`  | string (UUID) | ✓    | 仕様書ID |
 
 ### レスポンス
 
@@ -226,7 +226,7 @@ const page2 = await invoke('takumi:list_specs', {
 
 ### エラーレスポンス
 
-仕様書が見つからない場合:
+仕様書が見つからない場合は以下のようになります。
 
 ```json
 {
@@ -252,7 +252,7 @@ console.log(`完了タスク: ${spec.stats.tasksByStatus.done}`);
 
 ## エラーハンドリング
 
-すべてのMCPツールは、エラー発生時に以下の形式でエラーを返します:
+すべての MCP ツールは、エラー発生時に以下の形式でエラーを返します。
 
 ```json
 {
@@ -263,11 +263,11 @@ console.log(`完了タスク: ${spec.stats.tasksByStatus.done}`);
 
 ### 一般的なエラー
 
-| エラーメッセージ | 原因 | 対処法 |
-|---------------|------|--------|
-| `Spec not found: {id}` | 指定されたIDの仕様書が存在しない | IDを確認するか、`list_specs`で存在を確認 |
-| `Database connection failed` | データベースに接続できない | マイグレーション実行、`.takumi`ディレクトリの確認 |
-| `Invalid UUID: {id}` | UUIDの形式が不正 | 正しいUUID形式で指定 |
+| エラーメッセージ                 | 原因                             | 対処法                                             |
+| -------------------------------- | -------------------------------- | -------------------------------------------------- |
+| `Spec not found: {id}`           | 指定されたIDの仕様書が存在しない | IDを確認するか、`list_specs`で存在を確認           |
+| `Database connection failed`     | データベースに接続できない       | マイグレーション実行、`.takumi`ディレクトリの確認 |
+| `Invalid UUID: {id}`             | UUIDの形式が不正                 | 正しいUUID形式で指定                               |
 
 ---
 
@@ -278,12 +278,12 @@ console.log(`完了タスク: ${spec.stats.tasksByStatus.done}`);
 - `takumi:approve_spec` - 仕様書フェーズ承認
 - `takumi:create_task` - タスク作成
 - `takumi:update_task_status` - タスクステータス更新
-- `takumi:sync_github` - GitHub手動同期
+- `takumi:sync_github` - GitHub 手動同期
 
 ### Phase 3: TDD/Agile
 
-- `takumi:create_sprint` - Sprint作成
-- `takumi:start_tdd_session` - TDDセッション開始
+- `takumi:create_sprint` - Sprint 作成
+- `takumi:start_tdd_session` - TDD セッション開始
 - `takumi:run_tests` - テスト実行
 
 ---

@@ -5,7 +5,7 @@ argument-hint: "<project-name> [description]"
 
 # Takumiプロジェクト初期化
 
-指定されたプロジェクト名でTakumiプロジェクトを初期化します。
+指定されたプロジェクト名で Takumi プロジェクトを初期化します。
 
 ## 引数
 
@@ -20,19 +20,21 @@ argument-hint: "<project-name> [description]"
 
 ## 使用例
 
-```
+```bash
 /takumi:init my-awesome-app "革新的なWebアプリケーション"
 ```
 
 ---
 
-MCPツール `takumi:init_project` を呼び出してプロジェクトを初期化してください。
+MCP ツール `takumi:init_project` を呼び出してプロジェクトを初期化してください。
 
-引数:
+引数は以下の通りです。
+
 - projectName: $1
 - description: $2 (指定されている場合)
 
-初期化が完了したら、以下の情報を表示してください:
+初期化が完了したら、以下の情報を表示してください。
+
 - プロジェクト名
 - 作成されたディレクトリパス
 - 設定ファイルの内容

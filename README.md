@@ -1,28 +1,28 @@
-# Takumi (匠) - 統合開発キット
+# Takumi（匠）- 統合開発キット
 
-Claude Code上で**仕様駆動開発(SDD)**、**本質的TDD**、**GitHub Projects/Issues完全連携**を実現する次世代開発支援ツールキット。
+Claude Code 上で**仕様駆動開発（SDD）**、**本質的 TDD**、**GitHub Projects/Issues 完全連携**を実現する開発支援ツールキット。
 
 ## 🎯 コンセプト
 
-Takumi(匠)は、カスタムスラッシュコマンド + サブエージェント + スキルの三位一体で、開発ワークフローを革新します。
+Takumi（匠）は、カスタムスラッシュコマンド + サブエージェント + スキルの三位一体で、開発ワークフローを革新します。
 
 ### 核心的特徴
 
-- ✅ **GitHub完全統合**: Projects v2、Issue、Milestoneの自動管理
-- ✅ **Issueナレッジベース化**: 課題管理+途中経過+エラー対策+Tipsの統合記録
-- ✅ **コンテキスト圧迫抑制**: Progressive Disclosure、Issue参照による作業再開高速化
-- ✅ **並列作業対応**: 複数タスクの同時進行を情報共有で支援
-- ✅ **本質的TDD支援**: Kent Beck Canon TDD、設計フィードバックループ
-- ✅ **仕様駆動開発**: Requirements → Design → Tasks → Implementation の構造化ワークフロー
+- GitHub 完全統合：Projects v2、Issue、Milestone の自動管理
+- Issue ナレッジベース化：課題管理＋途中経過＋エラー対策＋Tips の統合記録
+- コンテキスト圧迫抑制：Progressive Disclosure、Issue 参照による作業再開の高速化
+- 並列作業対応：複数タスクの同時進行を情報共有で支援
+- 本質的 TDD 支援：Kent Beck Canon TDD、設計フィードバックループ
+- 仕様駆動開発：Requirements → Design → Tasks → Implementation の構造化ワークフロー
 
 ## 🚀 クイックスタート
 
 ### 前提条件
 
-- Node.js 18以上
-- TypeScript 5.0以上
+- Node.js 18 以上
+- TypeScript 5.0 以上
 - Claude Code CLI
-- GitHub Personal Access Token (Fine-grained PAT推奨)
+- GitHub Personal Access Token（Fine-grained PAT 推奨）
 
 ### インストール
 
@@ -36,7 +36,7 @@ npm install
 
 # 環境変数設定
 cp .env.example .env
-# .env ファイルを編集してGitHubトークンを設定
+# .env ファイルを編集して GitHub トークンを設定
 
 # データベースマイグレーション
 npm run db:migrate
@@ -55,9 +55,9 @@ npm run mcp:dev
 npm run mcp:build
 ```
 
-### Claude Codeとの統合
+### Claude Code との統合
 
-`claude_desktop_config.json` に以下を追加:
+`claude_desktop_config.json` に以下を追加してください。
 
 ```json
 {
@@ -108,7 +108,7 @@ takumi:get_spec({
 
 ### ディレクトリ構造
 
-```
+```text
 takumi/
 ├── .claude/                 # Claude Code統合
 │   ├── commands/takumi/     # カスタムスラッシュコマンド
@@ -135,15 +135,15 @@ takumi/
 
 ### 技術スタック
 
-| カテゴリ | 技術 | 用途 |
-|---------|------|------|
-| 言語 | TypeScript 5.0+ | 型安全な開発 |
-| ランタイム | Node.js 18+ | サーバー実行 |
-| データベース | SQLite + Kysely | ローカルデータ管理 |
-| GitHub API | Octokit | REST + GraphQL統合 |
-| DI | TSyringe | 依存性注入 |
-| イベント | EventEmitter2 | イベント駆動アーキテクチャ |
-| MCP | @modelcontextprotocol/sdk | Claude Code統合 |
+| カテゴリ     | 技術                      | 用途                       |
+| ------------ | ------------------------- | -------------------------- |
+| 言語         | TypeScript 5.0+           | 型安全な開発               |
+| ランタイム   | Node.js 18+               | サーバー実行               |
+| データベース | SQLite + Kysely           | ローカルデータ管理         |
+| GitHub API   | Octokit                   | REST + GraphQL統合         |
+| DI           | TSyringe                  | 依存性注入                 |
+| イベント     | EventEmitter2             | イベント駆動アーキテクチャ |
+| MCP          | @modelcontextprotocol/sdk | Claude Code統合            |
 
 ### データベーススキーマ
 
@@ -245,47 +245,58 @@ npm run test:watch
 
 ## 📋 実装ロードマップ
 
-### ✅ Phase 1: コア基盤 (Week 1-3) - **現在のフェーズ**
+### ✅ Phase 1: コア基盤 (Week 1-3) - 完了
 
 - [x] プロジェクト初期化
 - [x] Kysely + SQLite セットアップ
-- [x] MCPサーバー骨組み
-- [x] 基本MCPツール (`init_project`, `create_spec`, `list_specs`, `get_spec`)
-- [ ] テンプレートエンジン統合
-- [ ] スラッシュコマンド初期実装
+- [x] MCP サーバー骨組み
+- [x] 基本 MCP ツール (`init_project`, `create_spec`, `list_specs`, `get_spec`)
+- [x] テンプレートエンジン統合 (Handlebars)
+- [x] E2E テスト実装
 
-### 🔄 Phase 2: GitHub統合 (Week 4-6)
+### ✅ Phase 2: GitHub 統合 (Week 4-6) - 完了
 
-- [ ] Octokit統合 (REST + GraphQL)
-- [ ] Issue自動作成・更新
-- [ ] Projects v2ボード管理
-- [ ] Issueナレッジベース化機能
-- [ ] 双方向同期機構
+- [x] Octokit 統合 (REST + GraphQL)
+- [x] Issue 自動作成・更新
+- [x] Projects v2 ボード管理
+- [x] Issue ナレッジベース化機能
+- [x] 双方向の同期機構
+- [x] Webhook 統合
 
-### 🔜 Phase 3: サブエージェント+スキル (Week 7-10)
+### ✅ Phase 3: サブエージェント + スキル (Week 7-10) - 完了
 
-- [ ] 7つのコアサブエージェント実装
-- [ ] 5つのコアスキル実装
-- [ ] イベント駆動ワークフロー
-- [ ] Story-to-Doneパイプライン
+- [x] 7 つのコアサブエージェント実装
+  - RequirementsAnalyzer, TaskBreakdowner, CodeReviewer
+  - ArchitectDesigner, CodeGenerator, TestCreator, DocumentationWriter
+- [x] 5 つのコアスキル実装
+  - RequirementsDocGenerator, ArchitectureDiagramGenerator
+  - CodeQualityAnalyzer, TestCoverageReporter, GitHubIssueSync
+- [x] イベント駆動ワークフロー (EventBus, 12 種類のイベント)
+- [x] Story-to-Done パイプライン (自動ワークフロー)
 
-### ⏳ Phase 4: プラグイン+UI (Week 11-14)
+### ✅ Phase 4: プラグイン + UI (Week 11-14) - 完了
 
-- [ ] プラグインアーキテクチャ
-- [ ] 公式プラグイン (Backlog, JIRA, Slack)
-- [ ] WebUIダッシュボード (オプション)
-- [ ] ドキュメント完備
+- [x] プラグインアーキテクチャ (Registry + Loader)
+- [x] 公式プラグイン実装
+  - Backlog 統合プラグイン
+  - Slack 通知プラグイン
+- [x] プラグインライフサイクル管理
+- [x] イベントハンドラー拡張機能
 
-### 🎯 Phase 5: 最適化 (Week 15+)
+### ✅ Phase 5: 最適化 (Week 15+) - 完了
 
-- [ ] パフォーマンスチューニング
-- [ ] セキュリティ監査
-- [ ] CI/CD統合
+- [x] パフォーマンスプロファイラー実装
+- [x] キャッシュ機構実装
+- [x] セキュリティバリデーター実装
+- [x] CI/CD 統合 (GitHub Actions)
+- [x] 型安全性の向上 (121 個の`any`型を全て削除)
+- [x] ESLint 警告 0 個達成
+- [ ] WebUI ダッシュボード (オプション)
 - [ ] コミュニティエコシステム
 
 ## 🤝 コントリビューション
 
-コントリビューションを歓迎します!以下の手順でお願いします:
+コントリビューションを歓迎します。以下の手順でお願いします。
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
@@ -295,7 +306,7 @@ npm run test:watch
 
 ### コミットメッセージ規約
 
-Conventional Commits形式を推奨:
+Conventional Commits 形式を推奨します。
 
 - `feat:` - 新機能
 - `fix:` - バグ修正
@@ -306,21 +317,21 @@ Conventional Commits形式を推奨:
 
 ## 📄 ライセンス
 
-MIT License - 詳細は [LICENSE](LICENSE) を参照
+MIT License - 詳細は [LICENSE](LICENSE) を参照してください。
 
 ## 🙏 謝辞
 
-本プロジェクトは以下のプロジェクトから着想を得ています:
+本プロジェクトは以下のプロジェクトから着想を得ています。
 
-- **Kiro AI** - 仕様駆動IDEのパイオニア
+- **Kiro AI** - 仕様駆動 IDE のパイオニア
 - **cc-sdd** - 構造化ワークフローの実装
-- **spec-workflow-mcp** - MCPサーバーアーキテクチャ
+- **spec-workflow-mcp** - MCP サーバーアーキテクチャ
 - **GitHub Spec Kit** - constitution.md コンセプト
 
-また、以下の哲学・手法を実装に反映しています:
+また、以下の哲学・手法を実装に反映しています。
 
 - **Kent Beck** - Canon TDD
-- **t-wada (和田卓人)** - 3レベルTDD理解
+- **t-wada (和田卓人)** - 3 レベル TDD 理解
 - **Martin Fowler** - リファクタリングカタログ
 
 ## 📮 コンタクト
@@ -329,4 +340,4 @@ MIT License - 詳細は [LICENSE](LICENSE) を参照
 
 ---
 
-**Takumi (匠)** - 匠の技で、開発ワークフローを磨き上げる
+**Takumi (匠)** - 匠の技で、開発ワークフローを磨き上げる。
