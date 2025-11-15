@@ -1,0 +1,18 @@
+{
+  "recommendations": [
+    // TypeScript/JavaScript
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+
+    // Markdown
+    "DavidAnson.vscode-markdownlint",
+    "taichi.vscode-textlint",
+
+    // Git
+    "eamodio.gitlens",
+
+    // その他便利な拡張機能
+    "usernamehw.errorlens",
+    "streetsidesoftware.code-spell-checker"
+  ]
+}

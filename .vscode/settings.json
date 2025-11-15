@@ -1,0 +1,60 @@
+{
+  // エディタ設定
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+
+  // TypeScript設定
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // Markdown設定
+  "[markdown]": {
+    "editor.defaultFormatter": "DavidAnson.vscode-markdownlint",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.markdownlint": "explicit"
+    }
+  },
+
+  // textlint設定
+  "textlint.autoFixOnSave": true,
+  "textlint.languages": [
+    "markdown"
+  ],
+
+  // markdownlint設定
+  "markdownlint.config": {
+    "extends": ".markdownlint.json"
+  },
+
+  // ファイル保存時の動作
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+
+  // ESLint設定
+  "eslint.validate": [
+    "javascript",
+    "typescript"
+  ],
+
+  // 検索除外設定
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/.takumi": true,
+    "**/coverage": true
+  },
+
+  // ファイル監視除外設定
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/.takumi/**": true,
+    "**/coverage/**": true
+  }
+}

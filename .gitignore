@@ -16,11 +16,15 @@ build/
 .env.*.local
 
 # IDE
-.vscode/
 .idea/
 *.swp
 *.swo
 *~
+# VS Code - チーム設定は共有
+!.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 
 # OS
 .DS_Store
