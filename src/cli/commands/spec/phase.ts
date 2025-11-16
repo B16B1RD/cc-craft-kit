@@ -109,20 +109,20 @@ export async function updateSpecPhase(
     case 'requirements':
       console.log('  • Define requirements in the spec file');
       console.log('  • Add background, objectives, and acceptance criteria');
-      console.log('  • Move to design: takumi spec phase ' + spec.id.substring(0, 8) + ' design');
+      console.log('  • Move to design: /takumi:spec-phase ' + spec.id.substring(0, 8) + ' design');
       break;
 
     case 'design':
       console.log('  • Create detailed design in the spec file');
       console.log('  • Add architecture, API design, and data models');
-      console.log('  • Move to tasks: takumi spec phase ' + spec.id.substring(0, 8) + ' tasks');
+      console.log('  • Move to tasks: /takumi:spec-phase ' + spec.id.substring(0, 8) + ' tasks');
       break;
 
     case 'tasks':
       console.log('  • Break down into implementable tasks');
       console.log('  • Estimate effort and dependencies');
       console.log(
-        '  • Move to implementation: takumi spec phase ' +
+        '  • Move to implementation: /takumi:spec-phase ' +
           spec.id.substring(0, 8) +
           ' implementation'
       );
@@ -132,7 +132,7 @@ export async function updateSpecPhase(
       console.log('  • Implement the tasks');
       console.log('  • Write tests and documentation');
       console.log(
-        '  • Move to completed: takumi spec phase ' + spec.id.substring(0, 8) + ' completed'
+        '  • Move to completed: /takumi:spec-phase ' + spec.id.substring(0, 8) + ' completed'
       );
       break;
 

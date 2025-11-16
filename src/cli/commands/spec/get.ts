@@ -82,8 +82,8 @@ export async function getSpec(
   console.log(formatHeading('Next Actions', 2, options.color));
   console.log('');
   console.log(`  • Edit the file: ${specPath}`);
-  console.log(`  • Update phase: takumi spec phase ${spec.id.substring(0, 8)} <phase>`);
+  console.log(`  • Update phase: /takumi:spec-phase ${spec.id.substring(0, 8)} <phase>`);
   if (!spec.github_issue_id) {
-    console.log(`  • Create GitHub issue: takumi github issue create ${spec.id.substring(0, 8)}`);
+    console.log(`  • Create GitHub issue: /takumi:github-issue-create ${spec.id.substring(0, 8)}`);
   }
 }

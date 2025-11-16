@@ -77,7 +77,7 @@ export async function initProject(
   console.log(formatKeyValue('Config', configPath, options.color));
   console.log('');
   console.log('Next steps:');
-  console.log('  1. Create a spec: takumi spec create "<name>"');
-  console.log('  2. Configure GitHub: takumi github init <owner> <repo>');
-  console.log('  3. Check status: takumi status');
+  console.log('  1. Create a spec: /takumi:spec-create "<name>"');
+  console.log('  2. Configure GitHub: /takumi:github-init <owner> <repo>');
+  console.log('  3. Check status: /takumi:status');
 }

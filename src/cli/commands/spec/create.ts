@@ -169,6 +169,6 @@ export async function createSpec(
   console.log('');
   console.log('Next steps:');
   console.log('  1. Edit the spec file to define requirements');
-  console.log('  2. View the spec: takumi spec get ' + id.substring(0, 8));
-  console.log('  3. Move to design phase: takumi spec phase ' + id.substring(0, 8) + ' design');
+  console.log('  2. View the spec: /takumi:spec-get ' + id.substring(0, 8));
+  console.log('  3. Move to design phase: /takumi:spec-phase ' + id.substring(0, 8) + ' design');
 }

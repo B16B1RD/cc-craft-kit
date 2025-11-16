@@ -102,13 +102,13 @@ export async function initGitHub(
   console.log(formatHeading('Next Actions', 2, options.color));
   console.log('');
   console.log('  • Create GitHub Issue from spec:');
-  console.log(`    takumi github issue create <spec-id>`);
+  console.log(`    /takumi:github-issue-create <spec-id>`);
   console.log('');
   console.log('  • Sync spec to GitHub:');
-  console.log(`    takumi github sync to-github <spec-id>`);
+  console.log(`    /takumi:github-sync to-github <spec-id>`);
   console.log('');
   console.log('  • Sync GitHub to spec:');
-  console.log(`    takumi github sync from-github <spec-id>`);
+  console.log(`    /takumi:github-sync from-github <spec-id>`);
   console.log('');
 
   if (!githubToken) {

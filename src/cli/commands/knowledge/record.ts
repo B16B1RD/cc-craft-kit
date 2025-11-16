@@ -83,7 +83,7 @@ export async function recordProgress(
 
   if (!spec.github_issue_id) {
     throw new Error(
-      'Spec has no linked GitHub Issue. Create an issue first with "takumi github issue create".'
+      'Spec has no linked GitHub Issue. Create an issue first with "/takumi:github-issue-create".'
     );
   }
 
@@ -177,7 +177,7 @@ export async function recordErrorSolution(
 
   if (!spec.github_issue_id) {
     throw new Error(
-      'Spec has no linked GitHub Issue. Create an issue first with "takumi github issue create".'
+      'Spec has no linked GitHub Issue. Create an issue first with "/takumi:github-issue-create".'
     );
   }
 
@@ -271,7 +271,7 @@ export async function recordTip(
 
   if (!spec.github_issue_id) {
     throw new Error(
-      'Spec has no linked GitHub Issue. Create an issue first with "takumi github issue create".'
+      'Spec has no linked GitHub Issue. Create an issue first with "/takumi:github-issue-create".'
     );
   }
 

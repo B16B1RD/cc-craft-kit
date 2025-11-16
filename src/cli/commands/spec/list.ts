@@ -71,7 +71,7 @@ export async function listSpecs(
   if (specs.length === 0) {
     console.log('No specifications found.');
     console.log('');
-    console.log('Create your first spec: takumi spec create "<name>"');
+    console.log('Create your first spec: /takumi:spec-create "<name>"');
     return;
   }
 
@@ -90,10 +90,10 @@ export async function listSpecs(
 
   // 次のアクション
   console.log('Next actions:');
-  console.log('  • View a spec: takumi spec get <id>');
-  console.log('  • Create a spec: takumi spec create "<name>"');
+  console.log('  • View a spec: /takumi:spec-get <id>');
+  console.log('  • Create a spec: /takumi:spec-create "<name>"');
   if (!phase) {
-    console.log('  • Filter by phase: takumi spec list <phase>');
+    console.log('  • Filter by phase: /takumi:spec-list <phase>');
     console.log(`    Available phases: ${VALID_PHASES.join(', ')}`);
   }
 }

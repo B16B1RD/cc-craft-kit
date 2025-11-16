@@ -100,7 +100,7 @@ export async function showStatus(
     console.log('');
   } else {
     console.log(
-      formatInfo('GitHub is not configured. Run "takumi github init" to set up.', options.color)
+      formatInfo('GitHub is not configured. Run "/takumi:github-init" to set up.', options.color)
     );
     console.log('');
   }
@@ -178,13 +178,13 @@ export async function showStatus(
   // 次のアクション提案
   console.log(formatHeading('Suggested Actions', 2, options.color));
   if (specs.length === 0) {
-    console.log('  • Create your first spec: takumi spec create "<name>"');
+    console.log('  • Create your first spec: /takumi:spec-create "<name>"');
   }
   if (!config.github) {
-    console.log('  • Configure GitHub: takumi github init <owner> <repo>');
+    console.log('  • Configure GitHub: /takumi:github-init <owner> <repo>');
   }
   if (specs.length > 0) {
-    console.log('  • View specs: takumi spec list');
-    console.log('  • Create a spec: takumi spec create "<name>"');
+    console.log('  • View specs: /takumi:spec-list');
+    console.log('  • Create a spec: /takumi:spec-create "<name>"');
   }
 }

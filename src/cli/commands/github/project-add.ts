@@ -90,7 +90,7 @@ export async function addSpecToProject(
 
   if (!spec.github_issue_id) {
     throw new Error(
-      'Spec has no linked GitHub Issue. Create an issue first with "takumi github issue create".'
+      'Spec has no linked GitHub Issue. Create an issue first with "/takumi:github-issue-create".'
     );
   }
 
@@ -128,7 +128,7 @@ export async function addSpecToProject(
     console.log(
       `  • View project: https://github.com/${githubConfig.owner}/${githubConfig.repo}/projects/${projectNumber}`
     );
-    console.log(`  • Sync spec: takumi github sync to-github ${spec.id.substring(0, 8)}`);
+    console.log(`  • Sync spec: /takumi:github-sync to-github ${spec.id.substring(0, 8)}`);
     console.log('');
   } catch (error) {
     if (error instanceof Error) {

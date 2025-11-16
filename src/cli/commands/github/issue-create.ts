@@ -162,9 +162,11 @@ export async function createGitHubIssue(
     console.log(formatHeading('Next Actions', 2, options.color));
     console.log('');
     console.log(`  • View issue: ${issue.html_url}`);
-    console.log(`  • Sync spec to GitHub: takumi github sync to-github ${spec.id.substring(0, 8)}`);
     console.log(
-      `  • Sync GitHub to spec: takumi github sync from-github ${spec.id.substring(0, 8)}`
+      `  • Sync spec to GitHub: /takumi:github-sync to-github ${spec.id.substring(0, 8)}`
+    );
+    console.log(
+      `  • Sync GitHub to spec: /takumi:github-sync from-github ${spec.id.substring(0, 8)}`
     );
     console.log('');
   } catch (error) {
