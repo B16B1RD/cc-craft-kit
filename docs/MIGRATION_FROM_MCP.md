@@ -44,6 +44,7 @@ npm run build
 Claude Code の設定から MCP サーバー設定を削除します。
 
 **削除前の `claude_desktop_config.json`:**
+
 ```json
 {
   "mcpServers": {
@@ -56,6 +57,7 @@ Claude Code の設定から MCP サーバー設定を削除します。
 ```
 
 **削除後:**
+
 ```json
 {
   "mcpServers": {}
@@ -114,11 +116,13 @@ takumi spec list
 `.claude/commands/takumi/` 内のスラッシュコマンドは自動的に更新されます。
 
 **更新前（MCP版）:**
+
 ```markdown
 MCP ツール `takumi:init_project` を呼び出してプロジェクトを初期化してください。
 ```
 
 **更新後（CLI版）:**
+
 ```markdown
 以下のコマンドを実行してプロジェクトを初期化してください:
 
@@ -143,18 +147,27 @@ takumi spec list
 
 ### Q: GitHub統合が動作しない
 
-**A:** GITHUB_TOKEN 環境変数を再設定してください：
+**A:** GITHUB_TOKEN 環境変数を再設定してください。
+
+**重要**: 個人アカウントで Projects v2 を使用する場合は、**Classic Personal Access Token** が必須です。
 
 ```bash
+# Classic Personal Access Token を作成
+# 1. GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
+# 2. "Generate new token (classic)" をクリック
+# 3. スコープで 'repo' と 'project' を選択
+
 # トークンを設定
-export GITHUB_TOKEN="your_token_here"
+export GITHUB_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxx"
 
 # または .env ファイルに記載
-echo "GITHUB_TOKEN=your_token_here" >> .env
+echo "GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx" >> .env
 
 # GitHub初期化を再実行
 takumi github init <owner> <repo>
 ```
+
+> **注意**: Fine-grained Personal Access Token は個人アカウントの Projects v2 には対応していません。Organization の Projects を使用する場合のみ利用可能です。
 
 ### Q: コマンドが見つからない (command not found: takumi)
 

@@ -15,10 +15,12 @@ argument-hint: "<direction> <spec-id>"
 ## 実行内容
 
 ### to-github（仕様書→GitHub）
+
 - 仕様書の内容で Issue を更新
 - Issue 未作成の場合は新規作成
 
 ### from-github（GitHub→仕様書）
+
 - Issue のステータスを仕様書に反映
 - Issue クローズ時に仕様書を completed に移行
 
@@ -37,4 +39,8 @@ argument-hint: "<direction> <spec-id>"
 takumi github sync "$1" "$2"
 ```
 
-同期が完了したら、結果を表示し、次のアクション（内容確認、追加同期など）を案内してください。
+同期が完了したら、結果を表示し、必要に応じて次のアクションを案内してください:
+
+- 仕様書の詳細確認: `/takumi:spec-get <spec-id>`
+- 逆方向の同期: `/takumi:github-sync <opposite-direction> <spec-id>`
+- フェーズ移行: `/takumi:spec-phase <spec-id> <phase>`

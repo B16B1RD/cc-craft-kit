@@ -6,12 +6,8 @@ import { randomUUID } from 'node:crypto';
 import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDatabase } from '../../../core/database/connection.js';
-import {
-  formatSuccess,
-  formatHeading,
-  formatKeyValue,
-  formatInfo,
-} from '../../utils/output.js';
+import { getEventBus } from '../../../core/workflow/event-bus.js';
+import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../../utils/output.js';
 import {
   createProjectNotInitializedError,
   createValidationError,
@@ -152,6 +148,16 @@ export async function createSpec(
   writeFileSync(specPath, content, 'utf-8');
 
   // Note: content カラムはスキーマに存在しないため、ファイルのみに保存
+
+  // spec.created イベントを発行
+  const eventBus = getEventBus();
+  await eventBus.emit(
+    eventBus.createEvent('spec.created', id, {
+      name,
+      description: description || null,
+      phase: 'requirements',
+    })
+  );
 
   console.log('');
   console.log(formatSuccess('Specification created successfully!', options.color));

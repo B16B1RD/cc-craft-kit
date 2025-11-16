@@ -9,12 +9,7 @@ import { GitHubClient } from '../../../integrations/github/client.js';
 import { GitHubIssues } from '../../../integrations/github/issues.js';
 import { GitHubProjects } from '../../../integrations/github/projects.js';
 import { GitHubSyncService } from '../../../integrations/github/sync.js';
-import {
-  formatSuccess,
-  formatHeading,
-  formatKeyValue,
-  formatInfo,
-} from '../../utils/output.js';
+import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../../utils/output.js';
 import {
   createProjectNotInitializedError,
   createSpecNotFoundError,
@@ -25,9 +20,7 @@ import { validateSpecId } from '../../utils/validation.js';
 /**
  * GitHub設定を取得
  */
-function getGitHubConfig(
-  takumiDir: string
-): { owner: string; repo: string } | null {
+function getGitHubConfig(takumiDir: string): { owner: string; repo: string } | null {
   const configPath = join(takumiDir, 'config.json');
   if (!existsSync(configPath)) {
     return null;

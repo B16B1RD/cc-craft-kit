@@ -52,9 +52,7 @@ export function formatTable(
   });
 
   // ヘッダー行
-  const headerRow = headers
-    .map((header, i) => header.padEnd(columnWidths[i]))
-    .join(' | ');
+  const headerRow = headers.map((header, i) => header.padEnd(columnWidths[i])).join(' | ');
 
   // セパレーター行
   const separator = columnWidths.map((width) => '-'.repeat(width)).join('-+-');
@@ -136,7 +134,8 @@ export function formatKeyValue(
   useColor = true
 ): string {
   const formattedKey = colorText(`${key}:`, 'bold', useColor);
-  const formattedValue = value === null || value === undefined ? colorText('(none)', 'dim', useColor) : String(value);
+  const formattedValue =
+    value === null || value === undefined ? colorText('(none)', 'dim', useColor) : String(value);
   return `${formattedKey} ${formattedValue}`;
 }
 
@@ -191,7 +190,9 @@ export function formatProgressBar(
   const filled = Math.floor((percentage / 100) * width);
   const empty = width - filled;
 
-  const bar = colorText('█'.repeat(filled), 'green', useColor) + colorText('░'.repeat(empty), 'gray', useColor);
+  const bar =
+    colorText('█'.repeat(filled), 'green', useColor) +
+    colorText('░'.repeat(empty), 'gray', useColor);
   const percent = `${percentage.toFixed(0)}%`;
 
   return `[${bar}] ${percent} (${current}/${total})`;

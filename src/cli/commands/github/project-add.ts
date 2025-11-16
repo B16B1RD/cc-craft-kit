@@ -9,12 +9,7 @@ import { GitHubClient } from '../../../integrations/github/client.js';
 import { GitHubIssues } from '../../../integrations/github/issues.js';
 import { GitHubProjects } from '../../../integrations/github/projects.js';
 import { GitHubSyncService } from '../../../integrations/github/sync.js';
-import {
-  formatSuccess,
-  formatHeading,
-  formatKeyValue,
-  formatInfo,
-} from '../../utils/output.js';
+import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../../utils/output.js';
 import {
   createProjectNotInitializedError,
   createSpecNotFoundError,
@@ -25,9 +20,7 @@ import { validateSpecId } from '../../utils/validation.js';
 /**
  * GitHub設定を取得
  */
-function getGitHubConfig(
-  takumiDir: string
-): { owner: string; repo: string } | null {
+function getGitHubConfig(takumiDir: string): { owner: string; repo: string } | null {
   const configPath = join(takumiDir, 'config.json');
   if (!existsSync(configPath)) {
     return null;
@@ -132,11 +125,27 @@ export async function addSpecToProject(
     // 次のアクション
     console.log(formatHeading('Next Actions', 2, options.color));
     console.log('');
-    console.log(`  • View project: https://github.com/${githubConfig.owner}/${githubConfig.repo}/projects/${projectNumber}`);
+    console.log(
+      `  • View project: https://github.com/${githubConfig.owner}/${githubConfig.repo}/projects/${projectNumber}`
+    );
     console.log(`  • Sync spec: takumi github sync to-github ${spec.id.substring(0, 8)}`);
     console.log('');
   } catch (error) {
     if (error instanceof Error) {
+      // Projects v2 権限エラーの場合は、詳細なヘルプメッセージを表示
+      if (error.message.includes('Resource not accessible by personal access token')) {
+        throw new Error(
+          `Failed to add spec to project: ${error.message}\n\n` +
+            `個人アカウントの Projects v2 にアクセスするには、Classic Personal Access Token が必要です。\n` +
+            `Fine-grained PAT は Organization の Projects のみ対応しています。\n\n` +
+            `解決方法:\n` +
+            `1. GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)\n` +
+            `2. "Generate new token (classic)" をクリック\n` +
+            `3. スコープで 'repo' と 'project' を選択\n` +
+            `4. GITHUB_TOKEN 環境変数を更新\n\n` +
+            `詳細: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens`
+        );
+      }
       throw new Error(`Failed to add spec to project: ${error.message}`);
     }
     throw error;

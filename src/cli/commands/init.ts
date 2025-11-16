@@ -6,12 +6,7 @@ import { mkdirSync, existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDatabase } from '../../core/database/connection.js';
 import { migrateToLatest } from '../../core/database/migrator.js';
-import {
-  formatSuccess,
-  formatHeading,
-  formatKeyValue,
-  formatInfo,
-} from '../utils/output.js';
+import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
 import { createProjectAlreadyInitializedError } from '../utils/error-handler.js';
 
 /**

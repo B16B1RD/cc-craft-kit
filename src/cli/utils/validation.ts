@@ -12,8 +12,7 @@ import {
 /**
  * UUID v4 のパターン
  */
-const UUID_V4_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_V4_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /**
  * 有効なフェーズ
@@ -89,10 +88,7 @@ export function validateGitHubRepo(owner: string, repo: string): void {
 /**
  * 必須引数検証
  */
-export function validateRequired<T>(
-  value: T | undefined | null,
-  argumentName: string
-): T {
+export function validateRequired<T>(value: T | undefined | null, argumentName: string): T {
   if (value === undefined || value === null) {
     throw createMissingArgumentError(argumentName);
   }
@@ -142,10 +138,7 @@ export function validateEnum<T extends string>(
   argumentName: string
 ): T {
   if (!validValues.includes(value as T)) {
-    throw createValidationError(
-      argumentName,
-      `Must be one of: ${validValues.join(', ')}`
-    );
+    throw createValidationError(argumentName, `Must be one of: ${validValues.join(', ')}`);
   }
   return value as T;
 }
@@ -159,17 +152,11 @@ export function validateStringLength(
   options: { min?: number; max?: number }
 ): void {
   if (options.min !== undefined && value.length < options.min) {
-    throw createValidationError(
-      argumentName,
-      `Must be at least ${options.min} characters long`
-    );
+    throw createValidationError(argumentName, `Must be at least ${options.min} characters long`);
   }
 
   if (options.max !== undefined && value.length > options.max) {
-    throw createValidationError(
-      argumentName,
-      `Must be at most ${options.max} characters long`
-    );
+    throw createValidationError(argumentName, `Must be at most ${options.max} characters long`);
   }
 }
 
@@ -179,10 +166,7 @@ export function validateStringLength(
 export function validatePath(path: string, argumentName: string): void {
   // パストラバーサル攻撃を防ぐ
   if (path.includes('..')) {
-    throw createValidationError(
-      argumentName,
-      'Path cannot contain ".." (path traversal)'
-    );
+    throw createValidationError(argumentName, 'Path cannot contain ".." (path traversal)');
   }
 
   // 絶対パスかどうかをチェック（必要に応じて）

@@ -109,22 +109,12 @@ export class GitHubProjects {
    * Project V2 取得
    */
   async get(owner: string, projectNumber: number): Promise<ProjectResponse> {
+    // まず owner が user か organization かを判別
+    const ownerType = await this.getOwnerType(owner);
+
     const query = `
       query($owner: String!, $number: Int!) {
-        user(login: $owner) {
-          projectV2(number: $number) {
-            id
-            number
-            title
-            url
-            shortDescription
-            public
-            closed
-            createdAt
-            updatedAt
-          }
-        }
-        organization(login: $owner) {
+        ${ownerType}(login: $owner) {
           projectV2(number: $number) {
             id
             number
@@ -141,11 +131,15 @@ export class GitHubProjects {
     `;
 
     const result = await this.client.query<{
-      user: { projectV2: ProjectResponse } | null;
-      organization: { projectV2: ProjectResponse } | null;
+      user?: { projectV2: ProjectResponse };
+      organization?: { projectV2: ProjectResponse };
     }>(query, { owner, number: projectNumber });
 
-    return result.user?.projectV2 || result.organization!.projectV2;
+    const project = result.user?.projectV2 || result.organization?.projectV2;
+    if (!project) {
+      throw new Error(`Project #${projectNumber} not found for ${owner}`);
+    }
+    return project;
   }
 
   /**
@@ -211,6 +205,68 @@ export class GitHubProjects {
   }
 
   /**
+   * プロジェクト名でプロジェクトを検索
+   */
+  async searchByName(owner: string, projectName: string): Promise<ProjectResponse | null> {
+    const ownerType = await this.getOwnerType(owner);
+
+    const query = `
+      query($owner: String!) {
+        ${ownerType}(login: $owner) {
+          projectsV2(first: 100) {
+            nodes {
+              id
+              number
+              title
+              url
+              shortDescription
+              public
+              closed
+              createdAt
+              updatedAt
+            }
+          }
+        }
+      }
+    `;
+
+    const result = await this.client.query<{
+      user?: { projectsV2: { nodes: ProjectResponse[] } };
+      organization?: { projectsV2: { nodes: ProjectResponse[] } };
+    }>(query, { owner });
+
+    const projects = result.user?.projectsV2.nodes || result.organization?.projectsV2.nodes || [];
+
+    // プロジェクト名で完全一致検索
+    const project = projects.find((p) => p.title === projectName);
+    return project || null;
+  }
+
+  /**
+   * Owner の種類を判別（user or organization）
+   */
+  private async getOwnerType(owner: string): Promise<'user' | 'organization'> {
+    const query = `
+      query($owner: String!) {
+        user(login: $owner) {
+          id
+        }
+      }
+    `;
+
+    try {
+      const result = await this.client.query<{
+        user: { id: string } | null;
+      }>(query, { owner });
+
+      return result.user ? 'user' : 'organization';
+    } catch {
+      // user として解決できない場合は organization
+      return 'organization';
+    }
+  }
+
+  /**
    * Organization/User の Node ID 取得
    */
   async getOwnerId(owner: string): Promise<string> {
@@ -230,7 +286,11 @@ export class GitHubProjects {
       organization: { id: string } | null;
     }>(query, { owner });
 
-    return result.user?.id || result.organization!.id;
+    const ownerId = result.user?.id || result.organization?.id;
+    if (!ownerId) {
+      throw new Error(`Owner ${owner} not found (neither user nor organization)`);
+    }
+    return ownerId;
   }
 
   /**

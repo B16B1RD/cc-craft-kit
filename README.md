@@ -21,7 +21,9 @@ Takumi（匠）は、CLI ベースのシンプルなアーキテクチャで、�
 - Node.js 18 以上
 - TypeScript 5.0 以上
 - Claude Code CLI
-- GitHub Personal Access Token（Fine-grained PAT 推奨）
+- GitHub Personal Access Token
+  - **個人アカウント**: Classic Personal Access Token が必須（スコープ: `repo`, `project`）
+  - **Organization**: Fine-grained PAT または Classic PAT（スコープ: `repo`, `project`）
 
 ### インストール
 
@@ -42,13 +44,24 @@ npm link
 
 ### 環境変数設定
 
+**個人アカウントで Projects v2 を使用する場合**、Classic Personal Access Token が必要です:
+
+1. GitHub → Settings → Developer settings → Personal access tokens → **Tokens (classic)**
+2. "Generate new token (classic)" をクリック
+3. スコープを選択:
+   - ✅ `repo` (リポジトリへのフルアクセス)
+   - ✅ `project` (Projects v2 の読み書き)
+4. トークンを生成してコピー
+
 ```bash
 # GitHub Personal Access Token を設定
-export GITHUB_TOKEN="your_github_token_here"
+export GITHUB_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxx"
 
 # または .env ファイルに記載
-echo "GITHUB_TOKEN=your_github_token_here" > .env
+echo "GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx" > .env
 ```
+
+> **注意**: Fine-grained Personal Access Token は個人アカウントの Projects v2 には対応していません。Organization の Projects を使用する場合のみ Fine-grained PAT が利用可能です。
 
 ### プロジェクト初期化
 
@@ -88,16 +101,29 @@ takumi spec phase <spec-id> design
 # GitHub初期化
 takumi github init <owner> <repo>
 
-# Issue作成
+# Issue作成（仕様書作成時に自動作成される）
 takumi github issue create <spec-id>
+
+# Project自動追加の設定（.envファイルに追加）
+echo "GITHUB_PROJECT_NAME=My Project Board" >> .env
 
 # 双方向同期
 takumi github sync to-github <spec-id>
 takumi github sync from-github <spec-id>
 
-# Projectボード追加
+# 手動でProjectボード追加
 takumi github project add <spec-id> <project-number>
 ```
+
+#### Issue & Project 自動化
+
+仕様書作成時に以下が自動実行されます:
+
+1. **GitHub Issue 自動作成**: 仕様書の内容を Issue body として使用
+2. **Project 自動追加**: `GITHUB_PROJECT_NAME` 環境変数または `project_id` が設定されている場合、自動的に Projects ボードに追加
+3. **ラベル自動付与**: フェーズに応じたラベル（`phase:requirements` など）を自動設定
+
+Project 追加が失敗した場合でも Issue 作成は成功し、警告メッセージが表示されます。
 
 ### ナレッジベース記録
 

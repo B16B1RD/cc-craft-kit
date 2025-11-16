@@ -71,7 +71,9 @@ export async function initGitHub(
 
   const githubToken = process.env.GITHUB_TOKEN;
   if (!githubToken) {
-    console.log(formatError('Warning: GITHUB_TOKEN environment variable is not set.', options.color));
+    console.log(
+      formatError('Warning: GITHUB_TOKEN environment variable is not set.', options.color)
+    );
     console.log('');
     console.log('To use GitHub integration features, you need to set GITHUB_TOKEN:');
     console.log('');

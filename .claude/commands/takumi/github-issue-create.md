@@ -32,4 +32,8 @@ argument-hint: "<spec-id>"
 takumi github issue create "$1"
 ```
 
-Issue 作成が完了したら、Issue URL と次のアクション（同期、Project 追加など）を案内してください。
+Issue 作成が完了したら、Issue URL を表示し、必要に応じて次のアクションを案内してください:
+
+- GitHub Project に追加: `/takumi:github-project-add <spec-id> <project-number>`
+- GitHub から同期: `/takumi:github-sync from-github <spec-id>`
+- 仕様書の詳細確認: `/takumi:spec-get <spec-id>`

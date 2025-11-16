@@ -5,12 +5,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDatabase } from '../../../core/database/connection.js';
-import {
-  formatHeading,
-  formatTable,
-  formatKeyValue,
-  OutputOptions,
-} from '../../utils/output.js';
+import { formatHeading, formatTable, formatKeyValue, OutputOptions } from '../../utils/output.js';
 import { createProjectNotInitializedError } from '../../utils/error-handler.js';
 import { validatePhase, VALID_PHASES } from '../../utils/validation.js';
 

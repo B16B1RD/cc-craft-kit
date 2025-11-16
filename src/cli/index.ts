@@ -2,9 +2,12 @@
 import 'dotenv/config';
 import 'reflect-metadata';
 import { parseArgs } from 'node:util';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { getEventBus } from '../core/workflow/event-bus.js';
+import { getDatabase } from '../core/database/connection.js';
+import { registerGitHubIntegrationHandlers } from '../core/workflow/github-integration.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -355,10 +358,32 @@ async function routeKnowledgeCommand(
 }
 
 /**
+ * GitHub統合イベントハンドラーを初期化
+ */
+function initializeGitHubIntegration(): void {
+  try {
+    const cwd = process.cwd();
+    const takumiDir = join(cwd, '.takumi');
+
+    // .takumiディレクトリが存在する場合のみ初期化
+    if (existsSync(takumiDir)) {
+      const eventBus = getEventBus();
+      const db = getDatabase();
+      registerGitHubIntegrationHandlers(eventBus, db);
+    }
+  } catch {
+    // 初期化エラーは無視（プロジェクト未初期化の場合など）
+  }
+}
+
+/**
  * メイン関数
  */
 async function main() {
   try {
+    // GitHub統合ハンドラーを初期化
+    initializeGitHubIntegration();
+
     const args = process.argv.slice(2);
     const parsed = parseCliArgs(args);
     await routeCommand(parsed);

@@ -7,12 +7,7 @@ import { join } from 'node:path';
 import { getDatabase } from '../../../core/database/connection.js';
 import { GitHubClient } from '../../../integrations/github/client.js';
 import { GitHubIssues } from '../../../integrations/github/issues.js';
-import {
-  formatSuccess,
-  formatHeading,
-  formatKeyValue,
-  formatInfo,
-} from '../../utils/output.js';
+import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../../utils/output.js';
 import {
   createProjectNotInitializedError,
   createSpecNotFoundError,
@@ -23,9 +18,7 @@ import { validateSpecId } from '../../utils/validation.js';
 /**
  * GitHub設定を取得
  */
-function getGitHubConfig(
-  takumiDir: string
-): { owner: string; repo: string } | null {
+function getGitHubConfig(takumiDir: string): { owner: string; repo: string } | null {
   const configPath = join(takumiDir, 'config.json');
   if (!existsSync(configPath)) {
     return null;
@@ -92,9 +85,7 @@ export async function createGitHubIssue(
     console.log('');
     console.log(formatKeyValue('Spec ID', spec.id, options.color));
     console.log(formatKeyValue('Spec Name', spec.name, options.color));
-    console.log(
-      formatKeyValue('Issue Number', `#${spec.github_issue_id}`, options.color)
-    );
+    console.log(formatKeyValue('Issue Number', `#${spec.github_issue_id}`, options.color));
     console.log('');
     console.log(
       `View issue: https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/${spec.github_issue_id}`
@@ -108,7 +99,9 @@ export async function createGitHubIssue(
   console.log(formatKeyValue('Spec ID', spec.id, options.color));
   console.log(formatKeyValue('Spec Name', spec.name, options.color));
   console.log(formatKeyValue('Phase', spec.phase, options.color));
-  console.log(formatKeyValue('Repository', `${githubConfig.owner}/${githubConfig.repo}`, options.color));
+  console.log(
+    formatKeyValue('Repository', `${githubConfig.owner}/${githubConfig.repo}`, options.color)
+  );
   console.log('');
 
   // Markdownファイルを読み込んでIssue bodyとして使用
@@ -170,7 +163,9 @@ export async function createGitHubIssue(
     console.log('');
     console.log(`  • View issue: ${issue.html_url}`);
     console.log(`  • Sync spec to GitHub: takumi github sync to-github ${spec.id.substring(0, 8)}`);
-    console.log(`  • Sync GitHub to spec: takumi github sync from-github ${spec.id.substring(0, 8)}`);
+    console.log(
+      `  • Sync GitHub to spec: takumi github sync from-github ${spec.id.substring(0, 8)}`
+    );
     console.log('');
   } catch (error) {
     if (error instanceof Error) {

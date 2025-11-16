@@ -36,4 +36,8 @@ GitHub リポジトリとの連携を設定します。
 takumi github init "$1" "$2"
 ```
 
-初期化が完了したら、次のアクション（Issue 作成、同期設定など）を案内してください。
+初期化が完了したら、必要に応じて次のアクションを案内してください:
+
+- プロジェクト状況の確認: `/takumi:status`
+- 仕様書から Issue 作成: `/takumi:github-issue-create <spec-id>`
+- 新規仕様書作成: `/takumi:spec-create "<name>" [description]`

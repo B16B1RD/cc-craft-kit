@@ -32,4 +32,8 @@ argument-hint: "<spec-id> <message>"
 takumi knowledge progress "$1" "$2"
 ```
 
-記録が完了したら、Issue URL と次のアクション（追加の記録、同期など）を案内してください。
+記録が完了したら、Issue URL を表示し、必要に応じて次のアクションを案内してください:
+
+- エラー解決策の記録: `/takumi:knowledge-error <spec-id> "<error>" "<solution>"`
+- Tips の記録: `/takumi:knowledge-tip <spec-id> "<category>" "<tip>"`
+- 仕様書の詳細確認: `/takumi:spec-get <spec-id>`

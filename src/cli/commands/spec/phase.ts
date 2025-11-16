@@ -5,12 +5,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDatabase } from '../../../core/database/connection.js';
-import {
-  formatSuccess,
-  formatHeading,
-  formatKeyValue,
-  formatInfo,
-} from '../../utils/output.js';
+import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../../utils/output.js';
 import {
   createProjectNotInitializedError,
   createSpecNotFoundError,
@@ -81,10 +76,7 @@ export async function updateSpecPhase(
     let content = readFileSync(specPath, 'utf-8');
 
     // フェーズ行を更新
-    content = content.replace(
-      /\*\*フェーズ:\*\* .+/,
-      `**フェーズ:** ${validatedPhase}`
-    );
+    content = content.replace(/\*\*フェーズ:\*\* .+/, `**フェーズ:** ${validatedPhase}`);
 
     // 更新日時を更新
     content = content.replace(
@@ -119,13 +111,19 @@ export async function updateSpecPhase(
     case 'tasks':
       console.log('  • Break down into implementable tasks');
       console.log('  • Estimate effort and dependencies');
-      console.log('  • Move to implementation: takumi spec phase ' + spec.id.substring(0, 8) + ' implementation');
+      console.log(
+        '  • Move to implementation: takumi spec phase ' +
+          spec.id.substring(0, 8) +
+          ' implementation'
+      );
       break;
 
     case 'implementation':
       console.log('  • Implement the tasks');
       console.log('  • Write tests and documentation');
-      console.log('  • Move to completed: takumi spec phase ' + spec.id.substring(0, 8) + ' completed');
+      console.log(
+        '  • Move to completed: takumi spec phase ' + spec.id.substring(0, 8) + ' completed'
+      );
       break;
 
     case 'completed':

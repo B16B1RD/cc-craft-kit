@@ -38,4 +38,8 @@ argument-hint: "<spec-id> <project-number>"
 takumi github project add "$1" "$2"
 ```
 
-追加が完了したら、Project URL と次のアクション（カンバンボードでの管理など）を案内してください。
+追加が完了したら、Project URL を表示し、必要に応じて次のアクションを案内してください:
+
+- 仕様書の詳細確認: `/takumi:spec-get <spec-id>`
+- GitHub から同期: `/takumi:github-sync from-github <spec-id>`
+- プロジェクト状況の確認: `/takumi:status`

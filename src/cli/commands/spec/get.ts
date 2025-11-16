@@ -5,11 +5,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDatabase } from '../../../core/database/connection.js';
-import {
-  formatHeading,
-  formatKeyValue,
-  formatMarkdown,
-} from '../../utils/output.js';
+import { formatHeading, formatKeyValue, formatMarkdown } from '../../utils/output.js';
 import {
   createProjectNotInitializedError,
   createSpecNotFoundError,
@@ -64,13 +60,7 @@ export async function getSpec(
   console.log(formatKeyValue('ID', spec.id, options.color));
   console.log(formatKeyValue('Name', spec.name, options.color));
   console.log(formatKeyValue('Phase', spec.phase, options.color));
-  console.log(
-    formatKeyValue(
-      'Description',
-      spec.description || '(none)',
-      options.color
-    )
-  );
+  console.log(formatKeyValue('Description', spec.description || '(none)', options.color));
   console.log(
     formatKeyValue(
       'GitHub Issue',
@@ -78,20 +68,8 @@ export async function getSpec(
       options.color
     )
   );
-  console.log(
-    formatKeyValue(
-      'Created',
-      new Date(spec.created_at).toLocaleString(),
-      options.color
-    )
-  );
-  console.log(
-    formatKeyValue(
-      'Updated',
-      new Date(spec.updated_at).toLocaleString(),
-      options.color
-    )
-  );
+  console.log(formatKeyValue('Created', new Date(spec.created_at).toLocaleString(), options.color));
+  console.log(formatKeyValue('Updated', new Date(spec.updated_at).toLocaleString(), options.color));
   console.log('');
 
   // コンテンツ表示

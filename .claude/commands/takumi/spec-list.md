@@ -28,4 +28,8 @@ argument-hint: "[phase] [limit]"
 takumi spec list "$1" "$2"
 ```
 
-結果を要約して表示し、次のアクション（仕様書の詳細表示や新規作成）を案内してください。
+結果を要約して表示し、必要に応じて次のアクションを案内してください:
+
+- 仕様書の詳細確認: `/takumi:spec-get <spec-id>`
+- 新規仕様書作成: `/takumi:spec-create "<name>" [description]`
+- フェーズでフィルタ: `/takumi:spec-list <phase>`

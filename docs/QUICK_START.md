@@ -48,12 +48,27 @@ LOG_LEVEL=info
 
 ### GitHub Token取得方法
 
+**重要**: 個人アカウントで Projects v2 を使用する場合は、**Classic Personal Access Token** が必須です。
+
+#### Classic Personal Access Token の作成（個人アカウント向け）
+
+1. GitHub → Settings → Developer settings → Personal access tokens → **Tokens (classic)**
+2. "Generate new token (classic)" をクリック
+3. 必要なスコープを選択:
+   - ✅ `repo` - リポジトリへのフルアクセス
+   - ✅ `project` - Projects v2 の読み書き
+4. トークンを生成してコピーし、`.env` に貼り付け
+
+#### Fine-grained Personal Access Token（Organization のみ）
+
+Organization の Projects を使用する場合のみ、Fine-grained PAT が利用可能です:
+
 1. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens
-2. "Generate new token"をクリック
-3. 必要なスコープを選択してください。
-   - `repo` - リポジトリ全体へのアクセス
-   - `project` - Projects v2 へのアクセス
-4. トークンをコピーして`.env`に貼り付け
+2. "Generate new token" をクリック
+3. Repository permissions と Projects permissions を設定
+4. トークンをコピーして `.env` に貼り付け
+
+> **注意**: Fine-grained PAT は個人アカウントの Projects v2 には対応していません（2025年1月時点）。個人アカウントで Projects を使用する場合は、必ず Classic PAT を使用してください。
 
 ## ステップ3: グローバルインストール (オプション)
 
@@ -163,12 +178,56 @@ takumi status
 
 ### GitHub連携を有効にする場合
 
-Week 4 以降の GitHub 統合機能を使用して、以下が自動化されます。
+GitHub 統合機能を使用して、以下が自動化されます。
 
-- Issue 自動作成
-- Project Board 管理
-- Milestone 連携
-- 進捗同期
+1. **Issue 自動作成**: 仕様書作成時に GitHub Issue を自動作成
+2. **Project 自動追加**: `GITHUB_PROJECT_NAME` 環境変数または `project_id` が設定されている場合、Issue を自動的に Projects ボードに追加
+3. **フェーズ同期**: 仕様書のフェーズ変更時に Issue ラベルを自動更新
+4. **進捗管理**: Issue コメントに進捗、エラー解決策、Tips を記録してナレッジベース化
+
+#### GitHub 統合の初期化
+
+```bash
+takumi github init <owner> <repo>
+```
+
+または
+
+```bash
+/takumi:github-init <owner> <repo>
+```
+
+#### Project 自動追加の設定
+
+仕様書作成時に自動的に Projects ボードに追加するには、以下のいずれかを設定します。
+
+**方法1: 環境変数で設定（推奨）**
+
+`.env` ファイルに以下を追加:
+
+```env
+GITHUB_PROJECT_NAME="My Project Board"
+```
+
+**方法2: config.json で設定**
+
+`.takumi/config.json` に以下を追加:
+
+```json
+{
+  "github": {
+    "owner": "your-username",
+    "repo": "your-repo",
+    "project_id": 1
+  }
+}
+```
+
+設定後、仕様書を作成すると自動的に以下が実行されます。
+
+1. GitHub Issue 作成
+2. Projects ボードに追加（設定がある場合）
+3. 適切なラベル付与（`phase:requirements` など）
 
 ## トラブルシューティング
 

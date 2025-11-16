@@ -32,4 +32,8 @@ argument-hint: "<spec-id> <phase>"
 takumi spec phase "$1" "$2"
 ```
 
-フェーズ移行が完了したら、次のステップ（そのフェーズで実施すべき作業）を案内してください。
+フェーズ移行が完了したら、そのフェーズで実施すべき作業を案内してください。必要に応じて以下のアクションも提示してください:
+
+- 仕様書の詳細確認: `/takumi:spec-get <spec-id>`
+- GitHub Issue 作成: `/takumi:github-issue-create <spec-id>`
+- 次のフェーズに移行: `/takumi:spec-phase <spec-id> <next-phase>`

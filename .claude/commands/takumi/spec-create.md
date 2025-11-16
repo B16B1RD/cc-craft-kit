@@ -32,4 +32,7 @@ argument-hint: "<spec-name> [description]"
 takumi spec create "$1" "$2"
 ```
 
-作成が完了したら、結果を要約して表示し、次のステップ（Requirements 定義）を案内してください。
+作成が完了したら、結果を要約して表示し、必要に応じて次のアクションを案内してください:
+
+- 仕様書の詳細確認: `/takumi:spec-get <spec-id>`
+- デザインフェーズに移行: `/takumi:spec-phase <spec-id> design`

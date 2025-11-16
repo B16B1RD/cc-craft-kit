@@ -13,6 +13,7 @@ import {
   OutputOptions,
 } from '../utils/output.js';
 import { createProjectNotInitializedError } from '../utils/error-handler.js';
+import { resolveProjectId } from '../../integrations/github/project-resolver.js';
 
 /**
  * プロジェクト設定
@@ -27,6 +28,11 @@ interface ProjectConfig {
     repo: string;
     token?: string;
     project_id?: number;
+    project_name_cache?: {
+      name: string;
+      resolved_number: number;
+      cached_at: string;
+    };
   };
 }
 
@@ -81,9 +87,13 @@ export async function showStatus(
     console.log(
       formatKeyValue('Repository', `${config.github.owner}/${config.github.repo}`, options.color)
     );
+
+    // Project ID を解決
+    const projectId = await resolveProjectId(takumiDir);
     console.log(
-      formatKeyValue('Project ID', config.github.project_id || '(not set)', options.color)
+      formatKeyValue('Project ID', projectId ? `#${projectId}` : '(not set)', options.color)
     );
+
     // 環境変数GITHUB_TOKENの存在をチェック
     const hasToken = !!process.env.GITHUB_TOKEN;
     console.log(formatKeyValue('Token', hasToken ? '✓ Configured' : '✗ Not set', options.color));
