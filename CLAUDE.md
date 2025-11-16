@@ -117,10 +117,10 @@ EventEmitter2 を使用したイベント駆動設計により、モジュール
 
 **自動ハンドラー登録:**
 
-`getEventBus()` または `getEventBusAsync()` を初回呼び出し時に、GitHub 統合ハンドラーが自動的に登録されます。
+`getEventBus()` または `getEventBusAsync()` を初回呼び出し時に、統合ハンドラーが自動的に登録されます。
 
 - `spec.created` → GitHub Issue 自動作成
-- `spec.phase_changed` → GitHub Issue ラベル・Projects ステータス自動更新
+- `spec.phase_changed` → GitHub Issue ラベル・Projects ステータス自動更新、**Git 自動コミット**
 
 新機能の実装時は、適切なイベントの発火と購読を忘れずに実装してください。イベントを発火する際は、`getEventBusAsync()` を使用してハンドラー登録を待機することを推奨します。
 
@@ -231,7 +231,7 @@ export class YourService {
 
 1. プロジェクト初期化 → 仕様書作成
 2. 仕様書作成 → GitHub Issue 作成 → 同期確認
-3. 仕様書フェーズ移行 → Issue ステータス更新
+3. 仕様書フェーズ移行 → Issue ステータス更新、Git 自動コミット
 
 ### テスト実行時の注意
 
@@ -269,6 +269,40 @@ Issue は単なるタスク管理ではなく、以下の情報を統合記録�
 - 作業中に得た知見を Tips として記録
 
 これにより、Issue が開発ナレッジベースとして機能します。
+
+## Git自動コミット機能
+
+### 概要
+
+フェーズ変更時に変更内容を自動的に Git コミットする機能を提供します。特に completed フェーズ移行時のコミット漏れを防ぎます。
+
+### コミットタイミング
+
+| フェーズ | コミット対象 | コミットメッセージ |
+|---|---|---|
+| requirements | 仕様書ファイルのみ | `feat: <仕様書名> の要件定義を完了` |
+| design | 仕様書ファイルのみ | `feat: <仕様書名> の設計を完了` |
+| tasks | 仕様書ファイルのみ | `feat: <仕様書名> のタスク分解を完了` |
+| implementation | 仕様書ファイルのみ | `feat: <仕様書名> の実装を開始` |
+| **completed** | **全変更ファイル** | `feat: <仕様書名> を実装完了` |
+
+### 動作
+
+1. `/takumi:spec-phase <spec-id> <phase>` 実行
+2. `spec.phase_changed` イベント発火
+3. Git 統合ハンドラーが自動的にコミット実行
+4. コミット成功/失敗を通知
+
+### エラーハンドリング
+
+- **Git リポジトリ未初期化**: 警告のみ、フェーズ変更は成功
+- **pre-commit フック失敗**: 警告メッセージ表示、手動コミット案内
+- **コミット失敗**: エラーログ出力、フェーズ変更は成功
+
+### 実装ファイル
+
+- `src/core/workflow/git-integration.ts` - Git 統合ハンドラー
+- `src/core/workflow/event-bus.ts` - 自動ハンドラー登録
 
 ## プラグインシステム
 
