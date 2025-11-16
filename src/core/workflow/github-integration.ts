@@ -11,6 +11,7 @@ import { GitHubClient } from '../../integrations/github/client.js';
 import { GitHubIssues } from '../../integrations/github/issues.js';
 import { GitHubProjects } from '../../integrations/github/projects.js';
 import { resolveProjectId } from '../../integrations/github/project-resolver.js';
+import { mapPhaseToStatus, type Phase } from '../../integrations/github/phase-status-mapper.js';
 
 /**
  * GitHub設定を取得
@@ -142,10 +143,17 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
             );
 
             // Project に Issue を追加
-            await projects.addItem({
+            const item = await projects.addItem({
               projectId: project.id,
               contentId: issueNodeId,
             });
+
+            // Item ID をデータベースに保存
+            await db
+              .updateTable('specs')
+              .set({ github_project_item_id: item.id })
+              .where('id', '=', spec.id)
+              .execute();
 
             console.log(`✓ Added to GitHub Project #${projectNumber}\n`);
           }
@@ -196,14 +204,43 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
 
         const client = new GitHubClient({ token: githubToken });
         const issues = new GitHubIssues(client);
+        const projects = new GitHubProjects(client);
 
-        // Issueのラベルを更新
+        // Issue ラベル更新（既存）
         await issues.update({
           owner: githubConfig.owner,
           repo: githubConfig.repo,
           issueNumber: spec.github_issue_id,
           labels: [`phase:${event.data.newPhase}`],
         });
+
+        // ========== ここから新規追加: Project ステータス更新 ==========
+
+        // Project ステータス更新
+        if (spec.github_project_item_id) {
+          try {
+            const projectNumber = await resolveProjectId(takumiDir, githubToken);
+            if (!projectNumber) {
+              return;
+            }
+
+            const newStatus = mapPhaseToStatus(event.data.newPhase as Phase);
+
+            await projects.updateProjectStatus({
+              owner: githubConfig.owner,
+              projectNumber,
+              itemId: spec.github_project_item_id,
+              status: newStatus,
+            });
+
+            console.log(`✓ Updated project status to "${newStatus}"`);
+          } catch (projectError) {
+            // Project 更新失敗は警告のみ（Issue 更新は成功）
+            console.warn('Warning: Failed to update project status:', projectError);
+          }
+        }
+
+        // ========== ここまで新規追加 ==========
       } catch (error) {
         console.error('Warning: Failed to update GitHub issue labels:', error);
       }

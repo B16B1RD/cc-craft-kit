@@ -29,6 +29,7 @@ export interface SpecsTable {
   phase: SpecPhase;
   github_issue_id: number | null;
   github_project_id: string | null;
+  github_project_item_id: string | null; // GitHub Project v2 Item Node ID
   github_milestone_id: number | null;
   created_at: ColumnType<Date, string | undefined, never>;
   updated_at: ColumnType<Date, string | undefined, string>;

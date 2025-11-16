@@ -29,7 +29,9 @@ export interface UpdateProjectItemFieldParams {
   projectId: string;
   itemId: string;
   fieldId: string;
-  value: string | number;
+  value?: string | number; // TEXT, NUMBER フィールド用
+  fieldType?: ProjectFieldType; // フィールドタイプ
+  optionId?: string; // SINGLE_SELECT フィールド用
 }
 
 /**
@@ -64,6 +66,23 @@ export interface ProjectItemResponse {
     };
     value: unknown;
   }>;
+}
+
+/**
+ * Project V2 フィールドオプション
+ */
+export interface ProjectFieldOption {
+  id: string;
+  name: string;
+}
+
+/**
+ * Project V2 フィールドレスポンス
+ */
+export interface ProjectFieldResponse {
+  id: string;
+  name: string;
+  options: ProjectFieldOption[];
 }
 
 /**
@@ -192,13 +211,28 @@ export class GitHubProjects {
       }
     `;
 
+    // フィールドタイプに応じて value を構築
+    let value: Record<string, unknown>;
+    if (params.fieldType === 'SINGLE_SELECT') {
+      if (!params.optionId) {
+        throw new Error('optionId is required for SINGLE_SELECT field type');
+      }
+      value = { singleSelectOptionId: params.optionId };
+    } else {
+      // TEXT, NUMBER などのデフォルト
+      if (params.value === undefined) {
+        throw new Error('value is required for non-SINGLE_SELECT field types');
+      }
+      value = { text: params.value.toString() };
+    }
+
     const result = await this.client.query<{
       updateProjectV2ItemFieldValue: { projectV2Item: { id: string } };
     }>(mutation, {
       projectId: params.projectId,
       itemId: params.itemId,
       fieldId: params.fieldId,
-      value: { text: params.value.toString() },
+      value,
     });
 
     return result.updateProjectV2ItemFieldValue.projectV2Item;
@@ -312,5 +346,100 @@ export class GitHubProjects {
     }>(query, { owner, repo, number: issueNumber });
 
     return result.repository.issue.id;
+  }
+
+  /**
+   * Project のステータスフィールドを更新
+   */
+  async updateProjectStatus(params: {
+    owner: string;
+    projectNumber: number;
+    itemId: string;
+    status: 'Todo' | 'In Progress' | 'Done';
+  }): Promise<void> {
+    // 1. Project のフィールド一覧を取得
+    const fields = await this.getProjectFields(params.owner, params.projectNumber);
+
+    // 2. "Status" フィールドを検索
+    const statusField = fields.find((f) => f.name === 'Status');
+    if (!statusField) {
+      throw new Error('Status field not found in project');
+    }
+
+    // 3. ステータスオプション ID を検索
+    const option = statusField.options.find((o) => o.name === params.status);
+    if (!option) {
+      throw new Error(`Status option "${params.status}" not found`);
+    }
+
+    // 4. Project 情報を取得
+    const project = await this.get(params.owner, params.projectNumber);
+
+    // 5. フィールド更新
+    await this.updateItemField({
+      projectId: project.id,
+      itemId: params.itemId,
+      fieldId: statusField.id,
+      fieldType: 'SINGLE_SELECT',
+      optionId: option.id,
+    });
+  }
+
+  /**
+   * Project のフィールド一覧とオプションを取得
+   */
+  async getProjectFields(owner: string, projectNumber: number): Promise<ProjectFieldResponse[]> {
+    const ownerType = await this.getOwnerType(owner);
+
+    const query = `
+      query($owner: String!, $number: Int!) {
+        ${ownerType}(login: $owner) {
+          projectV2(number: $number) {
+            fields(first: 20) {
+              nodes {
+                ... on ProjectV2SingleSelectField {
+                  id
+                  name
+                  options {
+                    id
+                    name
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const result = await this.client.query<{
+      user?: {
+        projectV2: {
+          fields: {
+            nodes: Array<{
+              id: string;
+              name: string;
+              options: Array<{ id: string; name: string }>;
+            }>;
+          };
+        };
+      };
+      organization?: {
+        projectV2: {
+          fields: {
+            nodes: Array<{
+              id: string;
+              name: string;
+              options: Array<{ id: string; name: string }>;
+            }>;
+          };
+        };
+      };
+    }>(query, { owner, number: projectNumber });
+
+    const fields =
+      result.user?.projectV2.fields.nodes || result.organization?.projectV2.fields.nodes || [];
+
+    return fields;
   }
 }

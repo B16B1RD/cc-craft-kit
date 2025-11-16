@@ -175,10 +175,13 @@ export class GitHubSyncService {
       contentId: issueNodeId,
     });
 
-    // 仕様書更新
+    // 仕様書更新（Project ID と Item ID を保存）
     await this.db
       .updateTable('specs')
-      .set({ github_project_id: project.id })
+      .set({
+        github_project_id: project.id,
+        github_project_item_id: item.id, // Item ID も保存
+      })
       .where('id', '=', params.specId)
       .execute();
 
