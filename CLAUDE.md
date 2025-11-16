@@ -107,15 +107,33 @@ EventEmitter2 を使用したイベント駆動設計により、モジュール
 
 **重要なイベントタイプ:**
 
-- `spec:created` - 仕様書作成時
-- `spec:approved` - 仕様書承認時（フェーズ移行）
-- `task:created` - タスク作成時
-- `task:started` - タスク開始時
-- `task:completed` - タスク完了時
-- `github:issue:created` - GitHub Issue 作成時
-- `github:issue:updated` - GitHub Issue 更新時
+- `spec.created` - 仕様書作成時
+- `spec.phase_changed` - フェーズ移行時
+- `task.created` - タスク作成時
+- `task.started` - タスク開始時
+- `task.completed` - タスク完了時
+- `github.issue_created` - GitHub Issue 作成時
+- `github.issue_updated` - GitHub Issue 更新時
 
-新機能の実装時は、適切なイベントの発火と購読を忘れずに実装してください。
+**自動ハンドラー登録:**
+
+`getEventBus()` または `getEventBusAsync()` を初回呼び出し時に、GitHub 統合ハンドラーが自動的に登録されます。
+
+- `spec.created` → GitHub Issue 自動作成
+- `spec.phase_changed` → GitHub Issue ラベル・Projects ステータス自動更新
+
+新機能の実装時は、適切なイベントの発火と購読を忘れずに実装してください。イベントを発火する際は、`getEventBusAsync()` を使用してハンドラー登録を待機することを推奨します。
+
+```typescript
+// イベント発火の推奨パターン
+const eventBus = await getEventBusAsync();
+await eventBus.emit(
+  eventBus.createEvent('spec.phase_changed', specId, {
+    oldPhase,
+    newPhase,
+  })
+);
+```
 
 ### データベーススキーマ
 

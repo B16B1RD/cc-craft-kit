@@ -116,13 +116,78 @@ export class EventBus {
  * グローバルイベントバスインスタンス
  */
 let eventBusInstance: EventBus | null = null;
+let handlersRegistered = false;
+let registrationInProgress = false;
+
+/**
+ * 統合ハンドラーを登録（非同期）
+ * エラーが発生しても処理を継続する
+ */
+async function registerHandlersAsync(bus: EventBus): Promise<void> {
+  if (handlersRegistered || registrationInProgress) {
+    return;
+  }
+
+  registrationInProgress = true;
+
+  try {
+    const { getDatabase } = await import('../database/connection.js');
+    const { registerGitHubIntegrationHandlers } = await import('./github-integration.js');
+    const { registerGitIntegrationHandlers } = await import('./git-integration.js');
+
+    const db = getDatabase();
+    registerGitHubIntegrationHandlers(bus, db);
+    registerGitIntegrationHandlers(bus, db);
+    handlersRegistered = true;
+  } catch (error) {
+    // データベース未初期化、モジュール未存在などのエラーはスキップ
+    // プロジェクト未初期化の場合は正常動作
+    if (process.env.DEBUG) {
+      console.warn('Failed to register handlers:', error);
+    }
+    handlersRegistered = true; // エラーでも再試行しない
+  } finally {
+    registrationInProgress = false;
+  }
+}
 
 /**
  * グローバルイベントバス取得
+ * 初回呼び出し時に統合ハンドラーを自動登録（非同期）
  */
 export function getEventBus(): EventBus {
   if (!eventBusInstance) {
     eventBusInstance = new EventBus();
   }
+
+  // 初回のみハンドラー登録を開始（非同期、待機しない）
+  if (!handlersRegistered && !registrationInProgress) {
+    registerHandlersAsync(eventBusInstance).catch(() => {
+      // エラーは registerHandlersAsync 内で処理済み
+    });
+  }
+
+  return eventBusInstance;
+}
+
+/**
+ * グローバルイベントバス取得（ハンドラー登録を待機）
+ * イベント発火前にハンドラー登録を完了させたい場合に使用
+ */
+export async function getEventBusAsync(): Promise<EventBus> {
+  if (!eventBusInstance) {
+    eventBusInstance = new EventBus();
+  }
+
+  // ハンドラー登録を待機
+  if (!handlersRegistered && !registrationInProgress) {
+    await registerHandlersAsync(eventBusInstance);
+  } else if (registrationInProgress) {
+    // 登録中の場合は完了まで待機
+    while (registrationInProgress) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+  }
+
   return eventBusInstance;
 }

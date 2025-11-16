@@ -8,7 +8,7 @@ Takumi（匠）は、Claude Code 上のカスタムスラッシュコマンド�
 
 ### 核心的特徴
 
-- **スラッシュコマンド設計**: MCP サーバー不要、コンテキスト効率的なアーキテクチャ（MCP比99%削減）
+- **スラッシュコマンド設計**: MCP サーバー不要、コンテキスト効率的なアーキテクチャ（MCP 比 99%削減）
 - **GitHub 完全統合**: Projects v2、Issue、Milestone の自動管理
 - **Issue ナレッジベース化**: 課題管理＋途中経過＋エラー対策＋Tips の統合記録
 - **仕様駆動開発**: Requirements → Design → Tasks → Implementation の構造化ワークフロー
