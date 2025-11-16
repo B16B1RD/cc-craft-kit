@@ -6,22 +6,19 @@
 
 GitHub Projects v2 を作成すると、デフォルトでテーブルビューが追加されていますが、効果的なプロジェクト管理のためにはビューのカスタマイズが必須です。このガイドでは、Takumi の開発ワークフローに最適化された 3 つの推奨ビュー設定を紹介します。
 
-## 事前準備: Status フィールドの追加
+## 事前準備: Status フィールドを表示する
 
-GitHub Projects v2 では、Status フィールドはデフォルトでは存在しません。まず Status フィールドを **Single select カスタムフィールド** として追加する必要があります。
+GitHub Projects v2 では、Status フィールドは **デフォルトで Hidden fields（非表示フィールド）** に入っています。まず Status フィールドを **Visible fields（表示フィールド）** に変更する必要があります。
 
-### Status フィールドの作成手順
+### Status フィールドの表示手順
 
 1. Project の Table ビューを開く
-2. 右端のフィールドヘッダーにある **「+」** ボタンをクリック
-3. **「New field」** を選択
-4. フィールド名に `Status` と入力
-5. フィールドタイプで **「Single select」** を選択
-6. Options に以下を追加:
-   - `Todo`
-   - `In Progress`
-   - `Done`
-7. **「Save」** をクリック
+2. デフォルトのタブの右端にある **「▼」** をクリック
+3. 表示されるメニューから **「Fields:」** をクリック
+4. **「Hidden fields」** セクションの **「Status」** をクリック
+5. Status フィールドが列として追加される
+
+これで Status フィールド（Todo、In Progress、Done）が利用可能になります。
 
 ### Takumi の Phase と Project Status のマッピング
 
@@ -118,13 +115,13 @@ Group by: Status
 
 Table ビューでは、各列のヘッダーをクリックしてソートできます。
 
-**Status フィールドでソート**（Status カスタムフィールド追加後）:
+**Status フィールドでソート**（Hidden fields から表示後）:
 
 ```text
 Status: Todo → In Progress → Done
 ```
 
-**Priority フィールドでソート**（Priority カスタムフィールド追加後）:
+**Priority フィールドでソート**（カスタムフィールドとして追加後）:
 
 ```text
 Priority: High → Medium → Low
@@ -174,10 +171,10 @@ label:phase:implementation,phase:design
 
 | フィールド | 説明 |
 |-----------|------|
-| Title | タスク名（デフォルト） |
-| Status | Todo/In Progress/Done（カスタムフィールドとして追加が必要） |
-| Assignees | 担当者（デフォルト） |
-| Labels | Takumi が自動付与する `phase:requirements` などのラベル（デフォルト） |
+| Title | タスク名（デフォルトで表示） |
+| Status | Todo/In Progress/Done（Hidden fields から表示設定が必要） |
+| Assignees | 担当者（デフォルトで表示） |
+| Labels | Takumi が自動付与する `phase:requirements` などのラベル（デフォルトで表示） |
 
 ### 利点
 
@@ -282,14 +279,15 @@ Priority カスタムフィールドを追加すると、優先度別のビュ�
 
 #### Priority フィールドの追加方法
 
-1. Project の **Settings** → **Fields** に移動
-2. **Add field** → **Single select** を選択
-3. Field name: `Priority`
-4. Options を追加:
+1. Project の **Settings** に移動
+2. **Custom fields** の **「+」** をクリック
+3. **Field name** に `Priority` と入力
+4. **Field type** で **「Single select」** を選択
+5. **Options** で以下を追加:
    - `High`（高）
    - `Medium`（中）
    - `Low`（低）
-5. Save
+6. **Save** をクリック
 
 #### High Priority View (Board)
 
@@ -361,7 +359,7 @@ Takumi 開発プロジェクト自身では、以下のビュー構成を使用�
 
 ### Status フィールドが見つからない
 
-GitHub Projects v2 では、Status フィールドはデフォルトでは存在しません。本ドキュメント冒頭の「事前準備: Status フィールドの追加」セクションを参照して、カスタムフィールドとして追加してください。
+GitHub Projects v2 では、Status フィールドはデフォルトで Hidden fields（非表示）になっています。本ドキュメント冒頭の「事前準備: Status フィールドを表示する」セクションを参照して、表示設定を変更してください。
 
 ### Phase ラベルが自動更新されない
 
