@@ -4,15 +4,15 @@ Claude Code 上で**仕様駆動開発（SDD）**、**GitHub Projects/Issues 完
 
 ## 🎯 コンセプト
 
-Takumi（匠）は、CLI ベースのシンプルなアーキテクチャで、開発ワークフローを革新します。
+Takumi（匠）は、Claude Code 上のカスタムスラッシュコマンドで動作する軽量な開発支援ツールキットです。
 
 ### 核心的特徴
 
-- **CLI中心設計**: 複雑な MCP サーバー不要、シンプルなコマンドラインツール
+- **スラッシュコマンド設計**: MCP サーバー不要、コンテキスト効率的なアーキテクチャ（MCP比99%削減）
 - **GitHub 完全統合**: Projects v2、Issue、Milestone の自動管理
 - **Issue ナレッジベース化**: 課題管理＋途中経過＋エラー対策＋Tips の統合記録
 - **仕様駆動開発**: Requirements → Design → Tasks → Implementation の構造化ワークフロー
-- **スラッシュコマンド連携**: Claude Code のカスタムコマンドで即座にアクセス
+- **`.takumi/` ディレクトリ**: すべての機能が `.takumi/` に集約、既存プロジェクトと競合しない
 
 ## 🚀 クイックスタート
 
@@ -28,18 +28,18 @@ Takumi（匠）は、CLI ベースのシンプルなアーキテクチャで、�
 ### インストール
 
 ```bash
-# リポジトリクローン
-git clone https://github.com/yourusername/takumi.git
-cd takumi
+# 既存プロジェクトのルートディレクトリで実行
+git clone https://github.com/yourusername/takumi.git .takumi-repo
 
-# 依存関係インストール
-npm install
+# .takumi/ ディレクトリをコピー
+cp -r .takumi-repo/.takumi .
+cp -r .takumi-repo/.claude/commands/takumi .claude/commands/
 
-# ビルド
-npm run build
+# .takumi/ の依存関係をインストール
+cd .takumi && npm install && cd ..
 
-# グローバルインストール（オプション）
-npm link
+# クリーンアップ
+rm -rf .takumi-repo
 ```
 
 ### 環境変数設定
@@ -65,11 +65,9 @@ echo "GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx" > .env
 
 ### プロジェクト初期化
 
-```bash
-# Takumi プロジェクトを初期化
-takumi init my-project
+Claude Code のチャットで以下のスラッシュコマンドを実行:
 
-# または Claude Code のスラッシュコマンド経由
+```
 /takumi:init my-project
 ```
 
@@ -77,42 +75,44 @@ takumi init my-project
 
 ### 基本コマンド
 
-```bash
+すべてのコマンドは Claude Code のチャットからスラッシュコマンドで実行します:
+
+```
 # プロジェクト状態確認
-takumi status
+/takumi:status
 
 # 仕様書作成
-takumi spec create "ユーザー認証機能" "メール/パスワード認証とOAuth2.0対応"
+/takumi:spec-create "ユーザー認証機能" "メール/パスワード認証とOAuth2.0対応"
 
 # 仕様書一覧
-takumi spec list
-takumi spec list requirements  # フェーズでフィルタ
+/takumi:spec-list
+/takumi:spec-list requirements  # フェーズでフィルタ
 
 # 仕様書詳細表示
-takumi spec get <spec-id>
+/takumi:spec-get <spec-id>
 
 # フェーズ移行
-takumi spec phase <spec-id> design
+/takumi:spec-phase <spec-id> design
 ```
 
 ### GitHub統合
 
-```bash
+```
 # GitHub初期化
-takumi github init <owner> <repo>
+/takumi:github-init <owner> <repo>
 
 # Issue作成（仕様書作成時に自動作成される）
-takumi github issue create <spec-id>
+/takumi:github-issue-create <spec-id>
 
 # Project自動追加の設定（.envファイルに追加）
 echo "GITHUB_PROJECT_NAME=My Project Board" >> .env
 
 # 双方向同期
-takumi github sync to-github <spec-id>
-takumi github sync from-github <spec-id>
+/takumi:github-sync to-github <spec-id>
+/takumi:github-sync from-github <spec-id>
 
 # 手動でProjectボード追加
-takumi github project add <spec-id> <project-number>
+/takumi:github-project-add <spec-id> <project-number>
 ```
 
 #### Issue & Project 自動化
@@ -127,27 +127,33 @@ Project 追加が失敗した場合でも Issue 作成は成功し、警告メ�
 
 ### ナレッジベース記録
 
-```bash
+```
 # 進捗記録
-takumi knowledge progress <spec-id> "認証機能の基本実装が完了"
+/takumi:knowledge-progress <spec-id> "認証機能の基本実装が完了"
 
 # エラー解決策記録
-takumi knowledge error <spec-id> "CORSエラーが発生" "Access-Control-Allow-Originヘッダーを追加"
+/takumi:knowledge-error <spec-id> "CORSエラーが発生" "Access-Control-Allow-Originヘッダーを追加"
 
 # Tips記録
-takumi knowledge tip <spec-id> "performance" "useMemoを使ってレンダリングを最適化"
+/takumi:knowledge-tip <spec-id> "performance" "useMemoを使ってレンダリングを最適化"
 ```
 
-### Claude Code スラッシュコマンド
+### 全コマンド一覧
 
-```bash
+```
 /takumi:init my-project              # プロジェクト初期化
 /takumi:status                       # 状態表示
 /takumi:spec-create "機能名" "説明"  # 仕様書作成
 /takumi:spec-list                    # 仕様書一覧
 /takumi:spec-get <id>                # 仕様書詳細
 /takumi:spec-phase <id> <phase>      # フェーズ更新
-/takumi:github-init <owner> <repo>   # GitHub初期化
+/takumi:github-init <owner> <repo>   # GitHub統合初期化
+/takumi:github-issue-create <id>     # Issue作成
+/takumi:github-sync <dir> <id>       # GitHub同期
+/takumi:github-project-add <id> <num> # Project追加
+/takumi:knowledge-progress <id> <msg> # 進捗記録
+/takumi:knowledge-error <id> <err> <sol> # エラー記録
+/takumi:knowledge-tip <id> <cat> <tip>   # Tips記録
 ```
 
 ## 🏗️ アーキテクチャ

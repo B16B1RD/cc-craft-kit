@@ -33,7 +33,7 @@ GitHub リポジトリとの連携を設定します。
 以下のコマンドを実行して GitHub 統合を初期化してください:
 
 ```bash
-takumi github init "$1" "$2"
+npx tsx .takumi/commands/github/init.ts "$1" "$2"
 ```
 
 初期化が完了したら、必要に応じて次のアクションを案内してください:

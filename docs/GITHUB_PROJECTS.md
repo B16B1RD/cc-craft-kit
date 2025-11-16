@@ -24,13 +24,13 @@ GitHub Projects v2 では、Status フィールドは **デフォルトで Hidde
 
 Takumi では、仕様書のフェーズ変更時に自動的に GitHub Project の Status フィールドが更新されます。
 
-| Takumi Phase | Project Status |
-|--------------|----------------|
-| requirements | Todo |
-| design | In Progress |
-| tasks | In Progress |
-| implementation | In Progress |
-| completed | Done |
+| Takumi Phase   | Project Status |
+|----------------|----------------|
+| requirements   | Todo           |
+| design         | In Progress    |
+| tasks          | In Progress    |
+| implementation | In Progress    |
+| completed      | Done           |
 
 この自動マッピングにより、仕様書のフェーズを更新するだけで Project ボード上のステータスも同期されます。
 
@@ -169,12 +169,12 @@ label:phase:implementation,phase:design
 
 ### 表示推奨フィールド
 
-| フィールド | 説明 |
-|-----------|------|
-| Title | タスク名（デフォルトで表示） |
-| Status | Todo/In Progress/Done（Hidden fields から表示設定が必要） |
-| Assignees | 担当者（デフォルトで表示） |
-| Labels | Takumi が自動付与する `phase:requirements` などのラベル（デフォルトで表示） |
+| フィールド | 説明                                                                        |
+|------------|-----------------------------------------------------------------------------|
+| Title      | タスク名（デフォルトで表示）                                                |
+| Status     | Todo/In Progress/Done（Hidden fields から表示設定が必要）                   |
+| Assignees  | 担当者（デフォルトで表示）                                                  |
+| Labels     | Takumi が自動付与する `phase:requirements` などのラベル（デフォルトで表示） |
 
 ### 利点
 
@@ -338,13 +338,13 @@ Takumi 開発プロジェクト自身では、以下のビュー構成を使用�
 
 ### 作業フェーズ別の推奨ビュー
 
-| 作業内容 | 推奨ビュー | 理由 |
-|---------|-----------|------|
-| 日々のタスク管理 | Status Board | 視覚的にステータスを把握 |
-| 詳細な検索・フィルタリング | All Tasks | 強力な検索機能 |
-| フェーズ別レビュー | Phase フィルタービュー | 各フェーズに集中 |
-| スケジュール確認 | Timeline | 全体像とマイルストーンを把握 |
-| 担当者別レビュー | Assignees でグループ化 | 個人の作業状況を確認 |
+| 作業内容                   | 推奨ビュー             | 理由                         |
+|----------------------------|------------------------|------------------------------|
+| 日々のタスク管理           | Status Board           | 視覚的にステータスを把握     |
+| 詳細な検索・フィルタリング | All Tasks              | 強力な検索機能               |
+| フェーズ別レビュー         | Phase フィルタービュー | 各フェーズに集中             |
+| スケジュール確認           | Timeline               | 全体像とマイルストーンを把握 |
+| 担当者別レビュー           | Assignees でグループ化 | 個人の作業状況を確認         |
 
 ### 効率的な運用のコツ
 

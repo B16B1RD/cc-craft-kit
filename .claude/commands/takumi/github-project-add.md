@@ -35,7 +35,7 @@ argument-hint: "<spec-id> <project-number>"
 以下のコマンドを実行して Project に追加してください:
 
 ```bash
-takumi github project add "$1" "$2"
+npx tsx .takumi/commands/github/project-add.ts "$1" "$2"
 ```
 
 追加が完了したら、Project URL を表示し、必要に応じて次のアクションを案内してください:

@@ -29,7 +29,7 @@ argument-hint: "<spec-id>"
 以下のコマンドを実行して GitHub Issue を作成してください:
 
 ```bash
-takumi github issue create "$1"
+npx tsx .takumi/commands/github/issue-create.ts "$1"
 ```
 
 Issue 作成が完了したら、Issue URL を表示し、必要に応じて次のアクションを案内してください:

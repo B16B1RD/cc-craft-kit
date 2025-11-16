@@ -29,7 +29,7 @@ argument-hint: "<spec-name> [description]"
 以下のコマンドを実行して仕様書を作成してください:
 
 ```bash
-takumi spec create "$1" "$2"
+npx tsx .takumi/commands/spec/create.ts "$1" "$2"
 ```
 
 作成が完了したら、結果を要約して表示し、必要に応じて次のアクションを案内してください:

@@ -28,7 +28,7 @@ argument-hint: "<spec-id>"
 以下のコマンドを実行して仕様書の詳細を取得してください:
 
 ```bash
-takumi spec get "$1"
+npx tsx .takumi/commands/spec/get.ts "$1"
 ```
 
 結果を表示し、必要に応じて次のアクションを案内してください:

@@ -30,7 +30,7 @@ argument-hint: "<spec-id> <category> <tip>"
 以下のコマンドを実行して Tips を記録してください:
 
 ```bash
-takumi knowledge tip "$1" "$2" "$3"
+npx tsx .takumi/commands/knowledge/tip.ts "$1" "$2" "$3"
 ```
 
 記録が完了したら、Issue URL を表示し、必要に応じて次のアクションを案内してください:

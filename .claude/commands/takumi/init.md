@@ -29,7 +29,7 @@ argument-hint: "<project-name> [description]"
 以下のコマンドを実行してプロジェクトを初期化してください:
 
 ```bash
-takumi init "$1"
+npx tsx .takumi/commands/init.ts "$1"
 ```
 
 初期化が完了したら、結果を要約して表示し、必要に応じて次のアクションを案内してください:

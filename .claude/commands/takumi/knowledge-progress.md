@@ -29,7 +29,7 @@ argument-hint: "<spec-id> <message>"
 以下のコマンドを実行して進捗を記録してください:
 
 ```bash
-takumi knowledge progress "$1" "$2"
+npx tsx .takumi/commands/knowledge/progress.ts "$1" "$2"
 ```
 
 記録が完了したら、Issue URL を表示し、必要に応じて次のアクションを案内してください:

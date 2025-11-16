@@ -17,5 +17,5 @@ Takumi プロジェクトの現在の状況を表示します。
 以下のコマンドを実行してプロジェクトの状況を取得してください:
 
 ```bash
-takumi status
+npx tsx .takumi/commands/status.ts
 ```

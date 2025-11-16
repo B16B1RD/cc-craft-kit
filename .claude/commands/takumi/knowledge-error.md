@@ -30,7 +30,7 @@ argument-hint: "<spec-id> <error> <solution>"
 以下のコマンドを実行してエラー解決策を記録してください:
 
 ```bash
-takumi knowledge error "$1" "$2" "$3"
+npx tsx .takumi/commands/knowledge/error.ts "$1" "$2" "$3"
 ```
 
 記録が完了したら、Issue URL を表示し、必要に応じて次のアクションを案内してください:

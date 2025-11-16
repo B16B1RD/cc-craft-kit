@@ -13,16 +13,11 @@
   "author": "Takumi Project Contributors",
   "license": "MIT",
   "type": "module",
-  "bin": {
-    "takumi": "dist/cli/index.js"
-  },
   "engines": {
     "node": ">=18.0.0"
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsx watch src/cli/index.ts",
-    "start": "node dist/cli/index.js",
     "pretest": "npm run lint:all",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -34,8 +29,8 @@
     "typecheck": "tsc --noEmit",
     "textlint": "textlint \"./**/*.md\" --ignore-path .gitignore",
     "textlint:fix": "textlint --fix \"./**/*.md\" --ignore-path .gitignore",
-    "markdownlint": "markdownlint-cli2 \"**/*.md\" \"#node_modules\"",
-    "markdownlint:fix": "markdownlint-cli2 --fix \"**/*.md\" \"#node_modules\"",
+    "markdownlint": "markdownlint-cli2 \"**/*.md\" \"#node_modules\" \"#.takumi\"",
+    "markdownlint:fix": "markdownlint-cli2 --fix \"**/*.md\" \"#node_modules\" \"#.takumi\"",
     "db:migrate": "tsx src/core/database/migrate.ts",
     "prepare": "husky"
   },

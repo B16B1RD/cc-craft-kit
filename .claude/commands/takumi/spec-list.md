@@ -25,7 +25,7 @@ argument-hint: "[phase] [limit]"
 以下のコマンドを実行して仕様書一覧を取得してください:
 
 ```bash
-takumi spec list "$1" "$2"
+npx tsx .takumi/commands/spec/list.ts "$1" "$2"
 ```
 
 結果を要約して表示し、必要に応じて次のアクションを案内してください:

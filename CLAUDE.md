@@ -4,8 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクト概要
 
-Takumi（匠）は、Claude Code 上で仕様駆動開発（SDD）、本質的 TDD、GitHub Projects/Issues 完全連携を実現する開発支援ツールキット。
-CLI、カスタムスラッシュコマンド、サブエージェント、スキルの統合により、開発ワークフローを革新します。
+Takumi（匠）は、Claude Code 上で仕様駆動開発（SDD）、GitHub Projects/Issues 完全連携を実現する開発支援ツールキット。
+`.takumi/` ディレクトリベースの軽量アーキテクチャ、カスタムスラッシュコマンド、サブエージェント、スキルの統合により、開発ワークフローを革新します。
 
 ## よく使うコマンド
 
@@ -54,17 +54,16 @@ npm run textlint
 npm run textlint:fix
 ```
 
-### CLI実行
+### コマンド実行
+
+すべてのコマンドはスラッシュコマンド経由で実行します:
 
 ```bash
-# CLI開発モード（ホットリロード）
-npm run dev
+# 例: プロジェクト状態確認
+/takumi:status
 
-# ビルド後にCLI実行
-npm run build && npm start
-
-# グローバルインストール後
-takumi --help
+# 直接実行（開発・デバッグ用）
+npx tsx .takumi/commands/status.ts
 ```
 
 ### データベース
@@ -84,18 +83,19 @@ Takumi は**モジュラーモノリス**アーキテクチャを採用し、将
 
 ```text
 ┌─────────────────────────────────────┐
-│      CLI Interface (src/cli/)       │  ← コマンドライン統合
+│  Slash Commands (.claude/commands/) │  ← ユーザーインターフェース
 ├─────────────────────────────────────┤
-│   Integrations (src/integrations/)  │  ← GitHub統合（REST/GraphQL）
+│   Commands (.takumi/commands/)      │  ← コマンド実装層
 ├─────────────────────────────────────┤
-│   Core Modules (src/core/)          │  ← ドメインロジック
-│   - subagents/                      │
-│   - skills/                         │
-│   - workflow/                       │
+│   Core (.takumi/core/)              │  ← ドメインロジック
 │   - database/                       │
+│   - workflow/                       │
 │   - events/                         │
 │   - templates/                      │
-│   - plugins/                        │
+│   - subagents/                      │
+│   - skills/                         │
+├─────────────────────────────────────┤
+│   Integrations (.takumi/integrations/) │ ← GitHub統合
 ├─────────────────────────────────────┤
 │   Database Layer (Kysely + SQLite)  │  ← データ永続化
 └─────────────────────────────────────┘
@@ -132,34 +132,11 @@ EventEmitter2 を使用したイベント駆動設計により、モジュール
 - `tasks.status` - ステータス検索用
 - `github_sync.entity_id` - 同期レコード検索用
 
-### CLIコマンド一覧
-
-**プロジェクト管理:**
-
-- `takumi init <name> [description]` - プロジェクト初期化
-- `takumi status` - プロジェクト状況表示
-- `takumi spec create <name> [description]` - 仕様書作成
-- `takumi spec list [phase] [--limit=N]` - 仕様書一覧
-- `takumi spec get <spec-id>` - 仕様書取得
-- `takumi spec phase <spec-id> <phase>` - フェーズ更新
-
-**GitHub統合:**
-
-- `takumi github init <owner> <repo>` - GitHub 接続初期化
-- `takumi github issue create <spec-id>` - Issue 作成
-- `takumi github sync to-github <spec-id>` - 仕様書→GitHub 同期
-- `takumi github sync from-github <spec-id>` - GitHub→仕様書同期
-- `takumi github project add <spec-id> <project-number>` - Project ボードに Spec 追加
-
-**ナレッジベース:**
-
-- `takumi knowledge progress <spec-id> <message>` - 進捗記録
-- `takumi knowledge error <spec-id> <error> <solution>` - エラー解決策記録
-- `takumi knowledge tip <spec-id> <category> <tip>` - Tips 記録
-
 ### カスタムスラッシュコマンド
 
-すべてのスラッシュコマンドは対応する CLI コマンドを呼び出します。
+すべてのコマンドはスラッシュコマンド経由で実行します。各スラッシュコマンドは `.takumi/commands/` 配下の対応するコマンドファイルを `npx tsx` で直接実行します。
+
+**プロジェクト管理:**
 
 - `/takumi:init <project-name> [description]` - プロジェクト初期化
 - `/takumi:status` - プロジェクト状況表示
