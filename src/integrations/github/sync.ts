@@ -54,16 +54,49 @@ export class GitHubSyncService {
 
     // 既存のIssue確認
     if (spec.github_issue_id) {
+      // 既存のIssue本文を取得して、テンプレートのままかチェック
+      const existingIssue = await this.issues.get(params.owner, params.repo, spec.github_issue_id);
+      const isTemplate =
+        existingIssue.body?.includes('(背景を記述してください)') ||
+        existingIssue.body?.includes('(必須要件1)') ||
+        existingIssue.body?.includes('(機能要件1)');
+
       // Issue更新
       const updateParams: UpdateIssueParams = {
         owner: params.owner,
         repo: params.repo,
         issueNumber: spec.github_issue_id,
         title: `[${spec.phase}] ${spec.name}`,
-        body: this.buildIssueBody(spec),
+        labels: [this.getPhaseLabel(spec.phase)],
+        // テンプレートのままの場合は本文を更新、それ以外は履歴保持のため更新しない
+        ...(isTemplate ? { body: await this.buildIssueBody(spec) } : {}),
       };
 
       await this.issues.update(updateParams);
+
+      // 同期をコメントで記録
+      const comment = `## 🔄 仕様書から同期
+
+仕様書の内容をGitHub Issueに同期しました。
+
+**同期日時:** ${new Date().toLocaleString('ja-JP')}
+**フェーズ:** ${spec.phase}
+**最新の仕様書:** [\`.takumi/specs/${spec.id}.md\`](../../.takumi/specs/${spec.id}.md)
+`;
+
+      try {
+        console.log('Adding comment to issue...');
+        const commentResult = await this.issues.addComment(
+          params.owner,
+          params.repo,
+          spec.github_issue_id,
+          comment
+        );
+        console.log(`✓ Comment added: ${commentResult.id}`);
+      } catch (error) {
+        console.error('Warning: Failed to add comment:', error);
+      }
+
       return spec.github_issue_id;
     } else if (params.createIfNotExists) {
       // Issue作成
@@ -71,7 +104,7 @@ export class GitHubSyncService {
         owner: params.owner,
         repo: params.repo,
         title: `[${spec.phase}] ${spec.name}`,
-        body: this.buildIssueBody(spec),
+        body: await this.buildIssueBody(spec),
         labels: [this.getPhaseLabel(spec.phase)],
       };
 
@@ -189,16 +222,28 @@ export class GitHubSyncService {
   }
 
   /**
-   * Issue本文生成
+   * Issue本文生成（仕様書ファイルの内容を読み込む）
    */
-  private buildIssueBody(spec: {
+  private async buildIssueBody(spec: {
     id: string;
     description?: string | null;
     phase: string;
     created_at: string | Date;
     updated_at: string | Date;
-  }): string {
-    return `
+  }): Promise<string> {
+    // 仕様書ファイルを読み込む
+    const fs = await import('fs/promises');
+    const path = await import('path');
+
+    const specFilePath = path.join(process.cwd(), '.takumi', 'specs', `${spec.id}.md`);
+
+    try {
+      const specContent = await fs.readFile(specFilePath, 'utf-8');
+      return specContent;
+    } catch {
+      // ファイルが存在しない場合はサマリーのみ
+      console.warn(`Warning: Spec file not found at ${specFilePath}, using summary`);
+      return `
 ## 仕様概要
 
 ${spec.description || '説明なし'}
@@ -215,7 +260,8 @@ ${spec.description || '説明なし'}
 
 ---
 *このIssueはTakumiにより自動管理されています*
-    `.trim();
+      `.trim();
+    }
   }
 
   /**
