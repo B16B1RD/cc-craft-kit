@@ -60,7 +60,8 @@ async function gitCommit(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // git add
-    const addCommand = files.length === 1 && files[0] === '.' ? 'git add .' : `git add ${files.join(' ')}`;
+    const addCommand =
+      files.length === 1 && files[0] === '.' ? 'git add .' : `git add ${files.join(' ')}`;
 
     execSync(addCommand, { stdio: 'pipe' });
 

@@ -185,7 +185,7 @@ export async function getEventBusAsync(): Promise<EventBus> {
   } else if (registrationInProgress) {
     // 登録中の場合は完了まで待機
     while (registrationInProgress) {
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => globalThis.setTimeout(resolve, 10));
     }
   }
 

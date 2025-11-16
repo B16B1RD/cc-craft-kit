@@ -206,13 +206,36 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
         const issues = new GitHubIssues(client);
         const projects = new GitHubProjects(client);
 
-        // Issue ラベル更新（既存）
+        // Issue タイトル・ラベル更新（本文は履歴保持のため更新しない）
         await issues.update({
           owner: githubConfig.owner,
           repo: githubConfig.repo,
           issueNumber: spec.github_issue_id,
+          title: `[${event.data.newPhase}] ${spec.name}`,
           labels: [`phase:${event.data.newPhase}`],
         });
+
+        // フェーズ移行をコメントで記録
+        const phaseChangeComment = `## 🔄 フェーズ移行
+
+フェーズが更新されました。
+
+**変更前:** ${event.data.oldPhase}
+**変更後:** ${event.data.newPhase}
+**変更日時:** ${new Date().toLocaleString('ja-JP')}
+**最新の仕様書:** [\`.takumi/specs/${spec.id}.md\`](../../.takumi/specs/${spec.id}.md)
+`;
+
+        try {
+          await issues.addComment(
+            githubConfig.owner,
+            githubConfig.repo,
+            spec.github_issue_id,
+            phaseChangeComment
+          );
+        } catch (commentError) {
+          console.warn('Warning: Failed to add phase change comment:', commentError);
+        }
 
         // ========== ここから新規追加: Project ステータス更新 ==========
 
@@ -246,4 +269,57 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
       }
     }
   );
+
+  // spec.updated → GitHub Issue コメント追加
+  eventBus.on('spec.updated', async (event: WorkflowEvent) => {
+    try {
+      const githubToken = process.env.GITHUB_TOKEN;
+      if (!githubToken) {
+        return;
+      }
+
+      const cwd = process.cwd();
+      const takumiDir = join(cwd, '.takumi');
+      const githubConfig = getGitHubConfig(takumiDir);
+
+      if (!githubConfig) {
+        return;
+      }
+
+      const spec = await db
+        .selectFrom('specs')
+        .where('id', '=', event.specId)
+        .selectAll()
+        .executeTakeFirst();
+
+      if (!spec || !spec.github_issue_id) {
+        return;
+      }
+
+      const client = new GitHubClient({ token: githubToken });
+      const issues = new GitHubIssues(client);
+
+      // 仕様書更新をコメントで記録（本文は更新しない）
+      const updateComment = `## 📝 仕様書更新
+
+仕様書が更新されました。
+
+**更新日時:** ${new Date().toLocaleString('ja-JP')}
+**最新の仕様書:** [\`.takumi/specs/${spec.id}.md\`](../../.takumi/specs/${spec.id}.md)
+`;
+
+      try {
+        await issues.addComment(
+          githubConfig.owner,
+          githubConfig.repo,
+          spec.github_issue_id,
+          updateComment
+        );
+      } catch (commentError) {
+        console.warn('Warning: Failed to add spec update comment:', commentError);
+      }
+    } catch (error) {
+      console.error('Warning: Failed to handle spec.updated event:', error);
+    }
+  });
 }

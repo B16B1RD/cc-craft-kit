@@ -32,6 +32,12 @@
     "markdownlint": "markdownlint-cli2 \"**/*.md\" \"#node_modules\" \"#.takumi\"",
     "markdownlint:fix": "markdownlint-cli2 --fix \"**/*.md\" \"#node_modules\" \"#.takumi\"",
     "db:migrate": "tsx src/core/database/migrate.ts",
+    "check:sync": "tsx src/scripts/check-sync.ts",
+    "sync:dogfood": "tsx src/scripts/sync-dogfood.ts",
+    "sync:dogfood:dry": "tsx src/scripts/sync-dogfood.ts --dry-run --verbose",
+    "build:dogfood": "npm run build && npm run sync:dogfood",
+    "migrate:structure": "tsx src/scripts/migrate-structure.ts",
+    "migrate:structure:dry": "tsx src/scripts/migrate-structure.ts --dry-run --verbose",
     "prepare": "husky"
   },
   "dependencies": {

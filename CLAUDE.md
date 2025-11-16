@@ -7,6 +7,75 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Takumi（匠）は、Claude Code 上で仕様駆動開発（SDD）、GitHub Projects/Issues 完全連携を実現する開発支援ツールキット。
 `.takumi/` ディレクトリベースの軽量アーキテクチャ、カスタムスラッシュコマンド、サブエージェント、スキルの統合により、開発ワークフローを革新します。
 
+## ⚠️ 重要: ソースコードとインストール先の関係
+
+### ディレクトリ構成
+
+Takumi プロジェクトは、**自分自身を使って開発する（ドッグフーディング）** ため、以下のディレクトリ構造を採用しています：
+
+| ディレクトリ | 役割 | Git管理 | 説明 |
+|---|---|---|---|
+| **`src/`** | **ソースコード** | ✅ | 開発時に編集する本体のTypeScriptコード |
+| **`src/commands/`** | CLI実装 | ✅ | スラッシュコマンドから実行されるCLI実装 |
+| **`src/slash-commands/`** | スラッシュコマンド定義 | ✅ | Claude Codeのスラッシュコマンド定義 (`.md`) |
+| **`src/scripts/`** | ビルド・同期スクリプト | ✅ | 整合性チェック、自動同期、マイグレーションツール |
+| **`.claude/commands/takumi/`** | シンボリックリンク | ✅ | `src/slash-commands/` へのシンボリックリンク |
+| **`dist/`** | ビルド成果物 | ❌ | `npm run build` で `src/` からコンパイルされる |
+| **`.takumi/`** | **インストール先** | ❌ | Takumi自身がTakumiを使うためのインストール先（ドッグフーディング用） |
+
+### 開発フロー
+
+1. **編集**: `src/` 配下のファイルを編集
+2. **ビルド**: `npm run build` でTypeScriptコンパイル
+3. **同期**: `npm run sync:dogfood` で `.takumi/` へ自動コピー
+4. **実行**: スラッシュコマンド `/takumi:*` を実行してテスト
+
+**重要:** `src/` を編集したら必ず `npm run sync:dogfood` を実行してください。
+
+### 開発時の注意事項
+
+**❌ 間違った手順:**
+
+```bash
+# .takumi/ のファイルを直接編集
+vim .takumi/integrations/github/sync.ts  # NG!
+```
+
+**✅ 正しい手順:**
+
+```bash
+# 1. src/ のソースコードを編集
+vim src/integrations/github/sync.ts
+
+# 2. ビルド + 同期（一括実行）
+npm run build:dogfood
+
+# または個別に実行
+npm run build
+npm run sync:dogfood
+```
+
+### なぜ2つのコードベースが存在するのか？
+
+Takumi は「自分自身を使って開発する」ため、開発中のプロジェクトディレクトリ内に `.takumi/` ディレクトリがあります。これにより:
+
+- Takumi の開発中に、Takumi のコマンド（`/takumi:spec-create` など）を使用できる
+- 実際の運用環境と同じ構成でテスト可能
+- `.takumi/` は `.gitignore` に含まれており、Git で管理されない
+
+### コード修正時の確認方法
+
+```bash
+# src/ と .takumi/ の整合性チェック
+npm run check:sync
+
+# 差分がある場合は同期
+npm run sync:dogfood
+
+# 再度チェック
+npm run check:sync
+```
+
 ## よく使うコマンド
 
 ### ビルド・開発
@@ -71,6 +140,28 @@ npx tsx .takumi/commands/status.ts
 ```bash
 # マイグレーション実行
 npm run db:migrate
+```
+
+### ソースコード同期
+
+```bash
+# 整合性チェック
+npm run check:sync
+
+# ドッグフーディング環境へ同期
+npm run sync:dogfood
+
+# Dry-runモード（変更内容を確認のみ）
+npm run sync:dogfood:dry
+
+# ビルド + 同期（一括実行）
+npm run build:dogfood
+
+# 構造マイグレーション（初回のみ）
+npm run migrate:structure
+
+# マイグレーションのDry-run
+npm run migrate:structure:dry
 ```
 
 ## アーキテクチャ
@@ -354,6 +445,15 @@ eventBus.on('spec:created', async (spec) => {
 
 リスナー内でエラーが発生しても、他のリスナーに影響を与えないように try-catch で囲む必要があります。
 
+### ソースコード管理
+
+- **すべてのコード編集は `src/` で行う**: `.takumi/` 配下のファイルは自動生成されるため、直接編集しない
+- **スラッシュコマンド定義は `src/slash-commands/` で管理**: `.claude/commands/takumi/` はシンボリックリンクのため、直接編集しない
+- **同期を忘れない**: `src/` を編集したら `npm run sync:dogfood` を実行
+- **CI/CD での整合性チェック**: プルリクエスト時に `npm run check:sync` を実行して差分がないことを確認
+- **マイグレーション実行前は必ずバックアップ**: `npm run migrate:structure:dry` でDry-runを実行してから本番実行
+- **ビルドエラーは即座に修正**: `npm run build` でエラーが出た場合は、同期前に修正すること
+
 ## トラブルシューティング
 
 ### CLIが起動しない
@@ -372,6 +472,57 @@ eventBus.on('spec:created', async (spec) => {
 - 401 Unauthorized が出た場合、トークンが無効。`.env`の GITHUB_TOKEN を再設定すること
 - 403 Forbidden が出た場合、スコープが不足。Fine-grained PAT に`repo`, `project`スコープを追加すること
 - 404 Not Found が出た場合、リポジトリ・Project が存在しない。owner/repo を確認すること
+
+### ソースコード同期エラー
+
+**症状:** スラッシュコマンドが古い動作をする
+
+**原因:** `src/` の変更が `.takumi/` に反映されていない
+
+**解決策:**
+
+```bash
+# 1. 差分確認
+npm run check:sync
+
+# 2. 同期実行
+npm run sync:dogfood
+
+# 3. 整合性再確認
+npm run check:sync
+```
+
+**症状:** `npm run check:sync` で差分が検出される
+
+**原因:** `src/` と `.takumi/` のファイルハッシュが一致していない
+
+**解決策:**
+
+```bash
+# src/ と .takumi/ のファイルハッシュを比較
+md5sum src/commands/status.ts .takumi/commands/status.ts
+
+# 一致していない場合は同期
+npm run sync:dogfood
+```
+
+**症状:** マイグレーション実行時に競合エラー
+
+**原因:** `src/commands/` または `src/slash-commands/` が既に存在する
+
+**解決策:**
+
+```bash
+# Dry-runで確認
+npm run migrate:structure:dry
+
+# 既存ディレクトリをバックアップ
+mv src/commands src/commands.bak
+mv src/slash-commands src/slash-commands.bak
+
+# 再度マイグレーション実行
+npm run migrate:structure
+```
 
 ## 参考ドキュメント
 

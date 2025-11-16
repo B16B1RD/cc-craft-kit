@@ -98,11 +98,40 @@ jobs:
           flags: unittests
           name: codecov-takumi
 
+  check-sync:
+    runs-on: ubuntu-latest
+    name: Check Source Sync
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Check source synchronization
+        run: npm run check:sync
+
+      - name: Report sync status
+        if: failure()
+        run: |
+          echo "❌ Source files are out of sync!"
+          echo "Please run 'npm run sync:dogfood' to synchronize."
+          exit 1
+
   build:
     runs-on: ubuntu-latest
     name: Build
 
-    needs: [lint, typecheck, docs, test]
+    needs: [lint, typecheck, docs, test, check-sync]
 
     steps:
       - uses: actions/checkout@v4
