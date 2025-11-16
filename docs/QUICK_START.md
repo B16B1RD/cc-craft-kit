@@ -201,7 +201,7 @@ takumi github init <owner> <repo>
 
 仕様書作成時に自動的に Projects ボードに追加するには、以下のいずれかを設定します。
 
-**方法1: 環境変数で設定（推奨）**
+##### 方法1: 環境変数で設定（推奨）
 
 `.env` ファイルに以下を追加:
 
@@ -209,7 +209,7 @@ takumi github init <owner> <repo>
 GITHUB_PROJECT_NAME="My Project Board"
 ```
 
-**方法2: config.json で設定**
+##### 方法2: config.json で設定
 
 `.takumi/config.json` に以下を追加:
 
@@ -228,6 +228,18 @@ GITHUB_PROJECT_NAME="My Project Board"
 1. GitHub Issue 作成
 2. Projects ボードに追加（設定がある場合）
 3. 適切なラベル付与（`phase:requirements` など）
+
+#### Projects の推奨ビュー設定
+
+GitHub Projects v2 を効果的に活用するには、ビューのカスタマイズが重要です。
+
+Takumi では、以下の 3 つのビューを推奨しています:
+
+1. **Status Board** (Board) - カンバンスタイルでタスクの進捗を視覚的に管理
+2. **All Tasks** (Table) - 全タスクの詳細確認・強力なフィルタリング
+3. **Timeline** (Roadmap) - スケジュールとマイルストーンの可視化（オプション）
+
+詳しい設定方法とベストプラクティスは、[GitHub Projects v2 推奨ビュー設定ガイド](./GITHUB_PROJECTS.md)を参照してください。
 
 ## トラブルシューティング
 
