@@ -6,9 +6,26 @@
 
 GitHub Projects v2 を作成すると、デフォルトでテーブルビューが追加されていますが、効果的なプロジェクト管理のためにはビューのカスタマイズが必須です。このガイドでは、Takumi の開発ワークフローに最適化された 3 つの推奨ビュー設定を紹介します。
 
-## Takumi の Phase と Project Status のマッピング
+## 事前準備: Status フィールドの追加
 
-Takumi では、仕様書のフェーズ変更時に自動的に GitHub Project のステータスが更新されます。
+GitHub Projects v2 では、Status フィールドはデフォルトでは存在しません。まず Status フィールドを **Single select カスタムフィールド** として追加する必要があります。
+
+### Status フィールドの作成手順
+
+1. Project の Table ビューを開く
+2. 右端のフィールドヘッダーにある **「+」** ボタンをクリック
+3. **「New field」** を選択
+4. フィールド名に `Status` と入力
+5. フィールドタイプで **「Single select」** を選択
+6. Options に以下を追加:
+   - `Todo`
+   - `In Progress`
+   - `Done`
+7. **「Save」** をクリック
+
+### Takumi の Phase と Project Status のマッピング
+
+Takumi では、仕様書のフェーズ変更時に自動的に GitHub Project の Status フィールドが更新されます。
 
 | Takumi Phase | Project Status |
 |--------------|----------------|
@@ -41,7 +58,7 @@ Takumi プロジェクトでは、以下の 3 つのビューを設定するこ�
 1. Project ページで **「+ New view」** をクリック
 2. **「Board」** を選択
 3. ビュー名を **「Status Board」** に設定
-4. **「Group by」** で **「Status」** フィールドを選択
+4. **「Column by」** で **「Status」** フィールドを選択
 5. 列の順序を調整: **Todo → In Progress → Done**
 
 ### 推奨カスタマイズ
@@ -54,17 +71,11 @@ is:open
 
 未クローズの Issue のみを表示し、完了済みタスクでボードが混雑するのを防ぎます。
 
-#### ソート設定
-
-- **優先度順**: Priority（高→低）
-- **作成日順**: Created date（新→古）
-
 #### 表示フィールド
 
 - Title（タスク名）
 - Assignees（担当者）
-- Labels（`phase:*` ラベル）
-- Phase（Takumi フェーズ）
+- Labels（Takumi が自動付与する `phase:requirements` などのラベルを表示）
 
 ### 利点
 
@@ -85,27 +96,41 @@ is:open
 
 1. デフォルトの **「Table」** ビューを使用（または新規作成）
 2. ビュー名を **「All Tasks」** に設定
-3. 表示する列を追加: **Status, Phase, Assignees, Labels, Created, Updated**
+3. 表示する列を追加: 必要なフィールドを追加
 
 ### 推奨カスタマイズ
 
 #### グループ化
 
-**Phase でグループ化** して、各開発フェーズのタスクをまとめて表示します。
+**Group by** 機能を使用してカスタムフィールドでアイテムをグループ化できます。
+
+**Status でグループ化**（Status フィールド追加後）:
 
 ```text
-Group by: Phase
+Group by: Status
 ```
 
-これにより、requirements/design/tasks/implementation/completed ごとにタスクが整理されます。
+これにより、Todo/In Progress/Done ごとにタスクが整理されます。
+
+**注意**: Title、Labels、Reviewers、Linked pull requests ではグループ化できません（GitHub の仕様）。
 
 #### ソート設定
 
+Table ビューでは、各列のヘッダーをクリックしてソートできます。
+
+**Status フィールドでソート**（Status カスタムフィールド追加後）:
+
 ```text
-Priority (High → Low) → Created date (New → Old)
+Status: Todo → In Progress → Done
 ```
 
-優先度が高いタスクを上位に表示し、同じ優先度内では新しいタスクを優先します。
+**Priority フィールドでソート**（Priority カスタムフィールド追加後）:
+
+```text
+Priority: High → Medium → Low
+```
+
+複数フィールドでのソートも可能です。Priority フィールドの追加方法は、後述の「優先度ビュー」セクションを参照してください。
 
 #### フィルター例
 
@@ -115,35 +140,44 @@ Priority (High → Low) → Created date (New → Old)
 assignee:@me
 ```
 
-**特定フェーズのみ表示**:
+**特定ラベルのみ表示**（Takumi の phase ラベル）:
 
 ```text
-phase:implementation
+label:phase:implementation
 ```
 
-**期日が近いタスク**:
+**未クローズの Issue のみ表示**:
 
 ```text
-due:<7days
+is:open
 ```
 
-**複数条件の組み合わせ**:
+**複数条件の組み合わせ（AND 条件）**:
 
 ```text
-assignee:@me is:open phase:implementation
+assignee:@me is:open label:phase:implementation
+```
+
+**複数ラベルのいずれか（OR 条件）**:
+
+```text
+label:phase:implementation,phase:design
+```
+
+**条件の否定**:
+
+```text
+-assignee:@me
 ```
 
 ### 表示推奨フィールド
 
 | フィールド | 説明 |
 |-----------|------|
-| Title | タスク名（必須） |
-| Status | Todo/In Progress/Done |
-| Phase | requirements/design/tasks/implementation/completed |
-| Assignees | 担当者 |
-| Labels | `phase:*` ラベル |
-| Created date | 作成日時 |
-| Updated date | 更新日時 |
+| Title | タスク名（デフォルト） |
+| Status | Todo/In Progress/Done（カスタムフィールドとして追加が必要） |
+| Assignees | 担当者（デフォルト） |
+| Labels | Takumi が自動付与する `phase:requirements` などのラベル（デフォルト） |
 
 ### 利点
 
@@ -210,14 +244,14 @@ Takumi では現在、開始日・期日のフィールドは自動設定され�
 
 ## その他の推奨設定
 
-### Phase フィルタービュー
+### Phase ラベル別ビュー
 
 各フェーズごとに専用ビューを作成すると、フェーズ別の作業に集中しやすくなります。
 
 #### Requirements View (Table)
 
 ```text
-Filter: phase:requirements
+Filter: label:phase:requirements
 Group by: Status
 ```
 
@@ -226,30 +260,44 @@ Group by: Status
 #### Implementation View (Table)
 
 ```text
-Filter: phase:implementation
-Group by: Assignees
+Filter: label:phase:implementation
+Group by: assignee
 ```
 
 実装中のタスクを担当者別に表示します。
 
+**注意**: Group by では assignee（小文字）を使用します。
+
 #### Completed View (Table)
 
 ```text
-Filter: phase:completed
-Sort: Updated date (New → Old)
+Filter: label:phase:completed is:closed
 ```
 
-完了したタスクを更新日順に表示します。
+完了したタスクのみを表示します。
 
-### 優先度ビュー（Priority フィールドがある場合）
+### 優先度ビュー（Priority カスタムフィールドを追加する場合）
 
-Priority カスタムフィールドを追加している場合、優先度別のビューも有効です。
+Priority カスタムフィールドを追加すると、優先度別のビューも作成できます。
+
+#### Priority フィールドの追加方法
+
+1. Project の **Settings** → **Fields** に移動
+2. **Add field** → **Single select** を選択
+3. Field name: `Priority`
+4. Options を追加:
+   - `High`（高）
+   - `Medium`（中）
+   - `Low`（低）
+5. Save
 
 #### High Priority View (Board)
 
+Priority フィールド追加後、以下のビューを作成できます:
+
 ```text
 Filter: priority:high is:open
-Group by: Status
+Column by: Status
 ```
 
 ---
@@ -313,14 +361,7 @@ Takumi 開発プロジェクト自身では、以下のビュー構成を使用�
 
 ### Status フィールドが見つからない
 
-GitHub Projects v2 では、Status フィールドがデフォルトで作成されていない場合があります。
-
-**解決方法**:
-
-1. Project Settings → Fields
-2. Add field → Single select
-3. Field name: `Status`
-4. Options: `Todo`, `In Progress`, `Done`
+GitHub Projects v2 では、Status フィールドはデフォルトでは存在しません。本ドキュメント冒頭の「事前準備: Status フィールドの追加」セクションを参照して、カスタムフィールドとして追加してください。
 
 ### Phase ラベルが自動更新されない
 
