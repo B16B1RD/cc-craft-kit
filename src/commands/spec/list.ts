@@ -97,3 +97,14 @@ export async function listSpecs(
     console.log(`    Available phases: ${VALID_PHASES.join(', ')}`);
   }
 }
+
+// CLI エントリポイント
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const phase = process.argv[2];
+  const limit = process.argv[3] ? parseInt(process.argv[3], 10) : undefined;
+
+  listSpecs(phase, limit).catch((error) => {
+    console.error('Error:', error.message);
+    process.exit(1);
+  });
+}
