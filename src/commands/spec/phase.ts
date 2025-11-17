@@ -142,6 +142,8 @@ export async function updateSpecPhase(
       console.log('  • Create new specs for follow-up work');
       break;
   }
+
+  console.log('');
 }
 
 // CLI エントリポイント
