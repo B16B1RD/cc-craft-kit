@@ -62,7 +62,9 @@ export async function preflightCheck(config: MigrationConfig): Promise<{
   const canProceed = conflicts.length === 0;
 
   if (verbose) {
-    console.log(`\n${canProceed ? '✅' : '❌'} Preflight check ${canProceed ? 'passed' : 'failed'}\n`);
+    console.log(
+      `\n${canProceed ? '✅' : '❌'} Preflight check ${canProceed ? 'passed' : 'failed'}\n`
+    );
   }
 
   return { canProceed, conflicts };

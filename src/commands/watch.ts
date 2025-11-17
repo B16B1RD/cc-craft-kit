@@ -6,12 +6,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDatabase } from '../core/database/connection.js';
 import { SpecFileWatcher } from '../core/filesystem/watcher.js';
-import {
-  formatHeading,
-  formatInfo,
-  formatSuccess,
-  formatError,
-} from './utils/output.js';
+import { formatHeading, formatInfo, formatSuccess, formatError } from './utils/output.js';
 import { createProjectNotInitializedError } from './utils/error-handler.js';
 
 /**
@@ -82,12 +77,7 @@ export async function watchSpecFiles(
     console.log(formatSuccess('File watcher started successfully!', options.color));
     console.log('');
     console.log(formatInfo('Watching for changes in .takumi/specs/', options.color));
-    console.log(
-      formatInfo(
-        'File changes will automatically update GitHub Issues',
-        options.color
-      )
-    );
+    console.log(formatInfo('File changes will automatically update GitHub Issues', options.color));
     console.log('');
     console.log(formatInfo('Press Ctrl+C to stop', options.color));
     console.log('');

@@ -53,11 +53,7 @@ export async function updateSpec(
 
   // updated_at を現在時刻に更新
   const now = new Date().toISOString();
-  await db
-    .updateTable('specs')
-    .set({ updated_at: now })
-    .where('id', '=', spec.id)
-    .execute();
+  await db.updateTable('specs').set({ updated_at: now }).where('id', '=', spec.id).execute();
 
   console.log(formatSuccess('Database updated_at timestamp updated', options.color));
 
@@ -76,9 +72,7 @@ export async function updateSpec(
 
   if (spec.github_issue_id) {
     console.log(formatKeyValue('GitHub Issue', `#${spec.github_issue_id}`, options.color));
-    console.log(
-      formatSuccess('Update notification posted to GitHub Issue', options.color)
-    );
+    console.log(formatSuccess('Update notification posted to GitHub Issue', options.color));
   } else {
     console.log(formatKeyValue('GitHub Issue', 'Not linked', options.color));
   }

@@ -63,7 +63,8 @@ export interface FileChangeEvent {
  */
 export class SpecFileWatcher {
   private watcher: FSWatcher | null = null;
-  private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private debounceTimers: Map<string, any> = new Map();
   private isRunning = false;
 
   constructor(
@@ -132,6 +133,7 @@ export class SpecFileWatcher {
 
     // デバウンスタイマーをすべてクリア
     for (const timer of this.debounceTimers.values()) {
+      // eslint-disable-next-line no-undef
       clearTimeout(timer);
     }
     this.debounceTimers.clear();
@@ -148,10 +150,7 @@ export class SpecFileWatcher {
   /**
    * ファイル変更ハンドラー
    */
-  private handleFileChange(
-    filePath: string,
-    type: 'change' | 'add' | 'unlink'
-  ): void {
+  private handleFileChange(filePath: string, type: 'change' | 'add' | 'unlink'): void {
     const specId = this.extractSpecId(filePath);
 
     if (!specId) {
@@ -176,10 +175,12 @@ export class SpecFileWatcher {
     // 既存のタイマーをクリア
     const existingTimer = this.debounceTimers.get(specId);
     if (existingTimer) {
+      // eslint-disable-next-line no-undef
       clearTimeout(existingTimer);
     }
 
     // 新しいタイマーを設定
+    // eslint-disable-next-line no-undef
     const timer = setTimeout(() => {
       this.emitSpecUpdatedEvent(specId, filePath, type).catch((error) => {
         this.log('error', `Failed to emit spec.updated event: ${error.message}`);
@@ -253,8 +254,7 @@ export class SpecFileWatcher {
     const filename = basename(filePath, '.md');
 
     // UUID形式のチェック（簡易版）
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
     if (uuidRegex.test(filename)) {
       return filename;
