@@ -306,11 +306,13 @@ ${spec.description || '説明なし'}
     details: Record<string, unknown>;
   }): Promise<void> {
     const { randomUUID } = await import('crypto');
+    // 仕様書とIssueの同期記録
+    // entity_type は 'spec' を使用（'issue' ではない）
     await this.db
       .insertInto('github_sync')
       .values({
         id: randomUUID(),
-        entity_type: 'issue',
+        entity_type: 'spec',
         entity_id: params.spec_id,
         github_id: params.github_issue_id.toString(),
         github_number: params.github_issue_id,

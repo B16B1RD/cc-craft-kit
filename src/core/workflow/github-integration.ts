@@ -111,10 +111,12 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
           .execute();
 
         // 同期ログ記録
+        // 仕様書とIssueの同期記録
+        // entity_type は 'spec' を使用（'issue' ではない）
         await db
           .insertInto('github_sync')
           .values({
-            entity_type: 'issue',
+            entity_type: 'spec',
             entity_id: spec.id,
             github_id: issue.number.toString(),
             last_synced_at: new Date().toISOString(),
