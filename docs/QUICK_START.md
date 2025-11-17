@@ -61,7 +61,7 @@ LOG_LEVEL=info
 
 #### Fine-grained Personal Access Token（Organization のみ）
 
-Organization の Projects を使用する場合のみ、Fine-grained PAT が利用可能です:
+Organization の Projects を使用する場合のみ、Fine-grained PAT が利用可能です。
 
 1. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens
 2. "Generate new token" をクリック
@@ -173,7 +173,7 @@ GitHub 統合機能を使用して、以下が自動化されます。
 
 ##### 方法1: 環境変数で設定（推奨）
 
-`.env` ファイルに以下を追加:
+`.env` ファイルに以下を追加します。
 
 ```env
 GITHUB_PROJECT_NAME="My Project Board"
@@ -181,7 +181,7 @@ GITHUB_PROJECT_NAME="My Project Board"
 
 ##### 方法2: config.json で設定
 
-`.takumi/config.json` に以下を追加:
+`.takumi/config.json` に以下を追加します。
 
 ```json
 {
@@ -203,7 +203,7 @@ GITHUB_PROJECT_NAME="My Project Board"
 
 GitHub Projects v2 を効果的に活用するには、ビューのカスタマイズが重要です。
 
-Takumi では、以下の 3 つのビューを推奨しています:
+Takumi では、以下の 3 つのビューを推奨しています。
 
 1. **Status Board** (Board) - カンバンスタイルでタスクの進捗を視覚的に管理
 2. **All Tasks** (Table) - 全タスクの詳細確認・強力なフィルタリング
@@ -234,15 +234,19 @@ npm run db:migrate
 ### スラッシュコマンドが認識されない
 
 1. `.claude/commands/takumi/` が `src/slash-commands/` へのシンボリックリンクになっているか確認
+
    ```bash
    ls -la .claude/commands/takumi
    ```
+
 2. `src/slash-commands/` に `.md` ファイルが存在するか確認
 3. `.takumi/commands/` に TypeScript ファイルが同期されているか確認
+
    ```bash
    npm run check:sync
    npm run sync:dogfood
    ```
+
 4. Claude Code を再起動
 
 ## さらに学ぶ

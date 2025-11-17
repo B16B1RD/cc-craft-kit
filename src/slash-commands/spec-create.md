@@ -26,13 +26,13 @@ argument-hint: "<spec-name> [description]"
 
 ---
 
-以下のコマンドを実行して仕様書を作成してください:
+以下のコマンドを実行して仕様書を作成してください。
 
 ```bash
 npx tsx .takumi/commands/spec/create.ts "$1" "$2"
 ```
 
-作成が完了したら、結果を要約して表示し、必要に応じて次のアクションを案内してください:
+作成が完了したら、結果を要約して表示し、必要に応じて次のアクションを案内してください。
 
 - 仕様書の詳細確認: `/takumi:spec-get <spec-id>`
 - デザインフェーズに移行: `/takumi:spec-phase <spec-id> design`

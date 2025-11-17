@@ -26,13 +26,13 @@ argument-hint: "<spec-id> <phase>"
 
 ---
 
-以下のコマンドを実行して仕様書のフェーズを更新してください:
+以下のコマンドを実行して仕様書のフェーズを更新してください。
 
 ```bash
 npx tsx .takumi/commands/spec/phase.ts "$1" "$2"
 ```
 
-フェーズ移行が完了したら、そのフェーズで実施すべき作業を案内してください。必要に応じて以下のアクションも提示してください:
+フェーズ移行が完了したら、そのフェーズで実施すべき作業を案内してください。必要に応じて以下のアクションも提示してください。
 
 - 仕様書の詳細確認: `/takumi:spec-get <spec-id>`
 - GitHub Issue 作成: `/takumi:github-issue-create <spec-id>`

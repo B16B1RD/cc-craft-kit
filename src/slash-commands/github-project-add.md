@@ -32,13 +32,13 @@ argument-hint: "<spec-id> <project-number>"
 
 ---
 
-以下のコマンドを実行して Project に追加してください:
+以下のコマンドを実行して Project に追加してください。
 
 ```bash
 npx tsx .takumi/commands/github/project-add.ts "$1" "$2"
 ```
 
-追加が完了したら、Project URL を表示し、必要に応じて次のアクションを案内してください:
+追加が完了したら、Project URL を表示し、必要に応じて次のアクションを案内してください。
 
 - 仕様書の詳細確認: `/takumi:spec-get <spec-id>`
 - GitHub から同期: `/takumi:github-sync from-github <spec-id>`

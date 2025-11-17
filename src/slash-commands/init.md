@@ -26,14 +26,14 @@ argument-hint: "<project-name> [description]"
 
 ---
 
-以下のコマンドを実行してプロジェクトを初期化してください:
+以下のコマンドを実行してプロジェクトを初期化してください。
 
 ```bash
 npx tsx .takumi/commands/init.ts "$1"
 ```
 
-初期化が完了したら、結果を要約して表示し、必要に応じて次のアクションを案内してください:
+初期化が完了したら、結果を要約して表示し、必要に応じて次のアクションを案内してください。
 
 - GitHub 統合の設定: `/takumi:github-init <owner> <repo>`
 - プロジェクト状況の確認: `/takumi:status`
-- 新規仕様書作成: `/takumi:spec-create "<name>" [description]`
+- 新規仕様書の作成: `/takumi:spec-create "<name>" [description]`

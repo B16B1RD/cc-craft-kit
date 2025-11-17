@@ -30,14 +30,14 @@ GitHub リポジトリとの連携を設定します。
 
 ---
 
-以下のコマンドを実行して GitHub 統合を初期化してください:
+以下のコマンドを実行して GitHub 統合を初期化してください。
 
 ```bash
 npx tsx .takumi/commands/github/init.ts "$1" "$2"
 ```
 
-初期化が完了したら、必要に応じて次のアクションを案内してください:
+初期化が完了したら、必要に応じて次のアクションを案内してください。
 
 - プロジェクト状況の確認: `/takumi:status`
 - 仕様書から Issue 作成: `/takumi:github-issue-create <spec-id>`
-- 新規仕様書作成: `/takumi:spec-create "<name>" [description]`
+- 新規仕様書の作成: `/takumi:spec-create "<name>" [description]`

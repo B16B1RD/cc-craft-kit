@@ -33,13 +33,13 @@ argument-hint: "<direction> <spec-id>"
 
 ---
 
-以下のコマンドを実行して同期を実行してください:
+以下のコマンドを実行して同期を実行してください。
 
 ```bash
 npx tsx .takumi/commands/github/sync.ts "$1" "$2"
 ```
 
-同期が完了したら、結果を表示し、必要に応じて次のアクションを案内してください:
+同期が完了したら、結果を表示し、必要に応じて次のアクションを案内してください。
 
 - 仕様書の詳細確認: `/takumi:spec-get <spec-id>`
 - 逆方向の同期: `/takumi:github-sync <opposite-direction> <spec-id>`

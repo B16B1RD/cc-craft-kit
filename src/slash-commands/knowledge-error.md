@@ -27,13 +27,13 @@ argument-hint: "<spec-id> <error> <solution>"
 
 ---
 
-以下のコマンドを実行してエラー解決策を記録してください:
+以下のコマンドを実行してエラー解決策を記録してください。
 
 ```bash
 npx tsx .takumi/commands/knowledge/error.ts "$1" "$2" "$3"
 ```
 
-記録が完了したら、Issue URL を表示し、必要に応じて次のアクションを案内してください:
+記録が完了したら、Issue URL を表示し、必要に応じて次のアクションを案内してください。
 
 - 進捗の記録: `/takumi:knowledge-progress <spec-id> "<message>"`
 - Tips の記録: `/takumi:knowledge-tip <spec-id> "<category>" "<tip>"`

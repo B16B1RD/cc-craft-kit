@@ -11,7 +11,7 @@ Takumi（匠）は、Claude Code 上で仕様駆動開発（SDD）、GitHub Proj
 
 ### ディレクトリ構成
 
-Takumi プロジェクトは、**自分自身を使って開発する（ドッグフーディング）** ため、以下のディレクトリ構造を採用しています：
+Takumi プロジェクトは、**自分自身を使って開発する（ドッグフーディング）** ため、以下のディレクトリ構造を採用しています。
 
 | ディレクトリ | 役割 | Git管理 | 説明 |
 |---|---|---|---|
@@ -26,7 +26,7 @@ Takumi プロジェクトは、**自分自身を使って開発する（ドッ�
 ### 開発フロー
 
 1. **編集**: `src/` 配下のファイルを編集
-2. **ビルド**: `npm run build` でTypeScriptコンパイル
+2. **ビルド**: `npm run build` で TypeScript コンパイル
 3. **同期**: `npm run sync:dogfood` で `.takumi/` へ自動コピー
 4. **実行**: スラッシュコマンド `/takumi:*` を実行してテスト
 
@@ -55,9 +55,9 @@ npm run build
 npm run sync:dogfood
 ```
 
-### なぜ2つのコードベースが存在するのか？
+### なぜ2つのコードベースが存在するのか
 
-Takumi は「自分自身を使って開発する」ため、開発中のプロジェクトディレクトリ内に `.takumi/` ディレクトリがあります。これにより:
+Takumi は「自分自身を使って開発する」ため、開発中のプロジェクトディレクトリ内に `.takumi/` ディレクトリがあります。これにより以下が可能になります。
 
 - Takumi の開発中に、Takumi のコマンド（`/takumi:spec-create` など）を使用できる
 - 実際の運用環境と同じ構成でテスト可能
@@ -125,7 +125,7 @@ npm run textlint:fix
 
 ### コマンド実行
 
-すべてのコマンドはスラッシュコマンド経由で実行します:
+すべてのコマンドはスラッシュコマンド経由で実行します。
 
 ```bash
 # 例: プロジェクト状態確認
@@ -251,7 +251,7 @@ await eventBus.emit(
 - `/takumi:status` - プロジェクト状況表示
 - `/takumi:spec-create <name> [description]` - 仕様書作成
 - `/takumi:spec-list [phase] [limit]` - 仕様書一覧
-- `/takumi:spec-get <spec-id>` - 仕様書詳細表示
+- `/takumi:spec-get <spec-id>` - 仕様書の詳細表示
 - `/takumi:spec-phase <spec-id> <phase>` - フェーズ更新
 - `/takumi:github-init <owner> <repo>` - GitHub 統合初期化
 - `/takumi:github-issue-create <spec-id>` - Issue 作成
@@ -448,10 +448,10 @@ eventBus.on('spec:created', async (spec) => {
 ### ソースコード管理
 
 - **すべてのコード編集は `src/` で行う**: `.takumi/` 配下のファイルは自動生成されるため、直接編集しない
-- **スラッシュコマンド定義は `src/slash-commands/` で管理**: `.claude/commands/takumi/` はシンボリックリンクのため、直接編集しない
+- **スラッシュコマンド定義を `src/slash-commands/` で管理**: `.claude/commands/takumi/` はシンボリックリンクのため、直接編集しない
 - **同期を忘れない**: `src/` を編集したら `npm run sync:dogfood` を実行
 - **CI/CD での整合性チェック**: プルリクエスト時に `npm run check:sync` を実行して差分がないことを確認
-- **マイグレーション実行前は必ずバックアップ**: `npm run migrate:structure:dry` でDry-runを実行してから本番実行
+- **マイグレーション実行前は必ずバックアップ**: `npm run migrate:structure:dry` で Dry-run を実行してから本番実行
 - **ビルドエラーは即座に修正**: `npm run build` でエラーが出た場合は、同期前に修正すること
 
 ## トラブルシューティング
@@ -475,9 +475,9 @@ eventBus.on('spec:created', async (spec) => {
 
 ### ソースコード同期エラー
 
-**症状:** スラッシュコマンドが古い動作をする
+**症状:** スラッシュコマンドが古い動作をする。
 
-**原因:** `src/` の変更が `.takumi/` に反映されていない
+**原因:** `src/` の変更が `.takumi/` に反映されていない。
 
 **解決策:**
 
@@ -492,9 +492,9 @@ npm run sync:dogfood
 npm run check:sync
 ```
 
-**症状:** `npm run check:sync` で差分が検出される
+**症状:** `npm run check:sync` で差分が検出される。
 
-**原因:** `src/` と `.takumi/` のファイルハッシュが一致していない
+**原因:** `src/` と `.takumi/` のファイルハッシュが一致していない。
 
 **解決策:**
 
@@ -506,9 +506,9 @@ md5sum src/commands/status.ts .takumi/commands/status.ts
 npm run sync:dogfood
 ```
 
-**症状:** マイグレーション実行時に競合エラー
+**症状:** マイグレーション実行時に競合エラー。
 
-**原因:** `src/commands/` または `src/slash-commands/` が既に存在する
+**原因:** `src/commands/` または `src/slash-commands/` が既に存在する。
 
 **解決策:**
 

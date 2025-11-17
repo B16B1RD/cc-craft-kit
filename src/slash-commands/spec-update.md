@@ -3,7 +3,7 @@ description: 仕様書の更新通知をGitHub Issueに送信
 tags: [project]
 ---
 
-# 仕様書更新通知
+# 仕様書の更新通知
 
 仕様書ファイルを編集した後、この更新を GitHub Issue に通知します。
 
@@ -25,7 +25,7 @@ tags: [project]
 
 ---
 
-以下のコマンドを実行して仕様書の更新を通知してください:
+以下のコマンドを実行して仕様書の更新を通知してください。
 
 ```bash
 npx tsx .takumi/commands/spec/update.ts "$1"

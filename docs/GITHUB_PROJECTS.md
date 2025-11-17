@@ -36,7 +36,7 @@ Takumi では、仕様書のフェーズ変更時に自動的に GitHub Project 
 
 ## 推奨ビュー構成
 
-Takumi プロジェクトでは、以下の 3 つのビューを設定することを推奨します:
+Takumi プロジェクトでは、以下の 3 つのビューを設定することを推奨します。
 
 1. **Status Board** (Board) - 日々の作業管理用
 2. **All Tasks** (Table) - 全タスクの詳細確認・検索用
@@ -101,7 +101,7 @@ is:open
 
 **Group by** 機能を使用してカスタムフィールドでアイテムをグループ化できます。
 
-**Status でグループ化**（Status フィールド追加後）:
+**Status でグループ化**（Status フィールド追加後）。
 
 ```text
 Group by: Status
@@ -115,13 +115,13 @@ Group by: Status
 
 Table ビューでは、各列のヘッダーをクリックしてソートできます。
 
-**Status フィールドでソート**（Hidden fields から表示後）:
+**Status フィールドでソート**（Hidden fields から表示後）。
 
 ```text
 Status: Todo → In Progress → Done
 ```
 
-**Priority フィールドでソート**（カスタムフィールドとして追加後）:
+**Priority フィールドでソート**（カスタムフィールドとして追加後）。
 
 ```text
 Priority: High → Medium → Low
@@ -137,7 +137,7 @@ Priority: High → Medium → Low
 assignee:@me
 ```
 
-**特定ラベルのみ表示**（Takumi の phase ラベル）:
+**特定ラベルのみ表示**（Takumi の phase ラベル）。
 
 ```text
 label:phase:implementation
@@ -149,19 +149,19 @@ label:phase:implementation
 is:open
 ```
 
-**複数条件の組み合わせ（AND 条件）**:
+**複数条件の組み合わせ（AND 条件）**。
 
 ```text
 assignee:@me is:open label:phase:implementation
 ```
 
-**複数ラベルのいずれか（OR 条件）**:
+**複数ラベルのいずれか（OR 条件）**。
 
 ```text
 label:phase:implementation,phase:design
 ```
 
-**条件の否定**:
+**条件の否定**。
 
 ```text
 -assignee:@me
@@ -222,13 +222,11 @@ is:open
 
 ⚠️ **Roadmap ビューを使用するには、各 Issue に開始日・期日を設定する必要があります。**
 
-Takumi では現在、開始日・期日のフィールドは自動設定されないため、以下の方法で手動で追加してください:
+Takumi では、開始日・期日のフィールドを自動設定する機能は現在提供していません。以下の手順で手動追加してください。
 
-1. Project の Settings → Fields → Add field
-2. **「Date」** タイプのカスタムフィールドを 2 つ作成:
-   - `Start date`
-   - `End date`
-3. 各 Issue に日付を設定
+1. Project の Settings → Fields → Add field に移動する
+2. **「Date」** タイプのカスタムフィールドを 2 つ作成する（`Start date` と `End date`）
+3. 各 Issue に日付を設定する
 
 ### 利点
 
@@ -283,15 +281,12 @@ Priority カスタムフィールドを追加すると、優先度別のビュ�
 2. **Custom fields** の **「+」** をクリック
 3. **Field name** に `Priority` と入力
 4. **Field type** で **「Single select」** を選択
-5. **Options** で以下を追加:
-   - `High`（高）
-   - `Medium`（中）
-   - `Low`（低）
-6. **Save** をクリック
+5. **Options** で以下のオプションを追加する（`High`: 高、`Medium`: 中、`Low`: 低）
+6. **Save** をクリックする
 
 #### High Priority View (Board)
 
-Priority フィールド追加後、以下のビューを作成できます:
+Priority フィールド追加後、以下のビューを作成できます。
 
 ```text
 Filter: priority:high is:open
@@ -302,7 +297,7 @@ Column by: Status
 
 ## Takumi プロジェクトでの実践例
 
-Takumi 開発プロジェクト自身では、以下のビュー構成を使用しています:
+Takumi 開発プロジェクト自身では、以下のビュー構成を使用しています。
 
 ### 基本構成（最小セット）
 
@@ -318,7 +313,7 @@ Takumi 開発プロジェクト自身では、以下のビュー構成を使用�
 
 ### 拡張構成（推奨セット）
 
-上記に加えて:
+上記に加えて、以下のビューを設定します。
 
 1. **Requirements** (Table)
    - Filter: `phase:requirements`
@@ -365,7 +360,7 @@ GitHub Projects v2 では、Status フィールドはデフォルトで Hidden f
 
 Takumi の GitHub 統合が正しく設定されているか確認してください。
 
-**チェック項目**:
+**チェック項目**。
 
 - `.env` ファイルに `GITHUB_TOKEN` が設定されている
 - `/takumi:github-init <owner> <repo>` を実行済み
@@ -375,15 +370,15 @@ Takumi の GitHub 統合が正しく設定されているか確認してくだ�
 
 環境変数または config.json で Project 設定が必要です。
 
-**設定方法**:
+**設定方法**。
 
-`.env` に以下を追加:
+`.env` に以下を追加します。
 
 ```env
 GITHUB_PROJECT_NAME="Your Project Name"
 ```
 
-または `.takumi/config.json` に以下を追加:
+または `.takumi/config.json` に以下を追加します。
 
 ```json
 {

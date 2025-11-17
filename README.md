@@ -44,7 +44,7 @@ rm -rf .takumi-repo
 
 ### 環境変数設定
 
-**個人アカウントで Projects v2 を使用する場合**、Classic Personal Access Token が必要です:
+**個人アカウントで Projects v2 を使用する場合**、Classic Personal Access Token が必要です。
 
 1. GitHub → Settings → Developer settings → Personal access tokens → **Tokens (classic)**
 2. "Generate new token (classic)" をクリック
@@ -65,9 +65,9 @@ echo "GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx" > .env
 
 ### プロジェクト初期化
 
-Claude Code のチャットで以下のスラッシュコマンドを実行:
+Claude Code のチャットで以下のスラッシュコマンドを実行します。
 
-```
+```sh
 /takumi:init my-project
 ```
 
@@ -75,9 +75,9 @@ Claude Code のチャットで以下のスラッシュコマンドを実行:
 
 ### 基本コマンド
 
-すべてのコマンドは Claude Code のチャットからスラッシュコマンドで実行します:
+すべてのコマンドは Claude Code のチャットからスラッシュコマンドで実行します。
 
-```
+```sh
 # プロジェクト状態確認
 /takumi:status
 
@@ -97,7 +97,7 @@ Claude Code のチャットで以下のスラッシュコマンドを実行:
 
 ### GitHub統合
 
-```
+```sh
 # GitHub初期化
 /takumi:github-init <owner> <repo>
 
@@ -117,7 +117,7 @@ echo "GITHUB_PROJECT_NAME=My Project Board" >> .env
 
 #### Issue & Project 自動化
 
-仕様書作成時に以下が自動実行されます:
+仕様書作成時に以下が自動実行されます。
 
 1. **GitHub Issue 自動作成**: 仕様書の内容を Issue body として使用
 2. **Project 自動追加**: `GITHUB_PROJECT_NAME` 環境変数または `project_id` が設定されている場合、自動的に Projects ボードに追加
@@ -127,7 +127,7 @@ Project 追加が失敗した場合でも Issue 作成は成功し、警告メ�
 
 ### ナレッジベース記録
 
-```
+```sh
 # 進捗記録
 /takumi:knowledge-progress <spec-id> "認証機能の基本実装が完了"
 
@@ -140,7 +140,7 @@ Project 追加が失敗した場合でも Issue 作成は成功し、警告メ�
 
 ### 全コマンド一覧
 
-```
+```sh
 /takumi:init my-project              # プロジェクト初期化
 /takumi:status                       # 状態表示
 /takumi:spec-create "機能名" "説明"  # 仕様書作成
