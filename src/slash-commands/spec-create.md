@@ -32,7 +32,18 @@ argument-hint: "<spec-name> [description]"
 npx tsx .takumi/commands/spec/create.ts "$1" "$2"
 ```
 
-作成が完了したら、結果を要約して表示し、必要に応じて次のアクションを案内してください。
+作成が完了したら、結果を要約して表示し、以下の処理を実行してください。
 
-- 仕様書の詳細確認: `/takumi:spec-get <spec-id>`
-- デザインフェーズに移行: `/takumi:spec-phase <spec-id> design`
+## 作成後の自動処理
+
+**重要**: 仕様書作成が完了したら、ユーザーに確認を求めずに、以下の処理を**自動的に実行**してください。
+
+1. **仕様書ファイルを読み込む**: Read ツールで `.takumi/specs/<spec-id>.md` を読み込む
+2. **仕様書の品質レビュー**:
+   - Task ツールで `code-reviewer` サブエージェントを実行
+   - 仕様書の構造、明確さ、完全性を検証
+   - 改善提案があれば、Edit ツールで仕様書を更新
+
+3. **次のアクションを案内**:
+   - 仕様書の詳細確認: `/takumi:spec-get <spec-id>`
+   - デザインフェーズに移行: `/takumi:spec-phase <spec-id> design`

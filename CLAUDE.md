@@ -290,6 +290,114 @@ await eventBus.emit(
 - `/takumi:knowledge-error <spec-id> <error> <solution>` - エラー解決策記録
 - `/takumi:knowledge-tip <spec-id> <category> <tip>` - Tips 記録
 
+**品質チェック:**
+
+- `/takumi:code-review [file-pattern]` - code-reviewer サブエージェントでコードレビュー
+- `/takumi:test-generate <file-pattern>` - test-generator サブエージェントでテスト自動生成
+- `/takumi:lint-check` - typescript-eslint スキルで型エラー・ESLint チェック
+- `/takumi:schema-validate` - database-schema-validator スキルでスキーマ検証
+- `/takumi:refactor [file-pattern]` - refactoring-assistant サブエージェントでリファクタリング
+
+### サブエージェントとスキルの使用方針
+
+Takumi は、コード品質を保証するために、サブエージェントとスキルを積極的に活用します。
+
+#### 利用可能なサブエージェント
+
+1. **code-reviewer** (`.claude/agents/code-reviewer.md`)
+   - **用途**: コード品質、セキュリティ、ベストプラクティスの検証
+   - **呼び出し方法**: Task ツールで `code-reviewer` サブエージェントを実行
+   - **自動実行タイミング**:
+     - 実装完了後（completed フェーズ移行前）
+     - `/takumi:code-review` コマンド実行時
+
+2. **test-generator** (`.claude/agents/test-generator.md`)
+   - **用途**: 単体テストの自動生成（正常系、エッジケース、エラーケース）
+   - **呼び出し方法**: Task ツールで `test-generator` サブエージェントを実行
+   - **自動実行タイミング**:
+     - 実装タスク完了後
+     - `/takumi:test-generate` コマンド実行時
+
+3. **refactoring-assistant** (`.claude/agents/refactoring-assistant.md`)
+   - **用途**: コード構造改善、パフォーマンス最適化
+   - **呼び出し方法**: Task ツールで `refactoring-assistant` サブエージェントを実行
+   - **自動実行タイミング**:
+     - `/takumi:refactor` コマンド実行時
+
+#### 利用可能なスキル
+
+1. **typescript-eslint** (`.claude/skills/typescript-eslint/SKILL.md`)
+   - **用途**: TypeScript コンパイルエラー・ESLint 警告の検出
+   - **呼び出し方法**: Skill ツールで `typescript-eslint` スキルを実行
+   - **自動実行タイミング**:
+     - implementation フェーズ開始前
+     - `/takumi:lint-check` コマンド実行時
+
+2. **database-schema-validator** (`.claude/skills/database-schema-validator/SKILL.md`)
+   - **用途**: Kysely スキーマとマイグレーションの検証
+   - **呼び出し方法**: Skill ツールで `database-schema-validator` スキルを実行
+   - **自動実行タイミング**:
+     - データベーススキーマ変更後
+     - `/takumi:schema-validate` コマンド実行時
+
+3. **git-operations** (`.claude/skills/git-operations/SKILL.md`)
+   - **用途**: Git リポジトリ管理、コミット履歴解析
+   - **呼び出し方法**: Skill ツールで `git-operations` スキルを実行
+   - **自動実行タイミング**:
+     - completed フェーズ移行時の変更差分確認
+
+#### サブエージェント/スキルの明示的な呼び出し方法
+
+スラッシュコマンド実行時、Claude は以下のパターンでサブエージェント/スキルを呼び出します。
+
+**Task ツールによるサブエージェント呼び出し:**
+
+```text
+Task ツールで `code-reviewer` サブエージェントを実行し、対象ファイルのコード品質を検証してください。
+```
+
+**Skill ツールによるスキル呼び出し:**
+
+```text
+Skill ツールで `typescript-eslint` スキルを実行し、型エラーと ESLint 警告をチェックしてください。
+```
+
+#### 自動実行が推奨されるタイミング
+
+| タイミング | サブエージェント/スキル | 目的 |
+|---|---|---|
+| **implementation フェーズ開始前** | `typescript-eslint` スキル | 既存コードの型エラーチェック |
+| **実装タスク完了後** | `test-generator` サブエージェント | テスト自動生成 |
+| **実装タスク完了後** | `code-reviewer` サブエージェント | コード品質検証 |
+| **completed フェーズ移行前** | `code-reviewer` サブエージェント | 最終コードレビュー |
+| **completed フェーズ移行前** | `git-operations` スキル | 変更差分確認 |
+| **データベーススキーマ変更後** | `database-schema-validator` スキル | スキーマ整合性検証 |
+
+#### 品質チェックワークフローの例
+
+**実装フェーズの標準フロー:**
+
+1. **実装開始前**: `typescript-eslint` スキルで既存コードをチェック
+2. **実装中**: 各タスク完了後、`test-generator` でテスト生成、`code-reviewer` でレビュー
+3. **実装完了後**: `code-reviewer` で最終レビュー、`git-operations` で変更差分確認
+4. **completed フェーズ移行**: Git 自動コミット実行
+
+**明示的な品質チェック:**
+
+```bash
+# 実装開始前の準備
+/takumi:lint-check
+
+# 実装中のテスト生成
+/takumi:test-generate "src/commands/quality/**/*.ts"
+
+# 実装完了後のコードレビュー
+/takumi:code-review "src/commands/quality/**/*.ts"
+
+# データベーススキーマ変更後の検証
+/takumi:schema-validate
+```
+
 ### 依存性注入（DI）
 
 TSyringe による DI コンテナを使用しています。新しいサービスクラスを追加する場合は、以下のパターンに従ってください。
