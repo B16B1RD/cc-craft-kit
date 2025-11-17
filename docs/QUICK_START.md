@@ -251,7 +251,6 @@ npm run db:migrate
 
 ## さらに学ぶ
 
-- [MCP からの移行ガイド](./MIGRATION_FROM_MCP.md)
 - [テンプレートカスタマイズガイド](./TEMPLATES.md)
 - [アーキテクチャドキュメント](./ARCHITECTURE.md)
 

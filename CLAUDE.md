@@ -664,5 +664,4 @@ npm run migrate:structure
 ## 参考ドキュメント
 
 - [ARCHITECTURE.md](./docs/ARCHITECTURE.md) - 詳細なアーキテクチャ設計
-- [MIGRATION_FROM_MCP.md](./docs/MIGRATION_FROM_MCP.md) - MCP からの移行ガイド
 - [QUICK_START.md](./docs/QUICK_START.md) - クイックスタートガイド
