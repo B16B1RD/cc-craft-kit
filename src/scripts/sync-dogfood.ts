@@ -176,10 +176,10 @@ export async function syncSlashCommands(options: SyncOptions = {}): Promise<Sync
 
   try {
     if (verbose) {
-      console.log('🔄 Syncing .claude/commands/takumi/ to .takumi/slash-commands/...\n');
+      console.log('🔄 Syncing src/slash-commands/ to .takumi/slash-commands/...\n');
     }
 
-    const sourceDir = path.join(baseDir, '.claude', 'commands', 'takumi');
+    const sourceDir = path.join(baseDir, 'src', 'slash-commands');
     const destDir = path.join(baseDir, '.takumi', 'slash-commands');
 
     // ソースディレクトリが存在しない場合はスキップ
@@ -187,7 +187,7 @@ export async function syncSlashCommands(options: SyncOptions = {}): Promise<Sync
       await fs.access(sourceDir);
     } catch {
       if (verbose) {
-        console.log('⚠️  .claude/commands/takumi/ does not exist, skipping...\n');
+        console.log('⚠️  src/slash-commands/ does not exist, skipping...\n');
       }
       return result;
     }
