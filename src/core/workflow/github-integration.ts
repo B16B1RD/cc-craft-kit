@@ -466,7 +466,7 @@ ${data.content}
     }
   });
 
-  // spec.updated → GitHub Issue コメント追加
+  // spec.updated → GitHub Issue 本文更新 + コメント追加
   eventBus.on('spec.updated', async (event: WorkflowEvent) => {
     try {
       const githubToken = process.env.GITHUB_TOKEN;
@@ -492,13 +492,34 @@ ${data.content}
         return;
       }
 
+      // 仕様書ファイルを読み込む
+      const specPath = join(takumiDir, 'specs', `${spec.id}.md`);
+      if (!existsSync(specPath)) {
+        console.warn(`Warning: Spec file not found: ${specPath}`);
+        return;
+      }
+
+      const specContent = readFileSync(specPath, 'utf-8');
+
       const client = new GitHubClient({ token: githubToken });
       const issues = new GitHubIssues(client);
 
-      // 仕様書更新をコメントで記録（本文は更新しない）
+      // Issue 本文を仕様書の最新内容で更新
+      try {
+        await issues.update({
+          owner: githubConfig.owner,
+          repo: githubConfig.repo,
+          issueNumber: spec.github_issue_id,
+          body: specContent,
+        });
+      } catch (updateError) {
+        console.warn('Warning: Failed to update issue body:', updateError);
+      }
+
+      // 仕様書更新をコメントで記録
       const updateComment = `## 📝 仕様書更新
 
-仕様書が更新されました。
+仕様書が更新されました。Issue 本文を最新の内容で更新しました。
 
 **更新日時:** ${new Date().toLocaleString('ja-JP')}
 **最新の仕様書:** [\`.takumi/specs/${spec.id}.md\`](../../.takumi/specs/${spec.id}.md)
