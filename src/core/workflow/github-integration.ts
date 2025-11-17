@@ -264,6 +264,33 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
         }
 
         // ========== ここまで新規追加 ==========
+
+        // completed フェーズで Issue をクローズ
+        if (event.data.newPhase === 'completed') {
+          try {
+            const closeComment = `## ✅ 実装完了
+
+この仕様書の実装が完了しました。
+
+**完了日時:** ${new Date().toLocaleString('ja-JP')}
+**最終フェーズ:** completed
+**仕様書:** [\`.takumi/specs/${spec.id}.md\`](../../.takumi/specs/${spec.id}.md)
+`;
+
+            await issues.addComment(
+              githubConfig.owner,
+              githubConfig.repo,
+              spec.github_issue_id,
+              closeComment
+            );
+
+            await issues.close(githubConfig.owner, githubConfig.repo, spec.github_issue_id);
+
+            console.log(`✓ GitHub Issue #${spec.github_issue_id} closed automatically`);
+          } catch (closeError) {
+            console.warn('Warning: Failed to close GitHub issue:', closeError);
+          }
+        }
       } catch (error) {
         console.error('Warning: Failed to update GitHub issue labels:', error);
       }

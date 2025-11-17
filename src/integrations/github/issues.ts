@@ -141,6 +141,18 @@ export class GitHubIssues {
   }
 
   /**
+   * Issue クローズ
+   */
+  async close(owner: string, repo: string, issueNumber: number): Promise<IssueResponse> {
+    return this.update({
+      owner,
+      repo,
+      issueNumber,
+      state: 'closed',
+    });
+  }
+
+  /**
    * Issue コメント追加
    */
   async addComment(
