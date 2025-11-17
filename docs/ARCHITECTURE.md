@@ -19,9 +19,9 @@ Takumi は**モジュラーモノリス**パターンを採用した、拡張可
 │           └──────────────────┴─────────────────┘          │
 │                              │                            │
 └──────────────────────────────┼────────────────────────────┘
-                               │ Shell Command
+                               │ Slash Command
 ┌──────────────────────────────┼────────────────────────────┐
-│                      Takumi CLI                           │
+│                  Takumi Slash Commands                    │
 │  ┌─────────────────────────────────────────────────────┐  │
 │  │              Core Modules (Modular Monolith)        │  │
 │  │  ┌────────────┐  ┌────────────┐  ┌─────────────┐    │  │
@@ -38,11 +38,11 @@ Takumi は**モジュラーモノリス**パターンを採用した、拡張可
 │  └─────────────────────────────────────────────────────┘  │
 │                                                           │
 │  ┌─────────────────────────────────────────────────────┐  │
-│  │           CLI Commands                              │  │
-│  │  • takumi init                                      │  │
-│  │  • takumi spec create/list/get/phase                │  │
-│  │  • takumi github init/issue/sync/project            │  │
-│  │  • takumi knowledge progress/error/tip              │  │
+│  │           Slash Commands                            │  │
+│  │  • /takumi:init                                     │  │
+│  │  • /takumi:spec-create/list/get/phase               │  │
+│  │  • /takumi:github-init/issue-create/sync/project-add│  │
+│  │  • /takumi:knowledge-progress/error/tip             │  │
 │  └─────────────────────────────────────────────────────┘  │
 └───────────────────────────────────────────────────────────┘
                               │
@@ -57,18 +57,21 @@ Takumi は**モジュラーモノリス**パターンを採用した、拡張可
 
 ## コアコンポーネント
 
-### 1. CLI Interface
+### 1. Slash Command Interface
 
-CLI は、Claude Code と Takumi の中核機能を橋渡しします。
+スラッシュコマンドは、Claude Code と Takumi の中核機能を橋渡しします。
 
 **責務:**
 
-- CLI コマンドのルーティング
+- スラッシュコマンドから対応するコマンドファイルの実行
 - 引数パース・バリデーション
 - エラーハンドリング
 - 出力フォーマッティング
 
-**実装:** `src/cli/index.ts`
+**実装:**
+- スラッシュコマンド定義: `src/slash-commands/*.md`
+- コマンド実装: `src/commands/*.ts`
+- 実行環境: `.takumi/commands/` (ドッグフーディング用)
 
 ### 2. Database Layer
 
@@ -155,18 +158,19 @@ interface TakumiPlugin {
 ### 1. 仕様書作成フロー
 
 ```text
-1. User: CLI コマンド実行 (takumi spec create)
+1. User: スラッシュコマンド実行 (/takumi:spec-create "機能名" "説明")
    ↓
-2. CLI: コマンドルーティング
+2. Slash Command: .takumi/commands/spec/create.ts を npx tsx で実行
    ↓
 3. spec/create.ts: 引数バリデーション
    ↓
 4. Database: specs テーブルへ INSERT
    ↓
-5. Event Bus: 'spec:created' イベント発火
+5. Event Bus: 'spec.created' イベント発火
    ↓
 6. Listeners:
-   - GitHub Client: Issue 作成
+   - GitHub Client: Issue 自動作成（設定があればProject追加）
+   - Git Integration: 仕様書ファイルを自動コミット
    - Logger: ログ記録
    ↓
 7. Response: 成功メッセージ出力

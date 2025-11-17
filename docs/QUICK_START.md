@@ -70,16 +70,17 @@ Organization の Projects を使用する場合のみ、Fine-grained PAT が利�
 
 > **注意**: Fine-grained PAT は個人アカウントの Projects v2 には対応していません（2025年1月時点）。個人アカウントで Projects を使用する場合は、必ず Classic PAT を使用してください。
 
-## ステップ3: グローバルインストール (オプション)
+## ステップ3: ドッグフーディング環境のセットアップ
 
-takumi コマンドをグローバルに利用可能にします。
+Takumi 自身を使って開発するため、`.takumi/` ディレクトリに同期します。
 
 ```bash
-# グローバルリンク (開発時)
-npm link
+# ビルド + 同期
+npm run build:dogfood
 
-# または npm インストール (公開後)
-npm install -g takumi
+# または個別に実行
+npm run build
+npm run sync:dogfood
 ```
 
 ## ステップ4: プロジェクト初期化
@@ -98,15 +99,7 @@ Claude Code CLI 内で、Takumi プロジェクトを初期化します。
 
 ## ステップ5: 最初の仕様書作成
 
-新しい仕様書を作成します。
-
-### CLI コマンド使用
-
-```bash
-takumi spec create "ユーザー認証機能" "メール/パスワード認証とOAuth2.0対応"
-```
-
-### Claude Code スラッシュコマンド使用
+新しい仕様書を作成します。Claude Code でスラッシュコマンドを使用します。
 
 ```bash
 /takumi:spec-create "ユーザー認証機能" "メール/パスワード認証とOAuth2.0対応"
@@ -126,14 +119,6 @@ Claude Code が以下の質問をします。
 
 作成した仕様書を確認します。
 
-### CLI コマンド
-
-```bash
-takumi spec list
-```
-
-### スラッシュコマンド
-
 ```bash
 /takumi:spec-list
 ```
@@ -141,21 +126,12 @@ takumi spec list
 フェーズでフィルタリングも可能です。
 
 ```bash
-takumi spec list requirements
 /takumi:spec-list requirements
 ```
 
 ## ステップ7: プロジェクト状況確認
 
 プロジェクト全体の状況を確認します。
-
-### CLI コマンド
-
-```bash
-takumi status
-```
-
-### スラッシュコマンド
 
 ```bash
 /takumi:status
@@ -186,12 +162,6 @@ GitHub 統合機能を使用して、以下が自動化されます。
 4. **進捗管理**: Issue コメントに進捗、エラー解決策、Tips を記録してナレッジベース化
 
 #### GitHub 統合の初期化
-
-```bash
-takumi github init <owner> <repo>
-```
-
-または
 
 ```bash
 /takumi:github-init <owner> <repo>
@@ -243,14 +213,14 @@ Takumi では、以下の 3 つのビューを推奨しています:
 
 ## トラブルシューティング
 
-### CLI が起動しない
+### ビルドエラー
 
 ```bash
-# ビルドを確認
+# TypeScriptのビルドを確認
 npm run build
 
-# CLI を直接起動してエラー確認
-npm run dev
+# エラーの詳細を確認
+npm run typecheck
 ```
 
 ### データベースエラー
@@ -263,19 +233,17 @@ npm run db:migrate
 
 ### スラッシュコマンドが認識されない
 
-1. `.claude/commands/takumi/` ディレクトリが存在するか確認
-2. カスタムスラッシュコマンドファイル (*.md) が正しく配置されているか確認
-3. Claude Code を再起動
-
-### コマンドが見つからないエラー
-
-グローバルインストールを行ってください。
-
-```bash
-npm link
-# または
-npm install -g takumi
-```
+1. `.claude/commands/takumi/` が `src/slash-commands/` へのシンボリックリンクになっているか確認
+   ```bash
+   ls -la .claude/commands/takumi
+   ```
+2. `src/slash-commands/` に `.md` ファイルが存在するか確認
+3. `.takumi/commands/` に TypeScript ファイルが同期されているか確認
+   ```bash
+   npm run check:sync
+   npm run sync:dogfood
+   ```
+4. Claude Code を再起動
 
 ## さらに学ぶ
 
