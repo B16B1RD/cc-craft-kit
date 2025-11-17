@@ -13,6 +13,9 @@ export type WorkflowEventType =
   | 'task.completed'
   | 'github.issue_created'
   | 'github.issue_updated'
+  | 'knowledge.progress_recorded'
+  | 'knowledge.error_recorded'
+  | 'knowledge.tip_recorded'
   | 'subagent.started'
   | 'subagent.completed'
   | 'subagent.failed'
@@ -34,6 +37,32 @@ export interface WorkflowEvent<T = unknown> {
  * イベントハンドラー
  */
 export type EventHandler<T = unknown> = (event: WorkflowEvent<T>) => Promise<void> | void;
+
+/**
+ * ナレッジベースイベントデータ型
+ */
+
+/** 進捗記録イベント */
+export interface ProgressRecordedData {
+  message: string;
+  details?: string;
+  timestamp: string;
+}
+
+/** エラー記録イベント */
+export interface ErrorRecordedData {
+  errorDescription: string;
+  solution: string;
+  timestamp: string;
+}
+
+/** Tips記録イベント */
+export interface TipRecordedData {
+  category: string;
+  title: string;
+  content: string;
+  timestamp: string;
+}
 
 /**
  * イベントバス実装

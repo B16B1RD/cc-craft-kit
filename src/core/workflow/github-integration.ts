@@ -297,6 +297,173 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
     }
   );
 
+  // knowledge.progress_recorded → GitHub Issue コメント追加
+  eventBus.on('knowledge.progress_recorded', async (event: WorkflowEvent) => {
+    try {
+      const githubToken = process.env.GITHUB_TOKEN;
+      if (!githubToken) {
+        return;
+      }
+
+      const cwd = process.cwd();
+      const takumiDir = join(cwd, '.takumi');
+      const githubConfig = getGitHubConfig(takumiDir);
+
+      if (!githubConfig) {
+        return;
+      }
+
+      const spec = await db
+        .selectFrom('specs')
+        .where('id', '=', event.specId)
+        .selectAll()
+        .executeTakeFirst();
+
+      if (!spec || !spec.github_issue_id) {
+        return;
+      }
+
+      const client = new GitHubClient({ token: githubToken });
+      const issues = new GitHubIssues(client);
+
+      const data = event.data as { message: string; timestamp: string };
+      const comment = `## 📊 進捗記録
+
+${data.message}
+
+**記録日時:** ${new Date(data.timestamp).toLocaleString('ja-JP')}
+`;
+
+      try {
+        await issues.addComment(
+          githubConfig.owner,
+          githubConfig.repo,
+          spec.github_issue_id,
+          comment
+        );
+      } catch (commentError) {
+        console.warn('Warning: Failed to add progress comment:', commentError);
+      }
+    } catch (error) {
+      console.error('Warning: Failed to handle knowledge.progress_recorded event:', error);
+    }
+  });
+
+  // knowledge.error_recorded → GitHub Issue コメント追加
+  eventBus.on('knowledge.error_recorded', async (event: WorkflowEvent) => {
+    try {
+      const githubToken = process.env.GITHUB_TOKEN;
+      if (!githubToken) {
+        return;
+      }
+
+      const cwd = process.cwd();
+      const takumiDir = join(cwd, '.takumi');
+      const githubConfig = getGitHubConfig(takumiDir);
+
+      if (!githubConfig) {
+        return;
+      }
+
+      const spec = await db
+        .selectFrom('specs')
+        .where('id', '=', event.specId)
+        .selectAll()
+        .executeTakeFirst();
+
+      if (!spec || !spec.github_issue_id) {
+        return;
+      }
+
+      const client = new GitHubClient({ token: githubToken });
+      const issues = new GitHubIssues(client);
+
+      const data = event.data as { errorDescription: string; solution: string; timestamp: string };
+      const comment = `## 🐛 エラー解決策
+
+**エラー内容:**
+${data.errorDescription}
+
+**解決策:**
+${data.solution}
+
+**記録日時:** ${new Date(data.timestamp).toLocaleString('ja-JP')}
+`;
+
+      try {
+        await issues.addComment(
+          githubConfig.owner,
+          githubConfig.repo,
+          spec.github_issue_id,
+          comment
+        );
+      } catch (commentError) {
+        console.warn('Warning: Failed to add error solution comment:', commentError);
+      }
+    } catch (error) {
+      console.error('Warning: Failed to handle knowledge.error_recorded event:', error);
+    }
+  });
+
+  // knowledge.tip_recorded → GitHub Issue コメント追加
+  eventBus.on('knowledge.tip_recorded', async (event: WorkflowEvent) => {
+    try {
+      const githubToken = process.env.GITHUB_TOKEN;
+      if (!githubToken) {
+        return;
+      }
+
+      const cwd = process.cwd();
+      const takumiDir = join(cwd, '.takumi');
+      const githubConfig = getGitHubConfig(takumiDir);
+
+      if (!githubConfig) {
+        return;
+      }
+
+      const spec = await db
+        .selectFrom('specs')
+        .where('id', '=', event.specId)
+        .selectAll()
+        .executeTakeFirst();
+
+      if (!spec || !spec.github_issue_id) {
+        return;
+      }
+
+      const client = new GitHubClient({ token: githubToken });
+      const issues = new GitHubIssues(client);
+
+      const data = event.data as {
+        category: string;
+        title: string;
+        content: string;
+        timestamp: string;
+      };
+      const comment = `## 💡 Tips: ${data.category}
+
+**${data.title}**
+
+${data.content}
+
+**記録日時:** ${new Date(data.timestamp).toLocaleString('ja-JP')}
+`;
+
+      try {
+        await issues.addComment(
+          githubConfig.owner,
+          githubConfig.repo,
+          spec.github_issue_id,
+          comment
+        );
+      } catch (commentError) {
+        console.warn('Warning: Failed to add tip comment:', commentError);
+      }
+    } catch (error) {
+      console.error('Warning: Failed to handle knowledge.tip_recorded event:', error);
+    }
+  });
+
   // spec.updated → GitHub Issue コメント追加
   eventBus.on('spec.updated', async (event: WorkflowEvent) => {
     try {

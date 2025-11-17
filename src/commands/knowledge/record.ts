@@ -5,9 +5,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDatabase } from '../../core/database/connection.js';
-import { GitHubClient } from '../../integrations/github/client.js';
-import { GitHubIssues } from '../../integrations/github/issues.js';
-import { GitHubKnowledgeBase } from '../../integrations/github/knowledge-base.js';
+import { getEventBusAsync } from '../../core/workflow/event-bus.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
 import {
   createProjectNotInitializedError,
@@ -94,29 +92,24 @@ export async function recordProgress(
   console.log(formatKeyValue('GitHub Issue', `#${spec.github_issue_id}`, options.color));
   console.log('');
 
-  // GitHub APIクライアント作成
-  const client = new GitHubClient({ token: githubToken });
-  const issues = new GitHubIssues(client);
-  const knowledgeBase = new GitHubKnowledgeBase(db, issues);
-
+  // イベント発火
   try {
     console.log(formatInfo('Recording progress to GitHub Issue...', options.color));
-    const commentId = await knowledgeBase.recordProgress({
-      specId: spec.id,
-      owner: githubConfig.owner,
-      repo: githubConfig.repo,
-      summary: message,
-      details: message,
-    });
+    const eventBus = await getEventBusAsync();
+    await eventBus.emit(
+      eventBus.createEvent('knowledge.progress_recorded', spec.id, {
+        message,
+        timestamp: new Date().toISOString(),
+      })
+    );
 
     console.log('');
     console.log(formatSuccess('Progress recorded successfully!', options.color));
     console.log('');
-    console.log(formatKeyValue('Comment ID', commentId, options.color));
     console.log(
       formatKeyValue(
         'URL',
-        `https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/${spec.github_issue_id}#issuecomment-${commentId}`,
+        `https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/${spec.github_issue_id}`,
         options.color
       )
     );
@@ -188,29 +181,25 @@ export async function recordErrorSolution(
   console.log(formatKeyValue('GitHub Issue', `#${spec.github_issue_id}`, options.color));
   console.log('');
 
-  // GitHub APIクライアント作成
-  const client = new GitHubClient({ token: githubToken });
-  const issues = new GitHubIssues(client);
-  const knowledgeBase = new GitHubKnowledgeBase(db, issues);
-
+  // イベント発火
   try {
     console.log(formatInfo('Recording error solution to GitHub Issue...', options.color));
-    const commentId = await knowledgeBase.recordErrorSolution({
-      specId: spec.id,
-      owner: githubConfig.owner,
-      repo: githubConfig.repo,
-      errorDescription,
-      solution,
-    });
+    const eventBus = await getEventBusAsync();
+    await eventBus.emit(
+      eventBus.createEvent('knowledge.error_recorded', spec.id, {
+        errorDescription,
+        solution,
+        timestamp: new Date().toISOString(),
+      })
+    );
 
     console.log('');
     console.log(formatSuccess('Error solution recorded successfully!', options.color));
     console.log('');
-    console.log(formatKeyValue('Comment ID', commentId, options.color));
     console.log(
       formatKeyValue(
         'URL',
-        `https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/${spec.github_issue_id}#issuecomment-${commentId}`,
+        `https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/${spec.github_issue_id}`,
         options.color
       )
     );
@@ -283,30 +272,26 @@ export async function recordTip(
   console.log(formatKeyValue('Category', category, options.color));
   console.log('');
 
-  // GitHub APIクライアント作成
-  const client = new GitHubClient({ token: githubToken });
-  const issues = new GitHubIssues(client);
-  const knowledgeBase = new GitHubKnowledgeBase(db, issues);
-
+  // イベント発火
   try {
     console.log(formatInfo('Recording tip to GitHub Issue...', options.color));
-    const commentId = await knowledgeBase.recordTip({
-      specId: spec.id,
-      owner: githubConfig.owner,
-      repo: githubConfig.repo,
-      title: category,
-      content,
-      category,
-    });
+    const eventBus = await getEventBusAsync();
+    await eventBus.emit(
+      eventBus.createEvent('knowledge.tip_recorded', spec.id, {
+        category,
+        title: category,
+        content,
+        timestamp: new Date().toISOString(),
+      })
+    );
 
     console.log('');
     console.log(formatSuccess('Tip recorded successfully!', options.color));
     console.log('');
-    console.log(formatKeyValue('Comment ID', commentId, options.color));
     console.log(
       formatKeyValue(
         'URL',
-        `https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/${spec.github_issue_id}#issuecomment-${commentId}`,
+        `https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/${spec.github_issue_id}`,
         options.color
       )
     );
