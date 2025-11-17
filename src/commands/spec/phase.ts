@@ -143,3 +143,20 @@ export async function updateSpecPhase(
       break;
   }
 }
+
+// CLI エントリポイント
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const specId = process.argv[2];
+  const phase = process.argv[3];
+
+  if (!specId || !phase) {
+    console.error('Error: spec-id and phase are required');
+    console.error('Usage: npx tsx phase.ts <spec-id> <phase>');
+    process.exit(1);
+  }
+
+  updateSpecPhase(specId, phase).catch((error) => {
+    console.error('Error:', error.message);
+    process.exit(1);
+  });
+}

@@ -151,3 +151,20 @@ export async function addSpecToProject(
     throw error;
   }
 }
+
+// CLI エントリポイント
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const specId = process.argv[2];
+  const projectId = process.argv[3];
+
+  if (!specId || !projectId) {
+    console.error('Error: spec-id and project-id are required');
+    console.error('Usage: npx tsx project-add.ts <spec-id> <project-id>');
+    process.exit(1);
+  }
+
+  addSpecToProject(specId, projectId).catch((error) => {
+    console.error('Error:', error.message);
+    process.exit(1);
+  });
+}

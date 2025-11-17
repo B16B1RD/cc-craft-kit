@@ -81,3 +81,13 @@ export async function initProject(
   console.log('  2. Configure GitHub: /takumi:github-init <owner> <repo>');
   console.log('  3. Check status: /takumi:status');
 }
+
+// CLI エントリポイント
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const projectName = process.argv[2];
+
+  initProject(projectName).catch((error) => {
+    console.error('Error:', error.message);
+    process.exit(1);
+  });
+}

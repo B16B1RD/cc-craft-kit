@@ -8,10 +8,7 @@ import { join } from 'node:path';
 import { getDatabase } from '../../core/database/connection.js';
 import { getEventBus } from '../../core/workflow/event-bus.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
-import {
-  createProjectNotInitializedError,
-  createValidationError,
-} from '../utils/error-handler.js';
+import { createProjectNotInitializedError, createValidationError } from '../utils/error-handler.js';
 import { validateRequired } from '../utils/validation.js';
 
 /**
@@ -171,4 +168,21 @@ export async function createSpec(
   console.log('  1. Edit the spec file to define requirements');
   console.log('  2. View the spec: /takumi:spec-get ' + id.substring(0, 8));
   console.log('  3. Move to design phase: /takumi:spec-phase ' + id.substring(0, 8) + ' design');
+}
+
+// CLI エントリポイント
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const name = process.argv[2];
+  const description = process.argv[3];
+
+  if (!name) {
+    console.error('Error: spec-name is required');
+    console.error('Usage: npx tsx create.ts <spec-name> [description]');
+    process.exit(1);
+  }
+
+  createSpec(name, description).catch((error) => {
+    console.error('Error:', error.message);
+    process.exit(1);
+  });
 }

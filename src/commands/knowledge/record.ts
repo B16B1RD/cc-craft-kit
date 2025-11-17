@@ -318,3 +318,55 @@ export async function recordTip(
     throw error;
   }
 }
+
+// CLI エントリポイント
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const command = process.argv[2];
+  const specId = process.argv[3];
+
+  if (!command || !specId) {
+    console.error('Error: command and spec-id are required');
+    console.error('Usage:');
+    console.error('  npx tsx record.ts progress <spec-id> <message>');
+    console.error('  npx tsx record.ts error <spec-id> <error> <solution>');
+    console.error('  npx tsx record.ts tip <spec-id> <category> <tip>');
+    process.exit(1);
+  }
+
+  if (command === 'progress') {
+    const message = process.argv.slice(4).join(' ');
+    if (!message) {
+      console.error('Error: message is required');
+      process.exit(1);
+    }
+    recordProgress(specId, message).catch((error) => {
+      console.error('Error:', error.message);
+      process.exit(1);
+    });
+  } else if (command === 'error') {
+    const errorMsg = process.argv[4];
+    const solution = process.argv.slice(5).join(' ');
+    if (!errorMsg || !solution) {
+      console.error('Error: error and solution are required');
+      process.exit(1);
+    }
+    recordErrorSolution(specId, errorMsg, solution).catch((error) => {
+      console.error('Error:', error.message);
+      process.exit(1);
+    });
+  } else if (command === 'tip') {
+    const category = process.argv[4];
+    const tip = process.argv.slice(5).join(' ');
+    if (!category || !tip) {
+      console.error('Error: category and tip are required');
+      process.exit(1);
+    }
+    recordTip(specId, category, tip).catch((error) => {
+      console.error('Error:', error.message);
+      process.exit(1);
+    });
+  } else {
+    console.error('Error: command must be "progress", "error", or "tip"');
+    process.exit(1);
+  }
+}

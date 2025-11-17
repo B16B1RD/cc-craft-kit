@@ -115,3 +115,20 @@ export async function initGitHub(
     throw createGitHubNotConfiguredError();
   }
 }
+
+// CLI エントリポイント
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const owner = process.argv[2];
+  const repo = process.argv[3];
+
+  if (!owner || !repo) {
+    console.error('Error: owner and repo are required');
+    console.error('Usage: npx tsx init.ts <owner> <repo>');
+    process.exit(1);
+  }
+
+  initGitHub(owner, repo).catch((error) => {
+    console.error('Error:', error.message);
+    process.exit(1);
+  });
+}

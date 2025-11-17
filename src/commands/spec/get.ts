@@ -87,3 +87,19 @@ export async function getSpec(
     console.log(`  • Create GitHub issue: /takumi:github-issue-create ${spec.id.substring(0, 8)}`);
   }
 }
+
+// CLI エントリポイント
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const specId = process.argv[2];
+
+  if (!specId) {
+    console.error('Error: spec-id is required');
+    console.error('Usage: npx tsx get.ts <spec-id>');
+    process.exit(1);
+  }
+
+  getSpec(specId).catch((error) => {
+    console.error('Error:', error.message);
+    process.exit(1);
+  });
+}

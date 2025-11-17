@@ -220,3 +220,30 @@ export async function syncFromGitHub(
     throw error;
   }
 }
+
+// CLI エントリポイント
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const direction = process.argv[2];
+  const specId = process.argv[3];
+
+  if (!direction || !specId) {
+    console.error('Error: direction and spec-id are required');
+    console.error('Usage: npx tsx sync.ts <to-github|from-github> <spec-id>');
+    process.exit(1);
+  }
+
+  if (direction === 'to-github') {
+    syncToGitHub(specId).catch((error) => {
+      console.error('Error:', error.message);
+      process.exit(1);
+    });
+  } else if (direction === 'from-github') {
+    syncFromGitHub(specId).catch((error) => {
+      console.error('Error:', error.message);
+      process.exit(1);
+    });
+  } else {
+    console.error('Error: direction must be "to-github" or "from-github"');
+    process.exit(1);
+  }
+}

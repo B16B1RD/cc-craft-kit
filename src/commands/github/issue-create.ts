@@ -176,3 +176,19 @@ export async function createGitHubIssue(
     throw error;
   }
 }
+
+// CLI エントリポイント
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const specId = process.argv[2];
+
+  if (!specId) {
+    console.error('Error: spec-id is required');
+    console.error('Usage: npx tsx issue-create.ts <spec-id>');
+    process.exit(1);
+  }
+
+  createGitHubIssue(specId).catch((error) => {
+    console.error('Error:', error.message);
+    process.exit(1);
+  });
+}
