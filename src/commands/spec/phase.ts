@@ -5,7 +5,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDatabase } from '../../core/database/connection.js';
-import { getEventBus } from '../../core/workflow/event-bus.js';
+import { getEventBusAsync } from '../../core/workflow/event-bus.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
 import {
   createProjectNotInitializedError,
@@ -89,7 +89,7 @@ export async function updateSpecPhase(
   }
 
   // イベント発火（GitHub統合のため）
-  const eventBus = getEventBus();
+  const eventBus = await getEventBusAsync();
   await eventBus.emit(
     eventBus.createEvent('spec.phase_changed', spec.id, {
       oldPhase: spec.phase,

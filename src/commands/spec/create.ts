@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDatabase } from '../../core/database/connection.js';
-import { getEventBus } from '../../core/workflow/event-bus.js';
+import { getEventBusAsync } from '../../core/workflow/event-bus.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
 import { createProjectNotInitializedError, createValidationError } from '../utils/error-handler.js';
 import { validateRequired } from '../utils/validation.js';
@@ -147,7 +147,7 @@ export async function createSpec(
   // Note: content カラムはスキーマに存在しないため、ファイルのみに保存
 
   // spec.created イベントを発行
-  const eventBus = getEventBus();
+  const eventBus = await getEventBusAsync();
   await eventBus.emit(
     eventBus.createEvent('spec.created', id, {
       name,
