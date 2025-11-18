@@ -9,15 +9,15 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase } from '../.takumi/core/database/connection.js';
+import { getDatabase } from '../.cc-craft-kit/core/database/connection.js';
 
 interface GitHubConfig {
   owner: string;
   repo: string;
 }
 
-function getGitHubConfig(takumiDir: string): GitHubConfig | null {
-  const configPath = join(takumiDir, 'config.json');
+function getGitHubConfig(ccCraftKitDir: string): GitHubConfig | null {
+  const configPath = join(ccCraftKitDir, 'config.json');
   if (!existsSync(configPath)) {
     return null;
   }
@@ -72,12 +72,12 @@ async function fetchGitHubIssue(
 
 async function main() {
   const cwd = process.cwd();
-  const takumiDir = join(cwd, '.takumi');
+  const ccCraftKitDir = join(cwd, '.cc-craft-kit');
 
   console.log('=== GitHub Sync Verification ===\n');
 
   // GitHub設定チェック
-  const githubConfig = getGitHubConfig(takumiDir);
+  const githubConfig = getGitHubConfig(ccCraftKitDir);
   if (!githubConfig) {
     console.error('Error: GitHub not configured');
     process.exit(1);
@@ -209,15 +209,15 @@ async function main() {
 
       console.log('=== Recommended Actions ===\n');
       console.log('For each issue with STATE_MISMATCH:');
-      console.log('  - If spec phase is "completed", run: /takumi:github-sync to-github <spec-id>');
+      console.log('  - If spec phase is "completed", run: /cft:github-sync to-github <spec-id>');
       console.log('  - Or manually close the issue on GitHub\n');
 
       console.log('For each issue with LABEL_MISMATCH:');
-      console.log('  - Run: /takumi:github-sync to-github <spec-id>');
+      console.log('  - Run: /cft:github-sync to-github <spec-id>');
       console.log('  - This will update the label to match the current phase\n');
 
       console.log('For each issue with NAME_MISMATCH:');
-      console.log('  - Run: /takumi:github-sync to-github <spec-id>');
+      console.log('  - Run: /cft:github-sync to-github <spec-id>');
       console.log('  - This will update the title to match the spec name\n');
     } else {
       console.log('✅ All issues are in sync!\n');

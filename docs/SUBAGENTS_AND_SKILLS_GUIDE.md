@@ -46,13 +46,13 @@ Takumi は、**Claude Code形式のサブエージェントとスキル**をサ�
 #### コマンドを使用した作成
 
 ```bash
-/takumi:agent-create my-agent "Description of what this agent does"
+/cft:agent-create my-agent "Description of what this agent does"
 ```
 
 **例:**
 
 ```bash
-/takumi:agent-create documentation-writer "Creates comprehensive documentation for code and APIs"
+/cft:agent-create documentation-writer "Creates comprehensive documentation for code and APIs"
 ```
 
 #### 手動での作成
@@ -183,13 +183,13 @@ tools: Read, Edit, Write, Bash  # リファクタリング用（編集可能）
 #### コマンドを使用した作成
 
 ```bash
-/takumi:skill-create my-skill "Description of what this skill provides"
+/cft:skill-create my-skill "Description of what this skill provides"
 ```
 
 **例:**
 
 ```bash
-/takumi:skill-create api-documentation "Generates comprehensive API documentation from code"
+/cft:skill-create api-documentation "Generates comprehensive API documentation from code"
 ```
 
 #### 手動での作成
@@ -341,13 +341,13 @@ await loadSkills();
 #### 1. サブエージェント一覧を確認
 
 ```bash
-/takumi:agent-list
+/cft:agent-list
 ```
 
 #### 2. スキル一覧を確認
 
 ```bash
-/takumi:skill-list
+/cft:skill-list
 ```
 
 #### 3. サブエージェントを実行
@@ -374,7 +374,7 @@ ls .claude/agents/
 head -10 .claude/agents/my-agent.md
 
 # 3. 再度読み込み
-/takumi:agent-list
+/cft:agent-list
 ```
 
 ### スキルが表示されない
@@ -411,7 +411,7 @@ cat .claude/skills/my-skill/SKILL.md
 
 ```bash
 # 1. スキル一覧を確認
-/takumi:skill-list
+/cft:skill-list
 
 # 2. スキル名を確認
 # サブエージェント内で正しいスキル名を使用

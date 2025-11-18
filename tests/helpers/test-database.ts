@@ -12,14 +12,14 @@ import path from 'path';
  * テスト用データベース作成
  */
 export async function createTestDatabase(): Promise<Kysely<Database>> {
-  // .takumiディレクトリ確認・作成
-  const takumiDir = path.join(process.cwd(), '.takumi');
-  if (!fs.existsSync(takumiDir)) {
-    fs.mkdirSync(takumiDir, { recursive: true });
+  // .cc-craft-kitディレクトリ確認・作成
+  const ccCraftKitDir = path.join(process.cwd(), '.cc-craft-kit');
+  if (!fs.existsSync(ccCraftKitDir)) {
+    fs.mkdirSync(ccCraftKitDir, { recursive: true });
   }
 
   // ユニークなDBファイル名を生成
-  const testDbPath = path.join(takumiDir, `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.db`);
+  const testDbPath = path.join(ccCraftKitDir, `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.db`);
 
   // 既存のテストDBを削除
   if (fs.existsSync(testDbPath)) {
@@ -49,11 +49,11 @@ export async function cleanupTestDatabase(db: Kysely<Database> | null): Promise<
   }
 
   // test-*.dbファイルをクリーンアップ
-  const takumiDir = path.join(process.cwd(), '.takumi');
-  if (fs.existsSync(takumiDir)) {
-    const files = fs.readdirSync(takumiDir);
+  const ccCraftKitDir = path.join(process.cwd(), '.cc-craft-kit');
+  if (fs.existsSync(ccCraftKitDir)) {
+    const files = fs.readdirSync(ccCraftKitDir);
     files.filter(f => f.startsWith('test-') && f.endsWith('.db')).forEach(f => {
-      const filepath = path.join(takumiDir, f);
+      const filepath = path.join(ccCraftKitDir, f);
       try {
         fs.unlinkSync(filepath);
       } catch {

@@ -7,7 +7,7 @@ import path from 'path';
 
 describe('initProjectTool', () => {
   const testProjectName = 'test-project';
-  const testProjectDir = path.join(process.cwd(), '.takumi');
+  const testProjectDir = path.join(process.cwd(), '.cc-craft-kit');
   const testConfigFile = path.join(testProjectDir, 'config.json');
 
   afterEach(async () => {

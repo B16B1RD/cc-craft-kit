@@ -26,7 +26,7 @@ interface Database {
 
 async function createFirstSpec() {
   const projectRoot = path.resolve(__dirname, '..');
-  const dbPath = path.join(projectRoot, '.takumi', 'takumi.db');
+  const dbPath = path.join(projectRoot, '.cc-craft-kit', 'cc-craft-kit.db');
 
   const db = new Database(dbPath);
   const kysely = new Kysely<Database>({
@@ -162,8 +162,8 @@ Takumiプロジェクトの状態を視覚的に把握できるWebダッシュ�
 
   console.log('🎉 ドッグフーディング準備完了！');
   console.log('\n📌 次のアクション:');
-  console.log('  1. Specの詳細を確認: /takumi:spec-list');
-  console.log('  2. GitHub Issueを作成: /takumi:create-github-issue');
+  console.log('  1. Specの詳細を確認: /cft:spec-list');
+  console.log('  2. GitHub Issueを作成: /cft:create-github-issue');
   console.log('  3. Requirementsフェーズを承認してDesignフェーズへ移行');
 }
 

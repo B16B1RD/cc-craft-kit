@@ -12,7 +12,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const projectRoot = path.resolve(__dirname, '..');
-const dbPath = path.join(projectRoot, '.takumi', 'takumi.db');
+const dbPath = path.join(projectRoot, '.cc-craft-kit', 'cc-craft-kit.db');
 
 const db = new Database(dbPath);
 

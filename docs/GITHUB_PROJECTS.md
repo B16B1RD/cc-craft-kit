@@ -363,7 +363,7 @@ Takumi の GitHub 統合が正しく設定されているか確認してくだ�
 **チェック項目**。
 
 - `.env` ファイルに `GITHUB_TOKEN` が設定されている
-- `/takumi:github-init <owner> <repo>` を実行済み
+- `/cft:github-init <owner> <repo>` を実行済み
 - 仕様書に GitHub Issue が紐づいている
 
 ### Project に Issue が自動追加されない
@@ -378,7 +378,7 @@ Takumi の GitHub 統合が正しく設定されているか確認してくだ�
 GITHUB_PROJECT_NAME="Your Project Name"
 ```
 
-または `.takumi/config.json` に以下を追加します。
+または `.cc-craft-kit/config.json` に以下を追加します。
 
 ```json
 {

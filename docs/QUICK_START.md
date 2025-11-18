@@ -72,14 +72,10 @@ Organization の Projects を使用する場合のみ、Fine-grained PAT が利�
 
 ## ステップ3: ドッグフーディング環境のセットアップ
 
-cc-craft-kit 自身を使って開発するため、`.cc-craft-kit/` ディレクトリに同期します。
+cc-craft-kit 自身を使って開発するため、`.cc-craft-kit/` ディレクトリに TypeScript ファイルを同期します。
 
 ```bash
-# ビルド + 同期
-npm run build:dogfood
-
-# または個別に実行
-npm run build
+# TypeScript ファイルを同期
 npm run sync:dogfood
 ```
 

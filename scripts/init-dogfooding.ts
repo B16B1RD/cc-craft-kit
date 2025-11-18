@@ -25,17 +25,17 @@ async function initProject() {
   const githubRepo = 'B16B1RD/takumi';
 
   const projectRoot = path.resolve(__dirname, '..');
-  const takumiDir = path.join(projectRoot, '.takumi');
-  const specsDir = path.join(takumiDir, 'specs');
-  const configFile = path.join(takumiDir, 'config.json');
-  const dbPath = path.join(takumiDir, 'takumi.db');
+  const ccCraftKitDir = path.join(projectRoot, '.cc-craft-kit');
+  const specsDir = path.join(ccCraftKitDir, 'specs');
+  const configFile = path.join(ccCraftKitDir, 'config.json');
+  const dbPath = path.join(ccCraftKitDir, 'cc-craft-kit.db');
 
   console.log('🚀 Takumiプロジェクトを初期化しています...');
 
-  // .takumiディレクトリ作成
-  await fs.mkdir(takumiDir, { recursive: true });
+  // .cc-craft-kitディレクトリ作成
+  await fs.mkdir(ccCraftKitDir, { recursive: true });
   await fs.mkdir(specsDir, { recursive: true });
-  console.log(`✅ ディレクトリ作成: ${takumiDir}`);
+  console.log(`✅ ディレクトリ作成: ${ccCraftKitDir}`);
 
   // config.json作成
   const config: Config = {
@@ -126,9 +126,9 @@ async function initProject() {
   console.log(JSON.stringify(config, null, 2));
 
   console.log('\n📝 次のステップ:');
-  console.log('  1. 仕様書を作成: /takumi:spec-create "機能名"');
-  console.log('  2. 仕様書一覧: /takumi:spec-list');
-  console.log('  3. プロジェクト状況: /takumi:status');
+  console.log('  1. 仕様書を作成: /cft:spec-create "機能名"');
+  console.log('  2. 仕様書一覧: /cft:spec-list');
+  console.log('  3. プロジェクト状況: /cft:status');
 }
 
 initProject().catch((error) => {

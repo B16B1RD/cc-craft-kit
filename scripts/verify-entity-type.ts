@@ -1,4 +1,4 @@
-import { getDatabase } from '../.takumi/core/database/connection.js';
+import { getDatabase } from '../.cc-craft-kit/core/database/connection.js';
 
 async function main() {
   const db = getDatabase();

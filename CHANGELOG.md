@@ -193,10 +193,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `design.md.hbs` - 設計書
   - `tasks.md.hbs` - タスク分解
 - スラッシュコマンド:
-  - `/takumi:init` - プロジェクト初期化
-  - `/takumi:spec-create` - 仕様書作成
-  - `/takumi:spec-list` - 仕様書一覧
-  - `/takumi:status` - プロジェクト状況表示
+  - `/cft:init` - プロジェクト初期化
+  - `/cft:spec-create` - 仕様書作成
+  - `/cft:spec-list` - 仕様書一覧
+  - `/cft:status` - プロジェクト状況表示
 - TemplateEngine クラス実装
 - Handlebars ヘルパー (formatDate、inc、join、eq、priorityLabel)
 - ドキュメント:

@@ -10,12 +10,12 @@
 
 import { copyFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase } from '../.takumi/core/database/connection.js';
+import { getDatabase } from '../.cc-craft-kit/core/database/connection.js';
 
 async function main() {
   const cwd = process.cwd();
-  const takumiDir = join(cwd, '.takumi');
-  const dbPath = join(takumiDir, 'takumi.db');
+  const ccCraftKitDir = join(cwd, '.cc-craft-kit');
+  const dbPath = join(ccCraftKitDir, 'cc-craft-kit.db');
 
   console.log('=== GitHub Sync Entity Type Migration ===\n');
 

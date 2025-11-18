@@ -26,7 +26,7 @@ interface DatabaseSchema {
 
 async function createSpec() {
   const projectRoot = path.resolve(__dirname, '..');
-  const dbPath = path.join(projectRoot, '.takumi', 'takumi.db');
+  const dbPath = path.join(projectRoot, '.cc-craft-kit', 'cc-craft-kit.db');
 
   const db = new Database(dbPath);
   const kysely = new Kysely<DatabaseSchema>({
@@ -88,11 +88,11 @@ Migration failed: SqliteError: table "specs" already exists
 
 ### オプション2: データベースを再初期化
 
-\`.takumi/takumi.db\`を削除して、マイグレーションシステムで再作成。
+\`.cc-craft-kit/cc-craft-kit.db\`を削除して、マイグレーションシステムで再作成。
 
 **手順:**
 1. データベースをバックアップ
-2. \`.takumi/takumi.db\`を削除
+2. \`.cc-craft-kit/cc-craft-kit.db\`を削除
 3. MCPサーバーを起動（マイグレーション自動実行）
 4. Specを再作成
 

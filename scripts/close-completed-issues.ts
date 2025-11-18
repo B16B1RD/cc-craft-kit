@@ -4,15 +4,15 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase } from '../.takumi/core/database/connection.js';
+import { getDatabase } from '../.cc-craft-kit/core/database/connection.js';
 
 interface GitHubConfig {
   owner: string;
   repo: string;
 }
 
-function getGitHubConfig(takumiDir: string): GitHubConfig | null {
-  const configPath = join(takumiDir, 'config.json');
+function getGitHubConfig(ccCraftKitDir: string): GitHubConfig | null {
+  const configPath = join(ccCraftKitDir, 'config.json');
   if (!existsSync(configPath)) {
     return null;
   }
@@ -97,12 +97,12 @@ async function addComment(
 
 async function main() {
   const cwd = process.cwd();
-  const takumiDir = join(cwd, '.takumi');
+  const ccCraftKitDir = join(cwd, '.cc-craft-kit');
 
   console.log('=== Close Completed Issues ===\n');
 
   // GitHub設定チェック
-  const githubConfig = getGitHubConfig(takumiDir);
+  const githubConfig = getGitHubConfig(ccCraftKitDir);
   if (!githubConfig) {
     console.error('Error: GitHub not configured');
     process.exit(1);
@@ -148,7 +148,7 @@ async function main() {
 
 **完了日時:** ${new Date().toLocaleString('ja-JP')}
 **最終フェーズ:** completed
-**仕様書:** [\`.takumi/specs/${spec.id}.md\`](../../.takumi/specs/${spec.id}.md)
+**仕様書:** [\`.cc-craft-kit/specs/${spec.id}.md\`](../../.cc-craft-kit/specs/${spec.id}.md)
 `;
 
       const commentAdded = await addComment(

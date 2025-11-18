@@ -28,7 +28,7 @@ async function listSpecs() {
   const limit = parseInt(process.argv[3] || '20', 10);
 
   const projectRoot = path.resolve(__dirname, '..');
-  const dbPath = path.join(projectRoot, '.takumi', 'takumi.db');
+  const dbPath = path.join(projectRoot, '.cc-craft-kit', 'cc-craft-kit.db');
 
   const db = new Database(dbPath);
   const kysely = new Kysely<DatabaseSchema>({

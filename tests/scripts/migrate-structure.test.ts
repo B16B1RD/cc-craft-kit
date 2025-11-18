@@ -78,9 +78,9 @@ describe('migrate-structure', () => {
   });
 
   describe('migrate', () => {
-    it('should migrate .takumi/commands/ to src/commands/', async () => {
-      // .takumi/commands/ を作成
-      const takumiCommands = path.join(testDir, '.takumi', 'commands');
+    it('should migrate .cc-craft-kit/commands/ to src/commands/', async () => {
+      // .cc-craft-kit/commands/ を作成
+      const takumiCommands = path.join(testDir, '.cc-craft-kit', 'commands');
       await fs.mkdir(takumiCommands, { recursive: true });
       await fs.writeFile(path.join(takumiCommands, 'test.ts'), 'export {}');
 
@@ -157,8 +157,8 @@ describe('migrate-structure', () => {
     });
 
     it('should handle nested directories', async () => {
-      // .takumi/commands/spec/ にファイルを作成
-      const specDir = path.join(testDir, '.takumi', 'commands', 'spec');
+      // .cc-craft-kit/commands/spec/ にファイルを作成
+      const specDir = path.join(testDir, '.cc-craft-kit', 'commands', 'spec');
       await fs.mkdir(specDir, { recursive: true });
       await fs.writeFile(path.join(specDir, 'create.ts'), 'export {}');
       await fs.writeFile(path.join(specDir, 'update.ts'), 'export {}');
@@ -194,8 +194,8 @@ describe('migrate-structure', () => {
     });
 
     it('should support dry-run mode', async () => {
-      // .takumi/commands/ を作成
-      const takumiCommands = path.join(testDir, '.takumi', 'commands');
+      // .cc-craft-kit/commands/ を作成
+      const takumiCommands = path.join(testDir, '.cc-craft-kit', 'commands');
       await fs.mkdir(takumiCommands, { recursive: true });
       await fs.writeFile(path.join(takumiCommands, 'test.ts'), 'export {}');
 
@@ -249,8 +249,8 @@ describe('migrate-structure', () => {
       const srcCommands = path.join(testDir, 'src', 'commands');
       await fs.mkdir(srcCommands, { recursive: true });
 
-      // .takumi/commands/ も作成
-      const takumiCommands = path.join(testDir, '.takumi', 'commands');
+      // .cc-craft-kit/commands/ も作成
+      const takumiCommands = path.join(testDir, '.cc-craft-kit', 'commands');
       await fs.mkdir(takumiCommands, { recursive: true });
       await fs.writeFile(path.join(takumiCommands, 'test.ts'), 'export {}');
 

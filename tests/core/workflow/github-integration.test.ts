@@ -30,7 +30,7 @@ describe('GitHub Integration Event Handlers', () => {
     originalEnv = { ...process.env };
 
     // テスト用ディレクトリ作成
-    testDir = join(process.cwd(), '.takumi-test');
+    testDir = join(process.cwd(), '.cc-craft-kit-test');
     if (existsSync(testDir)) {
       rmSync(testDir, { recursive: true, force: true });
     }

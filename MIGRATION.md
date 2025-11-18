@@ -13,7 +13,7 @@
 |---|---|---|
 | プロジェクト名 | cc-craft-kit（匠） | cc-craft-kit |
 | npm パッケージ名 | `takumi` | `cc-craft-kit` |
-| スラッシュコマンド | `/takumi:*` | `/cft:*` |
+| スラッシュコマンド | `/cft:*` | `/cft:*` |
 | コマンドディレクトリ | `.claude/commands/takumi/` | `.claude/commands/cft/` |
 | GitHub リポジトリ | `autum/takumi` | `autum/cc-craft-kit` |
 
@@ -27,8 +27,8 @@
 ### ステップ1: 既存のインストールをバックアップ
 
 ```bash
-# .takumi ディレクトリのバックアップ（任意）
-cp -r .takumi .takumi.backup
+# .cc-craft-kit ディレクトリのバックアップ（任意）
+cp -r .cc-craft-kit .cc-craft-kit.backup
 
 # Git で変更をコミット（作業中の変更がある場合）
 git add .
@@ -73,8 +73,8 @@ npm link
 # プロジェクトディレクトリで初期化
 cd /path/to/your/project
 
-# 古い .takumi ディレクトリを削除（バックアップ済みの場合のみ）
-rm -rf .takumi
+# 古い .cc-craft-kit ディレクトリを削除（バックアップ済みの場合のみ）
+rm -rf .cc-craft-kit
 
 # 新しく初期化
 cft:init my-project "プロジェクト説明"
@@ -86,33 +86,33 @@ cft:init my-project "プロジェクト説明"
 
 | 旧コマンド | 新コマンド | 説明 |
 |---|---|---|
-| `/takumi:init` | `/cft:init` | プロジェクト初期化 |
-| `/takumi:status` | `/cft:status` | プロジェクト状態確認 |
-| `/takumi:spec-create` | `/cft:spec-create` | 仕様書作成 |
-| `/takumi:spec-list` | `/cft:spec-list` | 仕様書一覧 |
-| `/takumi:spec-get` | `/cft:spec-get` | 仕様書詳細表示 |
-| `/takumi:spec-phase` | `/cft:spec-phase` | フェーズ更新 |
-| `/takumi:github-init` | `/cft:github-init` | GitHub 統合初期化 |
-| `/takumi:github-issue-create` | `/cft:github-issue-create` | Issue 作成 |
-| `/takumi:github-sync` | `/cft:github-sync` | GitHub 同期 |
-| `/takumi:github-project-add` | `/cft:github-project-add` | Project 追加 |
-| `/takumi:code-review` | `/cft:code-review` | コードレビュー |
-| `/takumi:test-generate` | `/cft:test-generate` | テスト生成 |
-| `/takumi:lint-check` | `/cft:lint-check` | Lint チェック |
-| `/takumi:schema-validate` | `/cft:schema-validate` | スキーマ検証 |
-| `/takumi:refactor` | `/cft:refactor` | リファクタリング |
-| `/takumi:knowledge-progress` | `/cft:knowledge-progress` | 進捗記録 |
-| `/takumi:knowledge-error` | `/cft:knowledge-error` | エラー記録 |
-| `/takumi:knowledge-tip` | `/cft:knowledge-tip` | Tips 記録 |
-| `/takumi:watch` | `/cft:watch` | ファイル監視 |
+| `/cft:init` | `/cft:init` | プロジェクト初期化 |
+| `/cft:status` | `/cft:status` | プロジェクト状態確認 |
+| `/cft:spec-create` | `/cft:spec-create` | 仕様書作成 |
+| `/cft:spec-list` | `/cft:spec-list` | 仕様書一覧 |
+| `/cft:spec-get` | `/cft:spec-get` | 仕様書詳細表示 |
+| `/cft:spec-phase` | `/cft:spec-phase` | フェーズ更新 |
+| `/cft:github-init` | `/cft:github-init` | GitHub 統合初期化 |
+| `/cft:github-issue-create` | `/cft:github-issue-create` | Issue 作成 |
+| `/cft:github-sync` | `/cft:github-sync` | GitHub 同期 |
+| `/cft:github-project-add` | `/cft:github-project-add` | Project 追加 |
+| `/cft:code-review` | `/cft:code-review` | コードレビュー |
+| `/cft:test-generate` | `/cft:test-generate` | テスト生成 |
+| `/cft:lint-check` | `/cft:lint-check` | Lint チェック |
+| `/cft:schema-validate` | `/cft:schema-validate` | スキーマ検証 |
+| `/cft:refactor` | `/cft:refactor` | リファクタリング |
+| `/cft:knowledge-progress` | `/cft:knowledge-progress` | 進捗記録 |
+| `/cft:knowledge-error` | `/cft:knowledge-error` | エラー記録 |
+| `/cft:knowledge-tip` | `/cft:knowledge-tip` | Tips 記録 |
+| `/cft:watch` | `/cft:watch` | ファイル監視 |
 
 **使用例:**
 
 ```bash
-# 旧: /takumi:spec-create "新機能" "新機能の説明"
+# 旧: /cft:spec-create "新機能" "新機能の説明"
 # 新: /cft:spec-create "新機能" "新機能の説明"
 
-# 旧: /takumi:spec-phase abc12345 implementation
+# 旧: /cft:spec-phase abc12345 implementation
 # 新: /cft:spec-phase abc12345 implementation
 ```
 
@@ -154,7 +154,7 @@ ln -s ../../src/slash-commands .claude/commands/cft
 
 **症状:**
 ```
-/takumi:status が動作する
+/cft:status が動作する
 /cft:status が動作しない
 ```
 
@@ -177,7 +177,7 @@ ls -la .claude/commands/cft
 Error: Database file not found
 ```
 
-**原因:** `.takumi/takumi.db` が削除されている。
+**原因:** `.cc-craft-kit/cc-craft-kit.db` が削除されている。
 
 **解決方法:**
 
@@ -186,7 +186,7 @@ Error: Database file not found
 /cft:init my-project "プロジェクト説明"
 
 # または、バックアップから復元
-cp .takumi.backup/takumi.db .takumi/takumi.db
+cp .cc-craft-kit.backup/cc-craft-kit.db .cc-craft-kit/cc-craft-kit.db
 ```
 
 ### 問題4: GitHub 統合が動作しない
@@ -215,11 +215,11 @@ echo "GITHUB_TOKEN=ghp_your_token_here" > .env
 
 ### Q1: 既存の仕様書データは引き継がれますか？
 
-**A:** はい、`.takumi/` ディレクトリをバックアップして復元すれば、すべてのデータ（仕様書、タスク、ログ）が引き継がれます。
+**A:** はい、`.cc-craft-kit/` ディレクトリをバックアップして復元すれば、すべてのデータ（仕様書、タスク、ログ）が引き継がれます。
 
 ### Q2: 旧コマンドと新コマンドを併用できますか？
 
-**A:** いいえ、旧コマンド（`/takumi:*`）は削除されているため、新コマンド（`/cft:*`）のみ使用してください。
+**A:** いいえ、旧コマンド（`/cft:*`）は削除されているため、新コマンド（`/cft:*`）のみ使用してください。
 
 ### Q3: npm パッケージ名が変更された理由は？
 
@@ -235,8 +235,8 @@ echo "GITHUB_TOKEN=ghp_your_token_here" > .env
 
 ```bash
 # バックアップから復元
-rm -rf .takumi
-cp -r .takumi.backup .takumi
+rm -rf .cc-craft-kit
+cp -r .cc-craft-kit.backup .cc-craft-kit
 
 # 旧バージョンを再インストール（必要に応じて）
 npm install -g takumi@0.1.0

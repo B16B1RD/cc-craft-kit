@@ -180,7 +180,7 @@ describe('check-sync', () => {
       });
     });
 
-    it('should detect missing files in .takumi/', () => {
+    it('should detect missing files in .cc-craft-kit/', () => {
       const srcHashes = new Map([
         ['file1.ts', 'hash1'],
         ['file2.ts', 'hash2'],
@@ -201,7 +201,7 @@ describe('check-sync', () => {
       });
     });
 
-    it('should detect extra files in .takumi/', () => {
+    it('should detect extra files in .cc-craft-kit/', () => {
       const srcHashes = new Map([
         ['file1.ts', 'hash1'],
       ]);
@@ -267,15 +267,15 @@ describe('check-sync', () => {
 
   describe('checkSync (integration)', () => {
     it('should report in sync when files are identical', async () => {
-      // src/ と .takumi/ を作成
+      // src/ と .cc-craft-kit/ を作成
       const srcDir = path.join(testDir, 'src', 'core');
-      const takumiDir = path.join(testDir, '.takumi', 'core');
+      const ccCraftKitDir = path.join(testDir, '.cc-craft-kit', 'core');
 
       await fs.mkdir(srcDir, { recursive: true });
-      await fs.mkdir(takumiDir, { recursive: true });
+      await fs.mkdir(ccCraftKitDir, { recursive: true });
 
       await fs.writeFile(path.join(srcDir, 'file.ts'), 'content');
-      await fs.writeFile(path.join(takumiDir, 'file.ts'), 'content');
+      await fs.writeFile(path.join(ccCraftKitDir, 'file.ts'), 'content');
 
       const result = await checkSync({ baseDir: testDir, verbose: false });
 
@@ -285,13 +285,13 @@ describe('check-sync', () => {
 
     it('should report differences when files are different', async () => {
       const srcDir = path.join(testDir, 'src', 'core');
-      const takumiDir = path.join(testDir, '.takumi', 'core');
+      const ccCraftKitDir = path.join(testDir, '.cc-craft-kit', 'core');
 
       await fs.mkdir(srcDir, { recursive: true });
-      await fs.mkdir(takumiDir, { recursive: true });
+      await fs.mkdir(ccCraftKitDir, { recursive: true });
 
       await fs.writeFile(path.join(srcDir, 'file.ts'), 'content1');
-      await fs.writeFile(path.join(takumiDir, 'file.ts'), 'content2');
+      await fs.writeFile(path.join(ccCraftKitDir, 'file.ts'), 'content2');
 
       const result = await checkSync({ baseDir: testDir, verbose: false });
 

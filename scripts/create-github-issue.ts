@@ -45,7 +45,7 @@ async function createGitHubIssue() {
   }
 
   const projectRoot = path.resolve(__dirname, '..');
-  const dbPath = path.join(projectRoot, '.takumi', 'takumi.db');
+  const dbPath = path.join(projectRoot, '.cc-craft-kit', 'cc-craft-kit.db');
 
   const db = new Database(dbPath);
   const kysely = new Kysely<DatabaseSchema>({

@@ -20,17 +20,16 @@ cc-craft-kit プロジェクトは、**自分自身を使って開発する（�
 | **`src/slash-commands/`** | スラッシュコマンド定義 | ✅ | Claude Codeのスラッシュコマンド定義 (`.md`) |
 | **`src/scripts/`** | ビルド・同期スクリプト | ✅ | 整合性チェック、自動同期、マイグレーションツール |
 | **`.claude/commands/cc-craft-kit/`** | シンボリックリンク | ✅ | `src/slash-commands/` へのシンボリックリンク |
-| **`dist/`** | ビルド成果物 | ❌ | `npm run build` で `src/` からコンパイルされる |
+| **`dist/`** | ビルド成果物 | ❌ | `npm run build` で `src/` からコンパイルされる（パッケージ配布用） |
 | **`.cc-craft-kit/`** | **インストール先** | ❌ | cc-craft-kit自身がcc-craft-kitを使うためのインストール先（ドッグフーディング用） |
 
 ### 開発フロー
 
 1. **編集**: `src/` 配下のファイルを編集
-2. **ビルド**: `npm run build` で TypeScript コンパイル
-3. **同期**: `npm run sync:dogfood` で `.cc-craft-kit/` へ自動コピー
-4. **実行**: スラッシュコマンド `/cc-craft-kit:*` を実行してテスト
+2. **同期**: `npm run sync:dogfood` で `.cc-craft-kit/` へ TypeScript ファイルをコピー
+3. **実行**: スラッシュコマンド `/cc-craft-kit:*` を実行してテスト（`npx tsx` で直接実行）
 
-**重要:** `src/` を編集したら必ず `npm run sync:dogfood` を実行してください。
+**重要:** `src/` を編集したら必ず `npm run sync:dogfood` を実行してください。ビルドは不要です。
 
 ### 開発時の注意事項
 
@@ -47,11 +46,7 @@ vim .cc-craft-kit/integrations/github/sync.ts  # NG!
 # 1. src/ のソースコードを編集
 vim src/integrations/github/sync.ts
 
-# 2. ビルド + 同期（一括実行）
-npm run build:dogfood
-
-# または個別に実行
-npm run build
+# 2. 同期実行（TypeScriptファイルをコピー）
 npm run sync:dogfood
 ```
 

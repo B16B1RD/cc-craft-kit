@@ -46,8 +46,8 @@ interface DatabaseSchema {
 
 async function showProjectStatus() {
   const projectRoot = path.resolve(__dirname, '..');
-  const configPath = path.join(projectRoot, '.takumi', 'config.json');
-  const dbPath = path.join(projectRoot, '.takumi', 'takumi.db');
+  const configPath = path.join(projectRoot, '.cc-craft-kit', 'config.json');
+  const dbPath = path.join(projectRoot, '.cc-craft-kit', 'cc-craft-kit.db');
 
   // 設定ファイル読み込み
   const configData = await fs.readFile(configPath, 'utf-8');
@@ -125,7 +125,7 @@ async function showProjectStatus() {
 
   console.log('### GitHub連携統計\n');
   console.log(`- **同期総数:** ${syncStats.total} 件`);
-  console.log(`- **Takumi → GitHub:** ${syncStats.takumiToGithub} 件`);
+  console.log(`- **Takumi → GitHub:** ${syncStats.cc-craft-kitToGithub} 件`);
   console.log(`- **GitHub → Takumi:** ${syncStats.githubToTakumi} 件\n`);
 
   if (recentSpecs.length > 0) {
@@ -139,8 +139,8 @@ async function showProjectStatus() {
   }
 
   console.log('### 次のアクション\n');
-  console.log('- 新しい仕様書を作成: `/takumi:spec-create <name>`');
-  console.log('- 仕様書一覧を見る: `/takumi:spec-list`');
+  console.log('- 新しい仕様書を作成: `/cft:spec-create <name>`');
+  console.log('- 仕様書一覧を見る: `/cft:spec-list`');
   console.log('- 仕様書詳細を見る: `npx tsx scripts/get-spec.ts <id>`\n');
 
   await kysely.destroy();
