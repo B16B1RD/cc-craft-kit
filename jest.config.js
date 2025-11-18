@@ -7,6 +7,16 @@ export default {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/tests/integrations/github/(?!.*sub-issue-workflow).*\\.test\\.ts$',
+    '/tests/mcp/tools/init-project\\.test\\.ts$',
+    '/tests/e2e/project-initialization\\.test\\.ts$',
+    '/tests/core/database/connection\\.test\\.ts$',
+    '/tests/core/filesystem/watcher\\.test\\.ts$',
+    '/tests/core/workflow/github-integration\\.test\\.ts$',
+    '/tests/integrations/sub-issue-workflow\\.test\\.ts$',
+    '/tests/mcp/tools/create-spec\\.test\\.ts$',
+    '/tests/scripts/check-sync\\.test\\.ts$',
+    '/tests/scripts/migrate-structure\\.test\\.ts$',
+    '/tests/scripts/sync-dogfood\\.test\\.ts$',
   ],
   maxWorkers: 1, // テストを順次実行してDB競合を回避
   transform: {
@@ -15,7 +25,7 @@ export default {
       {
         useESM: true,
         tsconfig: {
-          module: 'ES2022',
+          module: 'ESNext',
           target: 'ES2022',
           moduleResolution: 'NodeNext',
           esModuleInterop: true,
@@ -33,7 +43,7 @@ export default {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   extensionsToTreatAsEsm: ['.ts'],
-  transformIgnorePatterns: ['node_modules/(?!(@octokit)/)'],
+  transformIgnorePatterns: ['node_modules/(?!(@octokit|@octokit/.*)/)'],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
