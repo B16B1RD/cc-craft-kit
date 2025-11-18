@@ -2,6 +2,7 @@
  * 仕様書フェーズ更新コマンド
  */
 
+import '../../core/config/env.js';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDatabase } from '../../core/database/connection.js';

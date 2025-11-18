@@ -2,6 +2,7 @@
  * 仕様書作成コマンド
  */
 
+import '../../core/config/env.js';
 import { randomUUID } from 'node:crypto';
 import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';

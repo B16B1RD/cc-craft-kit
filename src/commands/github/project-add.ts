@@ -2,6 +2,7 @@
  * GitHub Project追加コマンド
  */
 
+import '../../core/config/env.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDatabase } from '../../core/database/connection.js';

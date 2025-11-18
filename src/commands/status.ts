@@ -2,6 +2,7 @@
  * プロジェクト状態表示コマンド
  */
 
+import '../core/config/env.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDatabase } from '../core/database/connection.js';
