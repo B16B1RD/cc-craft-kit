@@ -2,7 +2,8 @@
  * Git統合のイベントハンドラー
  */
 
-import { execSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
+import path from 'node:path';
 import { Kysely } from 'kysely';
 import { Database } from '../database/schema.js';
 import { EventBus, WorkflowEvent } from './event-bus.js';
@@ -40,36 +41,102 @@ function generateCommitMessage(specName: string, phase: Phase): string {
 }
 
 /**
+ * ファイルが .gitignore で除外されているかチェック
+ * @param files チェック対象のファイルパス配列
+ * @returns 除外されているファイルパス配列
+ */
+function getIgnoredFiles(files: string[]): string[] {
+  if (files.length === 0) return [];
+
+  const result = spawnSync('git', ['check-ignore', ...files], {
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  // 終了コード 0: 除外されたファイルがある
+  // 終了コード 1: 除外されたファイルがない（正常）
+  // 終了コード 128以上: Gitエラー
+  if (result.status !== null && result.status >= 128) {
+    throw new Error(`git check-ignore failed: ${result.stderr}`);
+  }
+
+  return result.stdout.trim().split('\n').filter(Boolean);
+}
+
+/**
  * コミット対象ファイルの決定
+ * @param phase フェーズ
+ * @param specId 仕様書ID（UUID形式）
+ * @returns コミット対象ファイルパス配列
+ * @throws specIdがUUID形式でない場合、エラーをスロー
  */
 function getCommitTargets(phase: Phase, specId: string): string[] {
+  // specIdのバリデーション（UUID形式）
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidPattern.test(specId)) {
+    throw new Error(`Invalid spec ID format: ${specId}`);
+  }
+
   if (phase === 'completed') {
     // completedフェーズでは全変更をコミット
     return ['.'];
   }
 
+  // パストラバーサル対策
+  const safeSpecId = path.basename(specId);
+
   // その他のフェーズでは仕様書ファイルのみ
-  return [`.cc-craft-kit/specs/${specId}.md`];
+  return [`.cc-craft-kit/specs/${safeSpecId}.md`];
 }
 
 /**
  * Gitコミット実行
+ * @param files コミット対象ファイルパス配列
+ * @param message コミットメッセージ
+ * @returns 成功/失敗の結果オブジェクト
  */
 async function gitCommit(
   files: string[],
   message: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; skipped?: boolean; error?: string }> {
   try {
-    // git add
-    const addCommand =
-      files.length === 1 && files[0] === '.' ? 'git add .' : `git add ${files.join(' ')}`;
+    // git add . の場合は特別処理
+    if (files.length === 1 && files[0] === '.') {
+      const addResult = spawnSync('git', ['add', '.'], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
 
-    execSync(addCommand, { stdio: 'pipe' });
+      if (addResult.status !== 0) {
+        return { success: false, error: addResult.stderr.toString() };
+      }
+    } else {
+      // .gitignore チェック
+      const ignoredFiles = new Set(getIgnoredFiles(files));
+      const filesToAdd = files.filter((file) => !ignoredFiles.has(file));
 
-    // git commit
-    // コミットメッセージのエスケープ（シェルインジェクション対策）
-    const escapedMessage = message.replace(/'/g, "'\\''");
-    execSync(`git commit -m '${escapedMessage}'`, { stdio: 'pipe' });
+      if (filesToAdd.length === 0) {
+        // コミット対象なし、正常終了
+        return { success: true, skipped: true };
+      }
+
+      // git add 実行（シェルインジェクション対策）
+      const addResult = spawnSync('git', ['add', ...filesToAdd], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+
+      if (addResult.status !== 0) {
+        return { success: false, error: addResult.stderr.toString() };
+      }
+    }
+
+    // git commit 実行（エスケープ不要）
+    const commitResult = spawnSync('git', ['commit', '-m', message], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    if (commitResult.status !== 0) {
+      return { success: false, error: commitResult.stderr.toString() };
+    }
 
     return { success: true };
   } catch (error) {
@@ -121,7 +188,12 @@ async function handlePhaseChangeCommit(
     const result = await gitCommit(files, message);
 
     if (result.success) {
-      console.log(`\n✓ Auto-committed: ${message}`);
+      if (result.skipped) {
+        // コミット対象なし（.gitignore で除外されている）
+        console.log('\nℹ Auto-commit skipped: No files to commit (ignored by .gitignore)');
+      } else {
+        console.log(`\n✓ Auto-committed: ${message}`);
+      }
     } else {
       const errorHandler = getErrorHandler();
       await errorHandler.handle(new Error(result.error || 'Git commit failed'), {
