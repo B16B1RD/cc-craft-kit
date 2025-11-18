@@ -1,0 +1,51 @@
+# cc-craft-kit npm パッケージ除外設定
+
+# ドッグフーディング環境
+.cc-craft-kit/
+
+# テストファイル
+tests/
+*.test.ts
+*.spec.ts
+jest.config.js
+coverage/
+
+# 開発ツール設定
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ビルド成果物（TypeScript を直接実行するため不要）
+dist/
+build/
+
+# Git関連
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+
+# ドキュメント（一部のみ含める）
+docs/
+
+# 環境変数ファイル
+.env
+.env.*
+!.env.example
+
+# ログファイル
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 依存関係
+node_modules/
+
+# その他
+.DS_Store
+Thumbs.db

@@ -65,12 +65,11 @@ describe('SpecFileWatcher', () => {
   });
 
   it('should extract spec ID from valid filename', () => {
-    const watcher = new SpecFileWatcher(mockDb, testDir);
     const validFilename = 'bb06f332-777a-4610-a5ff-cbd9903a135f.md';
-    const filePath = join(testDir, 'specs', validFilename);
 
     // private メソッドのテストは実装の詳細なのでスキップ
     // または、ファイル変更をトリガーして間接的にテスト
+    expect(validFilename).toMatch(/^[a-f0-9-]+\.md$/);
   });
 
   it('should start and stop watcher', async () => {

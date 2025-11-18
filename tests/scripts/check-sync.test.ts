@@ -1,10 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { tmpdir } from 'os';
 import {
   scanDirectory,
-  scanProjectFiles,
   calculateFileHash,
   calculateFileHashes,
   detectDifferences,

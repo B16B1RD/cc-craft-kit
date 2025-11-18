@@ -12,6 +12,14 @@
   ],
   "author": "cc-craft-kit Project Contributors",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/B16B1RD/cc-craft-kit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/B16B1RD/cc-craft-kit/issues"
+  },
+  "homepage": "https://github.com/B16B1RD/cc-craft-kit#readme",
   "type": "module",
   "engines": {
     "node": ">=18.0.0"
@@ -83,8 +91,11 @@
     "typescript": "^5.7.2"
   },
   "files": [
-    "dist",
-    "templates"
+    "src",
+    ".claude",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
   ],
   "lint-staged": {
     "*.md": [
