@@ -10,7 +10,27 @@ argument-hint: "<spec-id> <phase>"
 ## 引数
 
 - `$1` (必須): 仕様書 ID（部分一致可、最低 8 文字）
-- `$2` (必須): 新しいフェーズ (requirements/design/tasks/implementation/completed)
+- `$2` (必須): 新しいフェーズ（完全形または省略形）
+
+### フェーズ名（完全形）
+
+- `requirements` - 要件定義
+- `design` - 設計
+- `tasks` - タスク分解
+- `implementation` - 実装
+- `testing` - テスト
+- `completed` - 完了
+
+### フェーズ名（省略形）
+
+ユーザーフレンドリーな省略形もサポートしています。
+
+- `req`, `reqs` → requirements
+- `des` → design
+- `task` → tasks
+- `impl`, `imp` → implementation
+- `test` → testing
+- `comp`, `done` → completed
 
 ## 実行内容
 
@@ -21,7 +41,13 @@ argument-hint: "<spec-id> <phase>"
 ## 使用例
 
 ```bash
+# 完全形
 /cft:spec-phase f6621295 design
+
+# 省略形
+/cft:spec-phase f6621295 des
+/cft:spec-phase f6621295 impl
+/cft:spec-phase f6621295 comp
 ```
 
 ---
