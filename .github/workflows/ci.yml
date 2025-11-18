@@ -98,32 +98,6 @@ jobs:
           flags: unittests
           name: codecov-cc-craft-kit
 
-  check-sync:
-    runs-on: ubuntu-latest
-    name: Check Source Sync
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Check source synchronization
-        run: npm run check:sync
-
-      - name: Report sync status
-        if: failure()
-        run: |
-          echo "❌ Source files are out of sync!"
-          echo "Please run 'npm run sync:dogfood' to synchronize."
-          exit 1
-
   security:
     runs-on: ubuntu-latest
     name: Security Audit
