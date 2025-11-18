@@ -28,7 +28,7 @@ cc-craft-kit プロジェクトは、**自分自身を使って開発する（�
 2. **同期**: `npm run sync:dogfood` で `.cc-craft-kit/` へ TypeScript ファイルをコピー
 3. **実行**: スラッシュコマンド `/cc-craft-kit:*` を実行してテスト（`npx tsx` で直接実行）
 
-**重要:** `src/` を編集したら必ず `npm run sync:dogfood` を実行してください。ビルドは不要です。
+注意: `src/` を編集したら必ず `npm run sync:dogfood` を実行してください。ビルドは不要です。
 
 ### 開発時の注意事項
 
@@ -153,7 +153,7 @@ npx tsx .cc-craft-kit/commands/status.ts
 5. 対象ファイルを Read して実装を開始
 6. タスク完了後、TodoWrite で completed へ設定し、次のタスクへ自動移行
 
-注意:「実装を開始しますか？」などの確認は不要です。自動的に作業を進めてください。
+注意:「実装を開始しますか」などの確認は不要です。自動的に作業を進めてください。
 
 ### データベース
 
@@ -293,46 +293,36 @@ cc-craft-kit は、コード品質を保証するために、サブエージェ�
 #### 利用可能なサブエージェント
 
 1. **code-reviewer** (`.claude/agents/code-reviewer.md`)
-   - **用途**: コード品質、セキュリティ、ベストプラクティスの検証
-   - **呼び出し方法**: Task ツールで `code-reviewer` サブエージェントを実行
-   - **自動実行タイミング**:
-     - 実装完了後（completed フェーズ移行前）
-     - `/cc-craft-kit:code-review` コマンド実行時
+   - コード品質、セキュリティ、ベストプラクティスの検証を実施
+   - Task ツールで `code-reviewer` サブエージェントを実行
+   - 実装完了後（completed フェーズ移行前）および `/cc-craft-kit:code-review` コマンド実行時に自動実行
 
 2. **test-generator** (`.claude/agents/test-generator.md`)
-   - **用途**: 単体テストの自動生成（正常系、エッジケース、エラーケース）
-   - **呼び出し方法**: Task ツールで `test-generator` サブエージェントを実行
-   - **自動実行タイミング**:
-     - 実装タスク完了後
-     - `/cc-craft-kit:test-generate` コマンド実行時
+   - 単体テストの自動生成（正常系、エッジケース、エラーケース）を実施
+   - Task ツールで `test-generator` サブエージェントを実行
+   - 実装タスク完了後および `/cc-craft-kit:test-generate` コマンド実行時に自動実行
 
 3. **refactoring-assistant** (`.claude/agents/refactoring-assistant.md`)
-   - **用途**: コード構造改善、パフォーマンス最適化
-   - **呼び出し方法**: Task ツールで `refactoring-assistant` サブエージェントを実行
-   - **自動実行タイミング**:
-     - `/cc-craft-kit:refactor` コマンド実行時
+   - コード構造改善、パフォーマンス最適化を実施
+   - Task ツールで `refactoring-assistant` サブエージェントを実行
+   - `/cc-craft-kit:refactor` コマンド実行時に自動実行
 
 #### 利用可能なスキル
 
 1. **typescript-eslint** (`.claude/skills/typescript-eslint/SKILL.md`)
-   - **用途**: TypeScript コンパイルエラー・ESLint 警告の検出
-   - **呼び出し方法**: Skill ツールで `typescript-eslint` スキルを実行
-   - **自動実行タイミング**:
-     - implementation フェーズ開始前
-     - `/cc-craft-kit:lint-check` コマンド実行時
+   - TypeScript コンパイルエラー・ESLint 警告の検出を実施
+   - Skill ツールで `typescript-eslint` スキルを実行
+   - implementation フェーズ開始前および `/cc-craft-kit:lint-check` コマンド実行時に自動実行
 
 2. **database-schema-validator** (`.claude/skills/database-schema-validator/SKILL.md`)
-   - **用途**: Kysely スキーマとマイグレーションの検証
-   - **呼び出し方法**: Skill ツールで `database-schema-validator` スキルを実行
-   - **自動実行タイミング**:
-     - データベーススキーマ変更後
-     - `/cc-craft-kit:schema-validate` コマンド実行時
+   - Kysely スキーマとマイグレーションの検証を実施
+   - Skill ツールで `database-schema-validator` スキルを実行
+   - データベーススキーマ変更後および `/cc-craft-kit:schema-validate` コマンド実行時に自動実行
 
 3. **git-operations** (`.claude/skills/git-operations/SKILL.md`)
-   - **用途**: Git リポジトリ管理、コミット履歴解析
-   - **呼び出し方法**: Skill ツールで `git-operations` スキルを実行
-   - **自動実行タイミング**:
-     - completed フェーズ移行時の変更差分確認
+   - Git リポジトリ管理、コミット履歴解析を実施
+   - Skill ツールで `git-operations` スキルを実行
+   - completed フェーズ移行時の変更差分確認で自動実行
 
 #### サブエージェント/スキルの明示的な呼び出し方法
 
@@ -511,9 +501,9 @@ Issue は単なるタスク管理ではなく、以下の情報を統合記録�
 
 ### エラーハンドリング
 
-- **Git リポジトリ未初期化**: 警告のみ、フェーズ変更は成功
-- **pre-commit フック失敗**: 警告メッセージ表示、手動コミット案内
-- **コミット失敗**: エラーログ出力、フェーズ変更は成功
+- Git リポジトリ未初期化の場合、警告のみ表示し、フェーズ変更は成功
+- pre-commit フック失敗の場合、警告メッセージ表示し、手動コミット案内
+- コミット失敗の場合、エラーログ出力し、フェーズ変更は成功
 
 ### 実装ファイル
 
@@ -572,12 +562,12 @@ eventBus.on('spec:created', async (spec) => {
 
 ### ソースコード管理
 
-- **すべてのコード編集は `src/` で行う**: `.cc-craft-kit/` 配下のファイルは自動生成されるため、直接編集しない
-- **スラッシュコマンド定義を `src/slash-commands/` で管理**: `.claude/commands/cc-craft-kit/` はシンボリックリンクのため、直接編集しない
-- **同期を忘れない**: `src/` を編集したら `npm run sync:dogfood` を実行
-- **CI/CD での整合性チェック**: プルリクエスト時に `npm run check:sync` を実行して差分がないことを確認
-- **マイグレーション実行前は必ずバックアップ**: `npm run migrate:structure:dry` で Dry-run を実行してから本番実行
-- **型エラーは即座に修正**: `npx tsc --noEmit` でエラーが出た場合は、同期前に修正すること
+- すべてのコード編集は `src/` で行う。`.cc-craft-kit/` 配下のファイルは自動生成されるため、直接編集しない
+- スラッシュコマンド定義を `src/slash-commands/` で管理する。`.claude/commands/cc-craft-kit/` はシンボリックリンクのため、直接編集しない
+- 同期を忘れない。`src/` を編集したら `npm run sync:dogfood` を実行する
+- CI/CD での整合性チェックを実施する。プルリクエスト時に `npm run check:sync` を実行して差分がないことを確認する
+- マイグレーション実行前は必ずバックアップを取る。`npm run migrate:structure:dry` で Dry-run を実行してから本番実行する
+- 型エラーは即座に修正する。`npx tsc --noEmit` でエラーが出た場合は、同期前に修正すること
 
 ## トラブルシューティング
 

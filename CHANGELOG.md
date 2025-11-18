@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+#### プロジェクト名変更とビルドプロセス削除 (2025-11-18)
+
+**BREAKING CHANGES:**
+
+- **プロジェクト名を Takumi から cc-craft-kit に変更**
+  - ディレクトリ名: `.takumi/` → `.cc-craft-kit/`
+  - データベースファイル: `takumi.db` → `cc-craft-kit.db`
+  - スラッシュコマンド: `/takumi:*` → `/cft:*`
+  - パッケージ名: `takumi` → `cc-craft-kit`
+
+- **ビルドプロセスを削除し、TypeScript 直接実行方式に移行**
+  - 開発時は `npx tsx` で TypeScript ファイルを直接実行
+  - `npm run sync:dogfood` で `src/` から `.cc-craft-kit/` に TypeScript ファイルをコピー
+  - `dist/` ディレクトリは npm パッケージ配布用のみ使用
+  - 古い JavaScript ファイル (`.js`, `.d.ts`) を自動削除
+
+**影響範囲:**
+
+- すべてのスラッシュコマンドの呼び出し方法が変更
+- 開発ワークフローが変更（ビルド不要）
+- ドキュメントの更新が必要
+
+**マイグレーション手順:**
+
+1. `.cc-craft-kit/` ディレクトリが存在することを確認
+2. 既存の `.takumi/` ディレクトリがあれば削除
+3. スラッシュコマンドを `/cft:*` 形式に変更
+4. 開発時は `npm run sync:dogfood` で同期を実行
+5. `npm run check:sync` で整合性を確認
+
+**詳細:**
+
+- 仕様書 #33: 移行テスト
+- 仕様書 #32: Takumi から cc-craft-kit への変更が不十分
+
 ### Added
 
 #### Phase 2: GitHub 統合 (Week 3-4) - 実装完了（動作確認待ち）
@@ -121,9 +158,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - textlint/markdownlint 自動化
 - textlint warnings: 29 件 → 0 件
 - 日本語スペース統一、Markdown テーブル形式統一
-
-### Changed
-
 - TypeScript strict mode 有効化
 - ESLint グローバル オブジェクト拡張（performance, URL 等）
 - Jest DB 競合回避設定（maxWorkers: 1）

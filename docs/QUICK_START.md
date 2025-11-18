@@ -48,15 +48,15 @@ LOG_LEVEL=info
 
 ### GitHub Token取得方法
 
-**重要**: 個人アカウントで Projects v2 を使用する場合は、**Classic Personal Access Token** が必須です。
+重要: 個人アカウントで Projects v2 を使用する場合は、Classic Personal Access Token が必須です。
 
 #### Classic Personal Access Token の作成（個人アカウント向け）
 
 1. GitHub → Settings → Developer settings → Personal access tokens → **Tokens (classic)**
 2. "Generate new token (classic)" をクリック
 3. 必要なスコープを選択:
-   - ✅ `repo` - リポジトリへのフルアクセス
-   - ✅ `project` - Projects v2 の読み書き
+   - `repo` - リポジトリへのフルアクセス
+   - `project` - Projects v2 の読み書き
 4. トークンを生成してコピーし、`.env` に貼り付け
 
 #### Fine-grained Personal Access Token（Organization のみ）
@@ -68,7 +68,7 @@ Organization の Projects を使用する場合のみ、Fine-grained PAT が利�
 3. Repository permissions と Projects permissions を設定
 4. トークンをコピーして `.env` に貼り付け
 
-> **注意**: Fine-grained PAT は個人アカウントの Projects v2 には対応していません（2025年1月時点）。個人アカウントで Projects を使用する場合は、必ず Classic PAT を使用してください。
+注意: Fine-grained PAT は個人アカウントの Projects v2 には対応していません（2025 年 1 月時点）。個人アカウントで Projects を使用する場合は、必ず Classic PAT を使用してください。
 
 ## ステップ3: ドッグフーディング環境のセットアップ
 

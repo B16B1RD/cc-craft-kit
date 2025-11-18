@@ -32,6 +32,8 @@ Thumbs.db
 # Takumi specific
 .takumi/
 !.takumi/.gitkeep
+.cc-craft-kit/
+!.cc-craft-kit/.gitkeep
 *.db
 *.db-journal
 

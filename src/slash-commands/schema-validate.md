@@ -37,7 +37,7 @@ npx tsx .cc-craft-kit/commands/quality/schema-validate.ts
 
 ## 自動実行フロー
 
-**重要**: コマンド実行後、ユーザーに確認を求めずに、以下の処理を**自動的に実行**してください。
+重要: コマンド実行後、ユーザーに確認を求めずに、以下の処理を**自動的に実行**してください。
 
 1. **database-schema-validator スキルの実行**:
    - Skill ツールで `database-schema-validator` スキルを起動

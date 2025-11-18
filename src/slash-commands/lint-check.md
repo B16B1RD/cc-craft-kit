@@ -37,7 +37,7 @@ npx tsx .cc-craft-kit/commands/quality/lint-check.ts
 
 ## 自動実行フロー
 
-**重要**: コマンド実行後、ユーザーに確認を求めずに、以下の処理を**自動的に実行**してください。
+重要: コマンド実行後、ユーザーに確認を求めずに、以下の処理を**自動的に実行**してください。
 
 1. **typescript-eslint スキルの実行**:
    - Skill ツールで `typescript-eslint` スキルを起動

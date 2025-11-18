@@ -1,0 +1,22 @@
+# Ignore auto-generated and temporary directories
+.cc-craft-kit/
+.takumi/
+node_modules/
+dist/
+build/
+coverage/
+
+# Ignore lock files and logs
+package-lock.json
+*.log
+
+# Ignore hidden files
+.git/
+.vscode/
+
+# Ignore files with many legacy errors
+MIGRATION.md
+docs/trademark-research-report.md
+.claude/agents/test-generator.md
+.claude/commands/cft/watch.md
+src/slash-commands/watch.md

@@ -8,11 +8,11 @@ cc-craft-kit は、Claude Code 上のカスタムスラッシュコマンドで�
 
 ### 核心的特徴
 
-- **スラッシュコマンド設計**: MCP サーバー不要、コンテキスト効率的なアーキテクチャ（MCP 比 99%削減）
-- **GitHub 完全統合**: Projects v2、Issue、Milestone の自動管理
-- **Issue ナレッジベース化**: 課題管理＋途中経過＋エラー対策＋Tips の統合記録
-- **仕様駆動開発**: Requirements → Design → Tasks → Implementation の構造化ワークフロー
-- **`.cc-craft-kit/` ディレクトリ**: すべての機能が `.cc-craft-kit/` に集約、既存プロジェクトと競合しない
+- スラッシュコマンド設計により、MCP サーバー不要でコンテキスト効率的なアーキテクチャを実現（MCP 比 99%削減）
+- GitHub Projects v2、Issue、Milestone の完全統合による自動管理
+- Issue をナレッジベース化し、課題管理＋途中経過＋エラー対策＋Tips を統合記録
+- Requirements → Design → Tasks → Implementation の構造化ワークフローによる仕様駆動開発
+- すべての機能を `.cc-craft-kit/` ディレクトリに集約し、既存プロジェクトと競合しない設計
 
 ## 🚀 クイックスタート
 
@@ -22,8 +22,8 @@ cc-craft-kit は、Claude Code 上のカスタムスラッシュコマンドで�
 - TypeScript 5.0 以上
 - Claude Code CLI
 - GitHub Personal Access Token
-  - **個人アカウント**: Classic Personal Access Token が必須（スコープ: `repo`, `project`）
-  - **Organization**: Fine-grained PAT または Classic PAT（スコープ: `repo`, `project`）
+  - 個人アカウントの場合、Classic Personal Access Token が必須（スコープ: `repo`, `project`）
+  - Organization の場合、Fine-grained PAT または Classic PAT を使用（スコープ: `repo`, `project`）
 
 ### インストール
 
@@ -49,8 +49,8 @@ rm -rf .cc-craft-kit-repo
 1. GitHub → Settings → Developer settings → Personal access tokens → **Tokens (classic)**
 2. "Generate new token (classic)" をクリック
 3. スコープを選択:
-   - ✅ `repo` (リポジトリへのフルアクセス)
-   - ✅ `project` (Projects v2 の読み書き)
+   - `repo`（リポジトリへのフルアクセス）
+   - `project`（Projects v2 の読み書き）
 4. トークンを生成してコピー
 
 ```bash
@@ -61,7 +61,7 @@ export GITHUB_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxx"
 echo "GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx" > .env
 ```
 
-> **注意**: Fine-grained Personal Access Token は個人アカウントの Projects v2 には対応していません。Organization の Projects を使用する場合のみ Fine-grained PAT が利用可能です。
+注意: Fine-grained Personal Access Token は個人アカウントの Projects v2 には対応していません。Organization の Projects を使用する場合のみ Fine-grained PAT が利用可能です。
 
 ### プロジェクト初期化
 
