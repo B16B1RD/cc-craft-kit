@@ -68,7 +68,7 @@ echo "GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx" > .env
 Claude Code のチャットで以下のスラッシュコマンドを実行します。
 
 ```sh
-/cc-craft-kit:init my-project
+/cft:init my-project
 ```
 
 ## 📚 使い方
@@ -79,40 +79,40 @@ Claude Code のチャットで以下のスラッシュコマンドを実行し�
 
 ```sh
 # プロジェクト状態確認
-/cc-craft-kit:status
+/cft:status
 
 # 仕様書作成
-/cc-craft-kit:spec-create "ユーザー認証機能" "メール/パスワード認証とOAuth2.0対応"
+/cft:spec-create "ユーザー認証機能" "メール/パスワード認証とOAuth2.0対応"
 
 # 仕様書一覧
-/cc-craft-kit:spec-list
-/cc-craft-kit:spec-list requirements  # フェーズでフィルタ
+/cft:spec-list
+/cft:spec-list requirements  # フェーズでフィルタ
 
 # 仕様書詳細表示
-/cc-craft-kit:spec-get <spec-id>
+/cft:spec-get <spec-id>
 
 # フェーズ移行
-/cc-craft-kit:spec-phase <spec-id> design
+/cft:spec-phase <spec-id> design
 ```
 
 ### GitHub統合
 
 ```sh
 # GitHub初期化
-/cc-craft-kit:github-init <owner> <repo>
+/cft:github-init <owner> <repo>
 
 # Issue作成（仕様書作成時に自動作成される）
-/cc-craft-kit:github-issue-create <spec-id>
+/cft:github-issue-create <spec-id>
 
 # Project自動追加の設定（.envファイルに追加）
 echo "GITHUB_PROJECT_NAME=My Project Board" >> .env
 
 # 双方向同期
-/cc-craft-kit:github-sync to-github <spec-id>
-/cc-craft-kit:github-sync from-github <spec-id>
+/cft:github-sync to-github <spec-id>
+/cft:github-sync from-github <spec-id>
 
 # 手動でProjectボード追加
-/cc-craft-kit:github-project-add <spec-id> <project-number>
+/cft:github-project-add <spec-id> <project-number>
 ```
 
 #### Issue & Project 自動化
@@ -129,31 +129,31 @@ Project 追加が失敗した場合でも Issue 作成は成功し、警告メ�
 
 ```sh
 # 進捗記録
-/cc-craft-kit:knowledge-progress <spec-id> "認証機能の基本実装が完了"
+/cft:knowledge-progress <spec-id> "認証機能の基本実装が完了"
 
 # エラー解決策記録
-/cc-craft-kit:knowledge-error <spec-id> "CORSエラーが発生" "Access-Control-Allow-Originヘッダーを追加"
+/cft:knowledge-error <spec-id> "CORSエラーが発生" "Access-Control-Allow-Originヘッダーを追加"
 
 # Tips記録
-/cc-craft-kit:knowledge-tip <spec-id> "performance" "useMemoを使ってレンダリングを最適化"
+/cft:knowledge-tip <spec-id> "performance" "useMemoを使ってレンダリングを最適化"
 ```
 
 ### 全コマンド一覧
 
 ```sh
-/cc-craft-kit:init my-project              # プロジェクト初期化
-/cc-craft-kit:status                       # 状態表示
-/cc-craft-kit:spec-create "機能名" "説明"  # 仕様書作成
-/cc-craft-kit:spec-list                    # 仕様書一覧
-/cc-craft-kit:spec-get <id>                # 仕様書詳細
-/cc-craft-kit:spec-phase <id> <phase>      # フェーズ更新
-/cc-craft-kit:github-init <owner> <repo>   # GitHub統合初期化
-/cc-craft-kit:github-issue-create <id>     # Issue作成
-/cc-craft-kit:github-sync <dir> <id>       # GitHub同期
-/cc-craft-kit:github-project-add <id> <num> # Project追加
-/cc-craft-kit:knowledge-progress <id> <msg> # 進捗記録
-/cc-craft-kit:knowledge-error <id> <err> <sol> # エラー記録
-/cc-craft-kit:knowledge-tip <id> <cat> <tip>   # Tips記録
+/cft:init my-project              # プロジェクト初期化
+/cft:status                       # 状態表示
+/cft:spec-create "機能名" "説明"  # 仕様書作成
+/cft:spec-list                    # 仕様書一覧
+/cft:spec-get <id>                # 仕様書詳細
+/cft:spec-phase <id> <phase>      # フェーズ更新
+/cft:github-init <owner> <repo>   # GitHub統合初期化
+/cft:github-issue-create <id>     # Issue作成
+/cft:github-sync <dir> <id>       # GitHub同期
+/cft:github-project-add <id> <num> # Project追加
+/cft:knowledge-progress <id> <msg> # 進捗記録
+/cft:knowledge-error <id> <err> <sol> # エラー記録
+/cft:knowledge-tip <id> <cat> <tip>   # Tips記録
 ```
 
 ## 🏗️ アーキテクチャ

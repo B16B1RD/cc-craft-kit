@@ -15,9 +15,9 @@ argument-hint: "[phase] [limit]"
 ## 使用例
 
 ```bash
-/cc-craft-kit:spec-list
-/cc-craft-kit:spec-list requirements
-/cc-craft-kit:spec-list design 50
+/cft:spec-list
+/cft:spec-list requirements
+/cft:spec-list design 50
 ```
 
 ---
@@ -30,6 +30,6 @@ npx tsx .cc-craft-kit/commands/spec/list.ts "$1" "$2"
 
 結果を要約して表示し、必要に応じて次のアクションを案内してください。
 
-- 仕様書の詳細確認: `/cc-craft-kit:spec-get <spec-id>`
-- 新規仕様書の作成: `/cc-craft-kit:spec-create "<name>" [description]`
-- フェーズでフィルタ: `/cc-craft-kit:spec-list <phase>`
+- 仕様書の詳細確認: `/cft:spec-get <spec-id>`
+- 新規仕様書の作成: `/cft:spec-create "<name>" [description]`
+- フェーズでフィルタ: `/cft:spec-list <phase>`

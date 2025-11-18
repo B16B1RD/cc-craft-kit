@@ -26,7 +26,7 @@ cc-craft-kit プロジェクトは、**自分自身を使って開発する（�
 
 1. **編集**: `src/` 配下のファイルを編集
 2. **同期**: `npm run sync:dogfood` で `.cc-craft-kit/` へ TypeScript ファイルをコピー
-3. **実行**: スラッシュコマンド `/cc-craft-kit:*` を実行してテスト（`npx tsx` で直接実行）
+3. **実行**: スラッシュコマンド `/cft:*` を実行してテスト（`npx tsx` で直接実行）
 
 注意: `src/` を編集したら必ず `npm run sync:dogfood` を実行してください。ビルドは不要です。
 
@@ -53,7 +53,7 @@ npm run sync:dogfood
 
 cc-craft-kit は「自分自身を使って開発する」ため、開発中のプロジェクトディレクトリ内に `.cc-craft-kit/` ディレクトリがあります。これにより以下が可能になります。
 
-- cc-craft-kit の開発中に、cc-craft-kit のコマンド（`/cc-craft-kit:spec-create` など）を使用できる
+- cc-craft-kit の開発中に、cc-craft-kit のコマンド（`/cft:spec-create` など）を使用できる
 - 実際の運用環境と同じ構成でテスト可能
 - `.cc-craft-kit/` は `.gitignore` に含まれており、Git で管理されない
 
@@ -120,7 +120,7 @@ npm run textlint:fix
 
 ```bash
 # 例: プロジェクト状態確認
-/cc-craft-kit:status
+/cft:status
 
 # 直接実行（開発・デバッグ用）
 npx tsx .cc-craft-kit/commands/status.ts
@@ -128,7 +128,7 @@ npx tsx .cc-craft-kit/commands/status.ts
 
 ## cc-craft-kit スラッシュコマンドの自動処理
 
-### /cc-craft-kit:spec-phase の動作
+### /cft:spec-phase の動作
 
 このコマンドは、フェーズ移行後、ユーザー確認を求めず自動的に次の作業を開始します。
 
@@ -140,7 +140,7 @@ npx tsx .cc-craft-kit/commands/status.ts
 2. 受け入れ基準セクション（「3. 受け入れ基準」）を解析
 3. TodoWrite ツールで実装タスクリストを作成
 4. 仕様書ファイルの末尾へ「## 8. 実装タスクリスト」セクションを追加
-5. `/cc-craft-kit:spec-update <spec-id>` で GitHub Issue へ更新を通知
+5. `/cft:spec-update <spec-id>` で GitHub Issue へ更新を通知
 
 #### implementation フェーズ移行時の自動処理
 
@@ -264,27 +264,27 @@ await eventBus.emit(
 
 **プロジェクト管理:**
 
-- `/cc-craft-kit:init <project-name> [description]` - プロジェクト初期化
-- `/cc-craft-kit:status` - プロジェクト状況表示
-- `/cc-craft-kit:spec-create <name> [description]` - 仕様書作成
-- `/cc-craft-kit:spec-list [phase] [limit]` - 仕様書一覧
-- `/cc-craft-kit:spec-get <spec-id>` - 仕様書の詳細表示
-- `/cc-craft-kit:spec-phase <spec-id> <phase>` - フェーズ更新
-- `/cc-craft-kit:github-init <owner> <repo>` - GitHub 統合初期化
-- `/cc-craft-kit:github-issue-create <spec-id>` - Issue 作成
-- `/cc-craft-kit:github-sync <direction> <spec-id>` - GitHub 同期
-- `/cc-craft-kit:github-project-add <spec-id> <project-number>` - Project 追加
-- `/cc-craft-kit:knowledge-progress <spec-id> <message>` - 進捗記録
-- `/cc-craft-kit:knowledge-error <spec-id> <error> <solution>` - エラー解決策記録
-- `/cc-craft-kit:knowledge-tip <spec-id> <category> <tip>` - Tips 記録
+- `/cft:init <project-name> [description]` - プロジェクト初期化
+- `/cft:status` - プロジェクト状況表示
+- `/cft:spec-create <name> [description]` - 仕様書作成
+- `/cft:spec-list [phase] [limit]` - 仕様書一覧
+- `/cft:spec-get <spec-id>` - 仕様書の詳細表示
+- `/cft:spec-phase <spec-id> <phase>` - フェーズ更新
+- `/cft:github-init <owner> <repo>` - GitHub 統合初期化
+- `/cft:github-issue-create <spec-id>` - Issue 作成
+- `/cft:github-sync <direction> <spec-id>` - GitHub 同期
+- `/cft:github-project-add <spec-id> <project-number>` - Project 追加
+- `/cft:knowledge-progress <spec-id> <message>` - 進捗記録
+- `/cft:knowledge-error <spec-id> <error> <solution>` - エラー解決策記録
+- `/cft:knowledge-tip <spec-id> <category> <tip>` - Tips 記録
 
 **品質チェック:**
 
-- `/cc-craft-kit:code-review [file-pattern]` - code-reviewer サブエージェントでコードレビュー
-- `/cc-craft-kit:test-generate <file-pattern>` - test-generator サブエージェントでテスト自動生成
-- `/cc-craft-kit:lint-check` - typescript-eslint スキルで型エラー・ESLint チェック
-- `/cc-craft-kit:schema-validate` - database-schema-validator スキルでスキーマ検証
-- `/cc-craft-kit:refactor [file-pattern]` - refactoring-assistant サブエージェントでリファクタリング
+- `/cft:code-review [file-pattern]` - code-reviewer サブエージェントでコードレビュー
+- `/cft:test-generate <file-pattern>` - test-generator サブエージェントでテスト自動生成
+- `/cft:lint-check` - typescript-eslint スキルで型エラー・ESLint チェック
+- `/cft:schema-validate` - database-schema-validator スキルでスキーマ検証
+- `/cft:refactor [file-pattern]` - refactoring-assistant サブエージェントでリファクタリング
 
 ### サブエージェントとスキルの使用方針
 
@@ -295,29 +295,29 @@ cc-craft-kit は、コード品質を保証するために、サブエージェ�
 1. **code-reviewer** (`.claude/agents/code-reviewer.md`)
    - コード品質、セキュリティ、ベストプラクティスの検証を実施
    - Task ツールで `code-reviewer` サブエージェントを実行
-   - 実装完了後（completed フェーズ移行前）および `/cc-craft-kit:code-review` コマンド実行時に自動実行
+   - 実装完了後（completed フェーズ移行前）および `/cft:code-review` コマンド実行時に自動実行
 
 2. **test-generator** (`.claude/agents/test-generator.md`)
    - 単体テストの自動生成（正常系、エッジケース、エラーケース）を実施
    - Task ツールで `test-generator` サブエージェントを実行
-   - 実装タスク完了後および `/cc-craft-kit:test-generate` コマンド実行時に自動実行
+   - 実装タスク完了後および `/cft:test-generate` コマンド実行時に自動実行
 
 3. **refactoring-assistant** (`.claude/agents/refactoring-assistant.md`)
    - コード構造改善、パフォーマンス最適化を実施
    - Task ツールで `refactoring-assistant` サブエージェントを実行
-   - `/cc-craft-kit:refactor` コマンド実行時に自動実行
+   - `/cft:refactor` コマンド実行時に自動実行
 
 #### 利用可能なスキル
 
 1. **typescript-eslint** (`.claude/skills/typescript-eslint/SKILL.md`)
    - TypeScript コンパイルエラー・ESLint 警告の検出を実施
    - Skill ツールで `typescript-eslint` スキルを実行
-   - implementation フェーズ開始前および `/cc-craft-kit:lint-check` コマンド実行時に自動実行
+   - implementation フェーズ開始前および `/cft:lint-check` コマンド実行時に自動実行
 
 2. **database-schema-validator** (`.claude/skills/database-schema-validator/SKILL.md`)
    - Kysely スキーマとマイグレーションの検証を実施
    - Skill ツールで `database-schema-validator` スキルを実行
-   - データベーススキーマ変更後および `/cc-craft-kit:schema-validate` コマンド実行時に自動実行
+   - データベーススキーマ変更後および `/cft:schema-validate` コマンド実行時に自動実行
 
 3. **git-operations** (`.claude/skills/git-operations/SKILL.md`)
    - Git リポジトリ管理、コミット履歴解析を実施
@@ -364,16 +364,16 @@ Skill ツールで `typescript-eslint` スキルを実行し、型エラーと E
 
 ```bash
 # 実装開始前の準備
-/cc-craft-kit:lint-check
+/cft:lint-check
 
 # 実装中のテスト生成
-/cc-craft-kit:test-generate "src/commands/quality/**/*.ts"
+/cft:test-generate "src/commands/quality/**/*.ts"
 
 # 実装完了後のコードレビュー
-/cc-craft-kit:code-review "src/commands/quality/**/*.ts"
+/cft:code-review "src/commands/quality/**/*.ts"
 
 # データベーススキーマ変更後の検証
-/cc-craft-kit:schema-validate
+/cft:schema-validate
 ```
 
 ### 依存性注入（DI）
@@ -494,7 +494,7 @@ Issue は単なるタスク管理ではなく、以下の情報を統合記録�
 
 ### 動作
 
-1. `/cc-craft-kit:spec-phase <spec-id> <phase>` 実行
+1. `/cft:spec-phase <spec-id> <phase>` 実行
 2. `spec.phase_changed` イベント発火
 3. Git 統合ハンドラーが自動的にコミット実行
 4. コミット成功/失敗を通知

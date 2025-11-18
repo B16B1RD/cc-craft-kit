@@ -20,7 +20,7 @@ tags: [project]
 ## 使用例
 
 ```bash
-/cc-craft-kit:spec-update f6621295
+/cft:spec-update f6621295
 ```
 
 ---

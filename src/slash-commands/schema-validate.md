@@ -24,7 +24,7 @@ argument-hint: ""
 ## 使用例
 
 ```bash
-/cc-craft-kit:schema-validate
+/cft:schema-validate
 ```
 
 ---

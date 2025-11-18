@@ -21,7 +21,7 @@ description: 仕様書ファイルの変更を監視してGitHub Issueに自動�
 ## 使用例
 
 ```bash
-/cc-craft-kit:watch
+/cft:watch
 ```
 
 ## 詳細

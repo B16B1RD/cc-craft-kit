@@ -25,7 +25,7 @@ GitHub リポジトリとの連携を設定します。
 ## 使用例
 
 ```bash
-/cc-craft-kit:github-init myorg myrepo
+/cft:github-init myorg myrepo
 ```
 
 ---
@@ -38,6 +38,6 @@ npx tsx .cc-craft-kit/commands/github/init.ts "$1" "$2"
 
 初期化が完了したら、必要に応じて次のアクションを案内してください。
 
-- プロジェクト状況の確認: `/cc-craft-kit:status`
-- 仕様書から Issue 作成: `/cc-craft-kit:github-issue-create <spec-id>`
-- 新規仕様書の作成: `/cc-craft-kit:spec-create "<name>" [description]`
+- プロジェクト状況の確認: `/cft:status`
+- 仕様書から Issue 作成: `/cft:github-issue-create <spec-id>`
+- 新規仕様書の作成: `/cft:spec-create "<name>" [description]`

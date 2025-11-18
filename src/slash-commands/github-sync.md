@@ -27,8 +27,8 @@ argument-hint: "<direction> <spec-id>"
 ## 使用例
 
 ```bash
-/cc-craft-kit:github-sync to-github f6621295
-/cc-craft-kit:github-sync from-github f6621295
+/cft:github-sync to-github f6621295
+/cft:github-sync from-github f6621295
 ```
 
 ---
@@ -41,6 +41,6 @@ npx tsx .cc-craft-kit/commands/github/sync.ts "$1" "$2"
 
 同期が完了したら、結果を表示し、必要に応じて次のアクションを案内してください。
 
-- 仕様書の詳細確認: `/cc-craft-kit:spec-get <spec-id>`
-- 逆方向の同期: `/cc-craft-kit:github-sync <opposite-direction> <spec-id>`
-- フェーズ移行: `/cc-craft-kit:spec-phase <spec-id> <phase>`
+- 仕様書の詳細確認: `/cft:spec-get <spec-id>`
+- 逆方向の同期: `/cft:github-sync <opposite-direction> <spec-id>`
+- フェーズ移行: `/cft:spec-phase <spec-id> <phase>`

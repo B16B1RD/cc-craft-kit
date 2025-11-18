@@ -25,10 +25,10 @@ argument-hint: "<file-pattern>"
 
 ```bash
 # 特定のファイルのテストを生成
-/cc-craft-kit:test-generate "src/commands/spec/create.ts"
+/cft:test-generate "src/commands/spec/create.ts"
 
 # 複数ファイルのテストを生成
-/cc-craft-kit:test-generate "src/commands/**/*.ts"
+/cft:test-generate "src/commands/**/*.ts"
 ```
 
 ---

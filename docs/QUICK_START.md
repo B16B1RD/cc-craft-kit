@@ -84,7 +84,7 @@ npm run sync:dogfood
 Claude Code CLI 内で、cc-craft-kit プロジェクトを初期化します。
 
 ```bash
-/cc-craft-kit:init my-awesome-app "革新的なWebアプリケーション"
+/cft:init my-awesome-app "革新的なWebアプリケーション"
 ```
 
 これにより、以下が作成されます。
@@ -98,7 +98,7 @@ Claude Code CLI 内で、cc-craft-kit プロジェクトを初期化します。
 新しい仕様書を作成します。Claude Code でスラッシュコマンドを使用します。
 
 ```bash
-/cc-craft-kit:spec-create "ユーザー認証機能" "メール/パスワード認証とOAuth2.0対応"
+/cft:spec-create "ユーザー認証機能" "メール/パスワード認証とOAuth2.0対応"
 ```
 
 Claude Code が以下の質問をします。
@@ -116,13 +116,13 @@ Claude Code が以下の質問をします。
 作成した仕様書を確認します。
 
 ```bash
-/cc-craft-kit:spec-list
+/cft:spec-list
 ```
 
 フェーズでフィルタリングも可能です。
 
 ```bash
-/cc-craft-kit:spec-list requirements
+/cft:spec-list requirements
 ```
 
 ## ステップ7: プロジェクト状況確認
@@ -130,7 +130,7 @@ Claude Code が以下の質問をします。
 プロジェクト全体の状況を確認します。
 
 ```bash
-/cc-craft-kit:status
+/cft:status
 ```
 
 以下の情報が表示されます。
@@ -160,7 +160,7 @@ GitHub 統合機能を使用して、以下が自動化されます。
 #### GitHub 統合の初期化
 
 ```bash
-/cc-craft-kit:github-init <owner> <repo>
+/cft:github-init <owner> <repo>
 ```
 
 #### Project 自動追加の設定

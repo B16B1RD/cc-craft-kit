@@ -11,9 +11,9 @@ cc-craft-kit は**モジュラーモノリス**パターンを採用した、拡
 │                             Claude Code                              │
 │  ┌─────────────────────┐  ┌───────────────────┐  ┌────────────────┐  │
 │  │ Slash Commands      │  │ Skills            │  │ Subagents      │  │
-│  │  /cc-craft-kit:init │  │  cc-craft-kit-tdd │  │  spec-reviewer │  │
-│  │  /cc-craft-kit:spec │  │  cc-craft-kit-sdd │  │  task-planner  │  │
-│  │  /cc-craft-kit:task │  │                   │  │                │  │
+│  │  /cft:init │  │  cc-craft-kit-tdd │  │  spec-reviewer │  │
+│  │  /cft:spec │  │  cc-craft-kit-sdd │  │  task-planner  │  │
+│  │  /cft:task │  │                   │  │                │  │
 │  └──────────┬──────────┘  └─────┬─────────────┘  └───────┬────────┘  │
 │             │                   │                        │           │
 │             └───────────────────┴────────────────────────┘           │
@@ -39,10 +39,10 @@ cc-craft-kit は**モジュラーモノリス**パターンを採用した、拡
 │                                                                      │
 │  ┌────────────────────────────────────────────────────────────────┐  │
 │  │                         Slash Commands                         │  │
-│  │  • /cc-craft-kit:init                                          │  │
-│  │  • /cc-craft-kit:spec-create/list/get/phase                    │  │
-│  │  • /cc-craft-kit:github-init/issue-create/sync/project-add     │  │
-│  │  • /cc-craft-kit:knowledge-progress/error/tip                  │  │
+│  │  • /cft:init                                          │  │
+│  │  • /cft:spec-create/list/get/phase                    │  │
+│  │  • /cft:github-init/issue-create/sync/project-add     │  │
+│  │  • /cft:knowledge-progress/error/tip                  │  │
 │  └────────────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────────────┘
                                   │
@@ -159,7 +159,7 @@ interface cc-craft-kitPlugin {
 ### 1. 仕様書作成フロー
 
 ```text
-1. User: スラッシュコマンド実行 (/cc-craft-kit:spec-create "機能名" "説明")
+1. User: スラッシュコマンド実行 (/cft:spec-create "機能名" "説明")
    ↓
 2. Slash Command: .cc-craft-kit/commands/spec/create.ts を npx tsx で実行
    ↓

@@ -5,7 +5,7 @@
 ## 使用例
 
 ```bash
-/cc-craft-kit:agent-list
+/cft:agent-list
 ```
 
 ---
@@ -18,4 +18,4 @@ npx tsx .cc-craft-kit/commands/agent/list.ts
 
 結果を要約して表示し、必要に応じて次のアクションを案内してください。
 
-- サブエージェント作成: `/cc-craft-kit:agent-create <name> <description>`
+- サブエージェント作成: `/cft:agent-create <name> <description>`

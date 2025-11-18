@@ -21,7 +21,7 @@ argument-hint: "<project-name> [description]"
 ## 使用例
 
 ```bash
-/cc-craft-kit:init my-awesome-app
+/cft:init my-awesome-app
 ```
 
 ---
@@ -34,6 +34,6 @@ npx tsx .cc-craft-kit/commands/init.ts "$1"
 
 初期化が完了したら、結果を要約して表示し、必要に応じて次のアクションを案内してください。
 
-- GitHub 統合の設定: `/cc-craft-kit:github-init <owner> <repo>`
-- プロジェクト状況の確認: `/cc-craft-kit:status`
-- 新規仕様書の作成: `/cc-craft-kit:spec-create "<name>" [description]`
+- GitHub 統合の設定: `/cft:github-init <owner> <repo>`
+- プロジェクト状況の確認: `/cft:status`
+- 新規仕様書の作成: `/cft:spec-create "<name>" [description]`

@@ -25,13 +25,13 @@ argument-hint: "<file-pattern>"
 
 ```bash
 # 特定のファイルをリファクタリング
-/cc-craft-kit:refactor "src/commands/spec/create.ts"
+/cft:refactor "src/commands/spec/create.ts"
 
 # ディレクトリ全体をリファクタリング
-/cc-craft-kit:refactor "src/commands/**/*.ts"
+/cft:refactor "src/commands/**/*.ts"
 
 # プロジェクト全体をリファクタリング
-/cc-craft-kit:refactor
+/cft:refactor
 ```
 
 ---
