@@ -8,6 +8,7 @@ import {
   createMissingArgumentError,
   createValidationError,
 } from './error-handler.js';
+import { normalizePhase } from '../../core/workflow/phase-mapping.js';
 
 /**
  * UUID v4 のパターン
@@ -22,6 +23,7 @@ export const VALID_PHASES = [
   'design',
   'tasks',
   'implementation',
+  'testing',
   'completed',
 ] as const;
 
@@ -48,12 +50,20 @@ export function validateSpecId(specId: string): void {
 
 /**
  * フェーズ名検証
+ *
+ * 省略形が入力された場合は自動的に完全形に変換します。
+ * 例: req → requirements, impl → implementation
  */
 export function validatePhase(phase: string): Phase {
-  if (!VALID_PHASES.includes(phase as Phase)) {
+  // 省略形を正規化
+  const normalized = normalizePhase(phase);
+
+  // 正規化後のフェーズが有効か検証
+  if (!VALID_PHASES.includes(normalized as Phase)) {
     throw createInvalidPhaseError(phase);
   }
-  return phase as Phase;
+
+  return normalized as Phase;
 }
 
 /**
