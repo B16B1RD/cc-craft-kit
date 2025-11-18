@@ -1,7 +1,6 @@
 import { graphql } from '@octokit/graphql';
 import type { Kysely } from 'kysely';
 import type { Database } from '../../core/database/schema.js';
-import { injectable } from 'tsyringe';
 import { z } from 'zod';
 
 /**
@@ -35,7 +34,6 @@ const INITIAL_RETRY_DELAY_MS = 1000;
  * Sub Issue Manager
  * GitHub の Sub Issue 機能を使用してタスクを管理
  */
-@injectable()
 export class SubIssueManager {
   private graphqlClientCache: Map<string, ReturnType<typeof graphql.defaults>> = new Map();
 

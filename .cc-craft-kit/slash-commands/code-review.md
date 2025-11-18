@@ -26,13 +26,13 @@ argument-hint: "<file-pattern>"
 
 ```bash
 # 特定のファイルをレビュー
-/cc-craft-kit:code-review "src/commands/spec/create.ts"
+/cft:code-review "src/commands/spec/create.ts"
 
 # ディレクトリ全体をレビュー
-/cc-craft-kit:code-review "src/commands/**/*.ts"
+/cft:code-review "src/commands/**/*.ts"
 
 # プロジェクト全体をレビュー
-/cc-craft-kit:code-review
+/cft:code-review
 ```
 
 ---

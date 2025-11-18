@@ -21,7 +21,7 @@ argument-hint: "<spec-id>"
 ## 使用例
 
 ```bash
-/cc-craft-kit:github-issue-create f6621295
+/cft:github-issue-create f6621295
 ```
 
 ---
@@ -34,6 +34,6 @@ npx tsx .cc-craft-kit/commands/github/issue-create.ts "$1"
 
 Issue 作成が完了したら、Issue URL を表示し、必要に応じて次のアクションを案内してください。
 
-- GitHub Project に追加: `/cc-craft-kit:github-project-add <spec-id> <project-number>`
-- GitHub から同期: `/cc-craft-kit:github-sync from-github <spec-id>`
-- 仕様書の詳細確認: `/cc-craft-kit:spec-get <spec-id>`
+- GitHub Project に追加: `/cft:github-project-add <spec-id> <project-number>`
+- GitHub から同期: `/cft:github-sync from-github <spec-id>`
+- 仕様書の詳細確認: `/cft:spec-get <spec-id>`

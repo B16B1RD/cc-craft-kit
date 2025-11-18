@@ -10,8 +10,8 @@
 ## 使用例
 
 ```bash
-/cc-craft-kit:agent-create documentation-writer "Creates comprehensive documentation for code and APIs"
-/cc-craft-kit:agent-create security-auditor "Performs security audits and identifies vulnerabilities"
+/cft:agent-create documentation-writer "Creates comprehensive documentation for code and APIs"
+/cft:agent-create security-auditor "Performs security audits and identifies vulnerabilities"
 ```
 
 ---
@@ -24,6 +24,6 @@ npx tsx .cc-craft-kit/commands/agent/create.ts "$1" "$2"
 
 作成が完了したら、結果を要約して表示してください。
 
-- サブエージェント一覧: `/cc-craft-kit:agent-list`
+- サブエージェント一覧: `/cft:agent-list`
 
 ARGUMENTS: $*

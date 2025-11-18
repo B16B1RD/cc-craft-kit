@@ -20,7 +20,7 @@ argument-hint: "<spec-id>"
 ## 使用例
 
 ```bash
-/cc-craft-kit:spec-get f6621295
+/cft:spec-get f6621295
 ```
 
 ---
@@ -33,6 +33,6 @@ npx tsx .cc-craft-kit/commands/spec/get.ts "$1"
 
 結果を表示し、必要に応じて次のアクションを案内してください。
 
-- フェーズ移行: `/cc-craft-kit:spec-phase <spec-id> <phase>`
-- GitHub Issue 作成: `/cc-craft-kit:github-issue-create <spec-id>`
-- GitHub 同期: `/cc-craft-kit:github-sync <direction> <spec-id>`
+- フェーズ移行: `/cft:spec-phase <spec-id> <phase>`
+- GitHub Issue 作成: `/cft:github-issue-create <spec-id>`
+- GitHub 同期: `/cft:github-sync <direction> <spec-id>`

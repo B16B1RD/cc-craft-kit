@@ -10,8 +10,8 @@
 ## 使用例
 
 ```bash
-/cc-craft-kit:skill-create api-documentation "Generates comprehensive API documentation from code"
-/cc-craft-kit:skill-create performance-analysis "Analyzes code performance and identifies bottlenecks"
+/cft:skill-create api-documentation "Generates comprehensive API documentation from code"
+/cft:skill-create performance-analysis "Analyzes code performance and identifies bottlenecks"
 ```
 
 ---
@@ -24,6 +24,6 @@ npx tsx .cc-craft-kit/commands/skill/create.ts "$1" "$2"
 
 作成が完了したら、結果を要約して表示してください。
 
-- スキル一覧: `/cc-craft-kit:skill-list`
+- スキル一覧: `/cft:skill-list`
 
 ARGUMENTS: $*

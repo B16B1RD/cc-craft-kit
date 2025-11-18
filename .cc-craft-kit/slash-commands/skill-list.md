@@ -5,7 +5,7 @@
 ## 使用例
 
 ```bash
-/cc-craft-kit:skill-list
+/cft:skill-list
 ```
 
 ---
@@ -18,4 +18,4 @@ npx tsx .cc-craft-kit/commands/skill/list.ts
 
 結果を要約して表示し、必要に応じて次のアクションを案内してください。
 
-- スキル作成: `/cc-craft-kit:skill-create <name> <description>`
+- スキル作成: `/cft:skill-create <name> <description>`

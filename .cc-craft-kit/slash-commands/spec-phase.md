@@ -21,7 +21,7 @@ argument-hint: "<spec-id> <phase>"
 ## 使用例
 
 ```bash
-/cc-craft-kit:spec-phase f6621295 design
+/cft:spec-phase f6621295 design
 ```
 
 ---
@@ -44,7 +44,7 @@ npx tsx .cc-craft-kit/commands/spec/phase.ts "$1" "$2"
    - 各受け入れ基準を実装可能な単位に分解
    - 依存関係と優先度を設定
 4. **仕様書にタスクセクションを追加**: Edit ツールで仕様書ファイルの末尾に「## 8. 実装タスクリスト」セクションを追加
-5. **GitHub へ通知**: `/cc-craft-kit:spec-update $1` で GitHub Issue の更新を通知
+5. **GitHub へ通知**: `/cft:spec-update $1` で GitHub Issue の更新を通知
 
 ### implementation フェーズに移行した場合
 
@@ -77,6 +77,6 @@ npx tsx .cc-craft-kit/commands/spec/phase.ts "$1" "$2"
 
 requirements, design, completed フェーズの場合は、従来通りガイダンスメッセージを表示してください。
 
-- 仕様書の詳細確認: `/cc-craft-kit:spec-get <spec-id>`
-- GitHub Issue 作成: `/cc-craft-kit:github-issue-create <spec-id>`
-- 次のフェーズに移行: `/cc-craft-kit:spec-phase <spec-id> <next-phase>`
+- 仕様書の詳細確認: `/cft:spec-get <spec-id>`
+- GitHub Issue 作成: `/cft:github-issue-create <spec-id>`
+- 次のフェーズに移行: `/cft:spec-phase <spec-id> <next-phase>`

@@ -21,7 +21,7 @@ argument-hint: "<spec-name> [description]"
 ## 使用例
 
 ```bash
-/cc-craft-kit:spec-create "ユーザー認証機能" "メール/パスワード認証とOAuth2.0対応"
+/cft:spec-create "ユーザー認証機能" "メール/パスワード認証とOAuth2.0対応"
 ```
 
 ---
@@ -45,5 +45,5 @@ npx tsx .cc-craft-kit/commands/spec/create.ts "$1" "$2"
    - 改善提案があれば、Edit ツールで仕様書を更新
 
 3. **次のアクションを案内**:
-   - 仕様書の詳細確認: `/cc-craft-kit:spec-get <spec-id>`
-   - デザインフェーズに移行: `/cc-craft-kit:spec-phase <spec-id> design`
+   - 仕様書の詳細確認: `/cft:spec-get <spec-id>`
+   - デザインフェーズに移行: `/cft:spec-phase <spec-id> design`

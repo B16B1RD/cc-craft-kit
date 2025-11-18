@@ -9,7 +9,7 @@ cc-craft-kit プロジェクトの現在の状況を表示します。
 ## 使用例
 
 ```bash
-/cc-craft-kit:status
+/cft:status
 ```
 
 ---
