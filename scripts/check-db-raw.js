@@ -6,7 +6,7 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const dbPath = join(__dirname, '..', '.takumi', 'takumi.db');
+const dbPath = join(__dirname, '..', '.cc-craft-kit', 'cc-craft-kit.db');
 const db = new Database(dbPath, { readonly: true });
 
 console.log('=== テーブル一覧 ===');

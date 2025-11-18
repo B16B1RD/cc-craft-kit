@@ -21,7 +21,7 @@ TAKUMI_BASE_URL="https://github.com/${TAKUMI_REPO}"
 TAKUMI_RELEASES_API="https://api.github.com/repos/${TAKUMI_REPO}/releases/latest"
 INSTALL_DIR="."
 VERSION="latest"
-LOG_FILE=".takumi/install.log"
+LOG_FILE=".cc-craft-kit/install.log"
 
 # 色付きメッセージ用のANSIエスケープコード
 RED='\033[0;31m'
@@ -90,9 +90,9 @@ verify_archive() {
     error "アーカイブファイルが破損しています。"
   fi
 
-  # .takumi/ ディレクトリの存在確認
-  if ! tar -tzf "$archive_file" | grep -q '^\.takumi/'; then
-    error "無効なアーカイブです。.takumi/ ディレクトリが見つかりません。"
+  # .cc-craft-kit/ ディレクトリの存在確認
+  if ! tar -tzf "$archive_file" | grep -q '^\.cc-craft-kit/'; then
+    error "無効なアーカイブです。.cc-craft-kit/ ディレクトリが見つかりません。"
   fi
 }
 
@@ -166,7 +166,7 @@ fetch_latest_version() {
   LATEST_VERSION=$(echo "$VERSION_DATA" | grep -o '"tag_name": *"[^"]*"' | head -1 | cut -d'"' -f4)
 
   # browser_download_url を抽出
-  DOWNLOAD_URL=$(echo "$VERSION_DATA" | grep -o '"browser_download_url": *"[^"]*\.takumi\.tar\.gz"' | head -1 | cut -d'"' -f4)
+  DOWNLOAD_URL=$(echo "$VERSION_DATA" | grep -o '"browser_download_url": *"[^"]*\.cc-craft-kit\.tar\.gz"' | head -1 | cut -d'"' -f4)
 
   if [ -z "$LATEST_VERSION" ] || [ -z "$DOWNLOAD_URL" ]; then
     error "最新バージョンの取得に失敗しました。リポジトリに GitHub Release が存在することを確認してください。"
@@ -211,9 +211,9 @@ extract_archive() {
   ARCHIVE_FILE=$1
   info "アーカイブを $INSTALL_DIR に展開しています..."
 
-  # 既存の .takumi/ ディレクトリチェック
-  if [ -d "$INSTALL_DIR/.takumi" ]; then
-    warn ".takumi/ ディレクトリがすでに存在します。"
+  # 既存の .cc-craft-kit/ ディレクトリチェック
+  if [ -d "$INSTALL_DIR/.cc-craft-kit" ]; then
+    warn ".cc-craft-kit/ ディレクトリがすでに存在します。"
     printf "上書きしますか？ [y/N]: "
     read -r REPLY
     if [ "$REPLY" != "y" ] && [ "$REPLY" != "Y" ]; then
@@ -221,7 +221,7 @@ extract_archive() {
       rm -f "$ARCHIVE_FILE"
       exit 0
     fi
-    rm -rf "$INSTALL_DIR/.takumi"
+    rm -rf "$INSTALL_DIR/.cc-craft-kit"
   fi
 
   # 展開
@@ -255,16 +255,16 @@ create_symlink() {
   OS=$(detect_os)
   if [ "$OS" = "windows" ]; then
     # Windows: cmd //c mklink を試行
-    cmd //c mklink //D "$INSTALL_DIR\\.claude\\commands\\takumi" "$INSTALL_DIR\\.takumi\\commands" 2>/dev/null || \
-    ln -s "$INSTALL_DIR/.takumi/commands" "$INSTALL_DIR/.claude/commands/takumi" 2>/dev/null || {
-      warn "シンボリックリンクの作成に失敗しました。\n手動で作成してください: ln -s $INSTALL_DIR/.takumi/commands $INSTALL_DIR/.claude/commands/takumi"
+    cmd //c mklink //D "$INSTALL_DIR\\.claude\\commands\\takumi" "$INSTALL_DIR\\.cc-craft-kit\\commands" 2>/dev/null || \
+    ln -s "$INSTALL_DIR/.cc-craft-kit/commands" "$INSTALL_DIR/.claude/commands/takumi" 2>/dev/null || {
+      warn "シンボリックリンクの作成に失敗しました。\n手動で作成してください: ln -s $INSTALL_DIR/.cc-craft-kit/commands $INSTALL_DIR/.claude/commands/takumi"
       return
     }
   else
     # Linux/macOS: 相対パスでシンボリックリンク作成
     cd "$INSTALL_DIR/.claude/commands"
-    ln -s "../../.takumi/commands" takumi || {
-      warn "シンボリックリンクの作成に失敗しました。\n手動で作成してください: ln -s ../../.takumi/commands $INSTALL_DIR/.claude/commands/takumi"
+    ln -s "../../.cc-craft-kit/commands" takumi || {
+      warn "シンボリックリンクの作成に失敗しました。\n手動で作成してください: ln -s ../../.cc-craft-kit/commands $INSTALL_DIR/.claude/commands/takumi"
       cd - >/dev/null
       return
     }
@@ -284,9 +284,9 @@ generate_env() {
     return
   fi
 
-  if [ -f "$INSTALL_DIR/.takumi/.env.example" ]; then
+  if [ -f "$INSTALL_DIR/.cc-craft-kit/.env.example" ]; then
     info ".env ファイルを生成しています..."
-    cp "$INSTALL_DIR/.takumi/.env.example" "$INSTALL_DIR/.env"
+    cp "$INSTALL_DIR/.cc-craft-kit/.env.example" "$INSTALL_DIR/.env"
     success ".env ファイル生成完了"
   else
     warn ".env.example が見つかりません。.env ファイルを手動で作成してください。"
@@ -301,7 +301,7 @@ init_project() {
   info "Takumi プロジェクトを初期化しています..."
 
   cd "$INSTALL_DIR"
-  if npx tsx .takumi/commands/init.ts "My Project" "Takumi project" >/dev/null 2>&1; then
+  if npx tsx .cc-craft-kit/commands/init.ts "My Project" "Takumi project" >/dev/null 2>&1; then
     success "プロジェクト初期化完了"
   else
     warn "プロジェクトの初期化に失敗しました。\n手動で実行してください: /takumi:init"

@@ -29,9 +29,7 @@ build/
 .DS_Store
 Thumbs.db
 
-# Takumi specific
-.takumi/
-!.takumi/.gitkeep
+# cc-craft-kit specific
 .cc-craft-kit/
 !.cc-craft-kit/.gitkeep
 *.db

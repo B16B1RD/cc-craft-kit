@@ -30,8 +30,8 @@ jobs:
 
       - name: Create archive
         run: |
-          cd .takumi
-          tar -czf ../.takumi.tar.gz .
+          cd .cc-craft-kit
+          tar -czf ../.cc-craft-kit.tar.gz .
           cd ..
 
       - name: Generate changelog
@@ -50,7 +50,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: ./.takumi.tar.gz
+          files: ./.cc-craft-kit.tar.gz
           body: ${{ steps.changelog.outputs.changelog }}
           draft: false
           prerelease: false

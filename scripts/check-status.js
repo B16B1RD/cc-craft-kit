@@ -6,15 +6,15 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const dbPath = join(__dirname, '..', '.takumi', 'takumi.db');
+const dbPath = join(__dirname, '..', '.cc-craft-kit', 'cc-craft-kit.db');
 const db = new Database(dbPath, { readonly: true });
 
-console.log('# Takumi プロジェクト状況\n');
+console.log('# cc-craft-kit プロジェクト状況\n');
 
 // プロジェクト情報
 const config = JSON.parse(
   await import('fs').then(fs =>
-    fs.promises.readFile(join(__dirname, '..', '.takumi', 'config.json'), 'utf-8')
+    fs.promises.readFile(join(__dirname, '..', '.cc-craft-kit', 'config.json'), 'utf-8')
   )
 );
 console.log(`プロジェクト名: ${config.project.name}`);

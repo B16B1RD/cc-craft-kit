@@ -7,7 +7,7 @@ import { execSync } from 'child_process';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const dbPath = join(__dirname, '..', '.takumi', 'takumi.db');
+const dbPath = join(__dirname, '..', '.cc-craft-kit', 'cc-craft-kit.db');
 const db = new Database(dbPath);
 
 const specId = process.argv[2];
@@ -83,7 +83,7 @@ if (syncRecord) {
 
 // 仕様書ファイルを保存
 const fs = await import('fs/promises');
-const specsDir = join(__dirname, '..', '.takumi', 'specs');
+const specsDir = join(__dirname, '..', '.cc-craft-kit', 'specs');
 const specFilePath = join(specsDir, `${specId}.md`);
 await fs.writeFile(specFilePath, body, 'utf-8');
 
