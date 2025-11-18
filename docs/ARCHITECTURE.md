@@ -38,7 +38,7 @@ cc-craft-kit は**モジュラーモノリス**パターンを採用した、拡
 │  └────────────────────────────────────────────────────────────────┘  │
 │                                                                      │
 │  ┌────────────────────────────────────────────────────────────────┐  │
-│  │           Slash Commands                                       │  │
+│  │                         Slash Commands                         │  │
 │  │  • /cc-craft-kit:init                                          │  │
 │  │  • /cc-craft-kit:spec-create/list/get/phase                    │  │
 │  │  • /cc-craft-kit:github-init/issue-create/sync/project-add     │  │
