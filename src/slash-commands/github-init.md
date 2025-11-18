@@ -14,7 +14,7 @@ GitHub リポジトリとの連携を設定します。
 
 ## 実行内容
 
-1. `.takumi/config.json`に GitHub 情報を保存
+1. `.cc-craft-kit/config.json`に GitHub 情報を保存
 2. GITHUB_TOKEN 環境変数の確認
 3. 必要な権限のチェック
 
@@ -25,7 +25,7 @@ GitHub リポジトリとの連携を設定します。
 ## 使用例
 
 ```bash
-/takumi:github-init myorg myrepo
+/cc-craft-kit:github-init myorg myrepo
 ```
 
 ---
@@ -33,11 +33,11 @@ GitHub リポジトリとの連携を設定します。
 以下のコマンドを実行して GitHub 統合を初期化してください。
 
 ```bash
-npx tsx .takumi/commands/github/init.ts "$1" "$2"
+npx tsx .cc-craft-kit/commands/github/init.ts "$1" "$2"
 ```
 
 初期化が完了したら、必要に応じて次のアクションを案内してください。
 
-- プロジェクト状況の確認: `/takumi:status`
-- 仕様書から Issue 作成: `/takumi:github-issue-create <spec-id>`
-- 新規仕様書の作成: `/takumi:spec-create "<name>" [description]`
+- プロジェクト状況の確認: `/cc-craft-kit:status`
+- 仕様書から Issue 作成: `/cc-craft-kit:github-issue-create <spec-id>`
+- 新規仕様書の作成: `/cc-craft-kit:spec-create "<name>" [description]`

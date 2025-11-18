@@ -20,7 +20,7 @@ argument-hint: "<spec-id>"
 ## 使用例
 
 ```bash
-/takumi:spec-get f6621295
+/cc-craft-kit:spec-get f6621295
 ```
 
 ---
@@ -28,11 +28,11 @@ argument-hint: "<spec-id>"
 以下のコマンドを実行して仕様書の詳細を取得してください。
 
 ```bash
-npx tsx .takumi/commands/spec/get.ts "$1"
+npx tsx .cc-craft-kit/commands/spec/get.ts "$1"
 ```
 
 結果を表示し、必要に応じて次のアクションを案内してください。
 
-- フェーズ移行: `/takumi:spec-phase <spec-id> <phase>`
-- GitHub Issue 作成: `/takumi:github-issue-create <spec-id>`
-- GitHub 同期: `/takumi:github-sync <direction> <spec-id>`
+- フェーズ移行: `/cc-craft-kit:spec-phase <spec-id> <phase>`
+- GitHub Issue 作成: `/cc-craft-kit:github-issue-create <spec-id>`
+- GitHub 同期: `/cc-craft-kit:github-sync <direction> <spec-id>`

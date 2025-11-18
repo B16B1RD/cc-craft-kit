@@ -1,10 +1,10 @@
-# Takumi（匠）商標調査報告書
+# cc-craft-kit商標調査報告書
 
 ## 1. 調査概要
 
 - **調査日時**: 2024-11-18
 - **調査者**: Claude Code
-- **調査対象**: Takumi（匠）
+- **調査対象**: cc-craft-kit
 - **調査範囲**: 日本国内、第 9 類・第 42 類
 - **報告書ステータス**: 暫定報告（J-PlatPat・npm 検索未完了）
 
@@ -18,7 +18,7 @@
 
 ### 検索キーワード
 
-- 英語: Takumi
+- 英語: cc-craft-kit
 - カタカナ: タクミ
 - 漢字: 匠
 
@@ -36,16 +36,16 @@ J-PlatPat（特許情報プラットフォーム）は Web ブラウザでの手
 **検索ステップ**:
 
 1. **簡易検索**
-   - キーワード:「Takumi」
+   - キーワード:「cc-craft-kit」
    - 商標（検索対象）: 称呼、名称
    - 区分: 第 9 類
-   - 検索実行後、スクリーンショット保存: `docs/trademark-evidence/j-platpat/search-results-takumi-class9.png`
+   - 検索実行後、スクリーンショット保存: `docs/trademark-evidence/j-platpat/search-results-cc-craft-kit-class9.png`
 
 2. **簡易検索**
-   - キーワード:「Takumi」
+   - キーワード:「cc-craft-kit」
    - 商標（検索対象）: 称呼、名称
    - 区分: 第 42 類
-   - 検索実行後、スクリーンショット保存: `docs/trademark-evidence/j-platpat/search-results-takumi-class42.png`
+   - 検索実行後、スクリーンショット保存: `docs/trademark-evidence/j-platpat/search-results-cc-craft-kit-class42.png`
 
 3. **簡易検索**
    - キーワード:「タクミ」
@@ -83,18 +83,18 @@ J-PlatPat（特許情報プラットフォーム）は Web ブラウザでの手
 
 ### npm パッケージ検索結果
 
-**検索方法**: npmjs.com で「takumi」を検索（Web 検索制限により手動確認が必要）
+**検索方法**: npmjs.com で「cc-craft-kit」を検索（Web 検索制限により手動確認が必要）
 
 **注意事項**:
 
 - npm レジストリへの直接アクセスが制限されているため、手動での確認が推奨されます
-- 検索 URL: <https://www.npmjs.com/search?q=takumi>
-- ターミナルでの検索: `npm search takumi`
+- 検索 URL: <https://www.npmjs.com/search?q=cc-craft-kit>
+- ターミナルでの検索: `npm search cc-craft-kit`
 
 **推奨される次のステップ**:
 
-1. Web ブラウザで <https://www.npmjs.com/search?q=takumi> にアクセス
-2. `takumi` という完全一致のパッケージ名が存在するか確認
+1. Web ブラウザで <https://www.npmjs.com/search?q=cc-craft-kit> にアクセス
+2. `cc-craft-kit` という完全一致のパッケージ名が存在するか確認
 3. 存在する場合: ダウンロード数、最終更新日、用途を記録
 4. 存在しない場合: パッケージ名として利用可能と判定
 
@@ -108,45 +108,45 @@ J-PlatPat（特許情報プラットフォーム）は Web ブラウザでの手
 - **要確認**: 同じソフトウェア開発領域で名称重複の可能性がある
 - **競合する**: 同一用途・同一名称のプロジェクトが存在する
 
-**検索キーワード**: "GitHub takumi repository software development tool"
+**検索キーワード**: "GitHub cc-craft-kit repository software development tool"
 
 **発見されたアカウント・組織**:
 
-1. **TakumiHQ** (組織)
-   - URL: <https://github.com/TakumiHQ>
+1. **cc-craft-kitHQ** (組織)
+   - URL: <https://github.com/cc-craft-kitHQ>
    - 説明: デプロイメントツール「kyber」を開発
    - 言語: Python
    - リポジトリ数: 24 個
    - 用途: AWS + k8s デプロイメントツール
    - **競合判定**: 競合しない（デプロイメント特化）
 
-2. **Takumi Software** (組織)
-   - URL: <https://github.com/takumi-software>
+2. **cc-craft-kit Software** (組織)
+   - URL: <https://github.com/cc-craft-kit-software>
    - 説明: "Software craftmanship[sic]for the business"（原文ママ）
    - リポジトリ数: 3 個
    - **競合判定**: 要確認（同じソフトウェア開発領域）
 
-3. **takumi-dev** (個人)
-   - URL: <https://github.com/takumi-dev>
+3. **cc-craft-kit-dev** (個人)
+   - URL: <https://github.com/cc-craft-kit-dev>
    - 場所: 東京、日本
    - リポジトリ数: 14 個
    - **競合判定**: 競合しない（個人アカウント）
 
-4. **takumi-pro** (個人)
-   - URL: <https://github.com/takumi-pro>
+4. **cc-craft-kit-pro** (個人)
+   - URL: <https://github.com/cc-craft-kit-pro>
    - 主要プロジェクト: DevLocator、BOOKMAP
    - **競合判定**: 競合しない（個人プロジェクト）
 
-5. **Takumi** (ライブラリ)
-   - ベンチマーク比較で言及: Satori と Takumi の OG Image レンダリング比較
+5. **cc-craft-kit** (ライブラリ)
+   - ベンチマーク比較で言及: Satori と cc-craft-kit の OG Image レンダリング比較
    - 用途: OG Image レンダリングツール
    - **競合判定**: 競合しない（画像レンダリング特化）
 
 **総合評価**:
 
-- 「Takumi」という名称の開発ツールは複数存在するが、いずれも特定用途に特化している
-- 汎用的な「開発支援ツールキット」としての Takumi プロジェクトとの直接的な競合は確認されず
-- ただし、「Takumi Software」組織は同じソフトウェア開発領域であり、要注意
+- 「cc-craft-kit」という名称の開発ツールは複数存在するが、いずれも特定用途に特化している
+- 汎用的な「開発支援ツールキット」としての cc-craft-kit プロジェクトとの直接的な競合は確認されず
+- ただし、「cc-craft-kit Software」組織は同じソフトウェア開発領域であり、要注意
 
 ## 4. リスク評価
 
@@ -159,9 +159,9 @@ J-PlatPat（特許情報プラットフォーム）は Web ブラウザでの手
 #### 完了した調査
 
 1. **GitHub リポジトリ調査**: 完了
-   - 「Takumi」を含む複数のアカウント・組織が存在
+   - 「cc-craft-kit」を含む複数のアカウント・組織が存在
    - 直接的な競合プロジェクトは確認されず
-   - ただし、「Takumi Software」組織は同じソフトウェア開発領域
+   - ただし、「cc-craft-kit Software」組織は同じソフトウェア開発領域
 
 2. **npm パッケージ調査**: 未完了（手動確認が必要）
    - Web アクセス制限により自動検索不可
@@ -179,7 +179,7 @@ J-PlatPat（特許情報プラットフォーム）は Web ブラウザでの手
 
 #### 中リスクと判定した根拠
 
-1. GitHub での「Takumi」名称の使用は確認されたが、直接的な競合はない
+1. GitHub での「cc-craft-kit」名称の使用は確認されたが、直接的な競合はない
 2. J-PlatPat での商標登録状況が未確認のため、高リスクとは断定できない
 3. ただし、確認が完了していない項目が多いため、低リスクとも言えない
 
@@ -197,9 +197,9 @@ J-PlatPat（特許情報プラットフォーム）は Web ブラウザでの手
 
 #### 外観（見た目）の類似性
 
-- **対象**: Takumi、匠、タクミ
+- **対象**: cc-craft-kit、匠、タクミ
 - **類似する可能性のある外観**:
-  - Takumi、TAKUMI（大文字小文字の違い）
+  - cc-craft-kit、TAKUMI（大文字小文字の違い）
   - 匠（漢字表記）
   - タクミ（カタカナ表記）
 
@@ -218,14 +218,14 @@ J-PlatPat（特許情報プラットフォーム）は Web ブラウザでの手
 
 1. **J-PlatPat での手動商標検索**（最優先）
    - URL: <https://www.j-platpat.inpit.go.jp/>
-   - 検索キーワード:「Takumi」「タクミ」「匠」
+   - 検索キーワード:「cc-craft-kit」「タクミ」「匠」
    - 対象区分: 第 9 類、第 42 類
    - スクリーンショット保存: `docs/trademark-evidence/j-platpat/`
 
 2. **npm パッケージ名の確認**
-   - URL: <https://www.npmjs.com/search?q=takumi>
-   - または: `npm search takumi` をターミナルで実行
-   - `takumi` パッケージの存在有無を確認
+   - URL: <https://www.npmjs.com/search?q=cc-craft-kit>
+   - または: `npm search cc-craft-kit` をターミナルで実行
+   - `cc-craft-kit` パッケージの存在有無を確認
 
 3. **調査結果の更新**
    - J-PlatPat、npm 検索結果を本報告書に追記
@@ -235,13 +235,13 @@ J-PlatPat（特許情報プラットフォーム）は Web ブラウザでの手
 
 #### 条件
 
-- J-PlatPat で第 9 類・第 42 類において「Takumi」「タクミ」「匠」の登録商標が存在しない
+- J-PlatPat で第 9 類・第 42 類において「cc-craft-kit」「タクミ」「匠」の登録商標が存在しない
 - または、類似性が低い商標のみが存在する
 
 #### 推奨アクション
 
 1. **将来的な商標登録を検討**
-   - Takumi プロジェクトの商標登録を申請
+   - cc-craft-kit プロジェクトの商標登録を申請
    - 第 9 類（コンピュータソフトウェア）での登録
    - 第 42 類（ソフトウェア開発サービス）での登録
 
@@ -250,8 +250,8 @@ J-PlatPat（特許情報プラットフォーム）は Web ブラウザでの手
    - 新規登録された類似商標をチェック
 
 3. **npm パッケージ名の確保**
-   - `takumi` パッケージ名が利用可能であれば、早期に公開
-   - または、`@organization/takumi` 形式での公開を検討
+   - `cc-craft-kit` パッケージ名が利用可能であれば、早期に公開
+   - または、`@organization/cc-craft-kit` 形式での公開を検討
 
 ### 代替名称を検討する場合（高リスクの場合のみ）
 
@@ -299,13 +299,13 @@ J-PlatPat（特許情報プラットフォーム）は Web ブラウザでの手
 ### 優先度: 高（即座に実施）
 
 - [ ] **J-PlatPat での手動商標検索**
-  - 検索キーワード:「Takumi」「タクミ」「匠」
+  - 検索キーワード:「cc-craft-kit」「タクミ」「匠」
   - 対象区分: 第 9 類、第 42 類
   - スクリーンショット保存
 
 - [ ] **npm パッケージ名の確認**
-  - URL: <https://www.npmjs.com/search?q=takumi>
-  - または: `npm search takumi` をターミナルで実行
+  - URL: <https://www.npmjs.com/search?q=cc-craft-kit>
+  - または: `npm search cc-craft-kit` をターミナルで実行
 
 - [ ] **調査結果の更新**
   - 本報告書に J-PlatPat、npm 検索結果を追記
@@ -332,7 +332,46 @@ J-PlatPat（特許情報プラットフォーム）は Web ブラウザでの手
   - 年 1 回、J-PlatPat で商標登録状況を確認
   - 新規登録された類似商標をチェック
 
-## 7. 参考資料
+## 7. 最終決定
+
+### 決定名称
+
+**cc-craft-kit**
+
+### 決定日時
+
+2025-11-18 10:38:00
+
+### 決定理由
+
+1. **npm パッケージ名の確認結果**:
+   - `cc-craft-kit`: 存在せず、取得可能 ✅
+   - `cc-sdd-kit`: `cc-sdd` パッケージが既に存在（v2.0.3、2025-11-15 公開）、混同リスクあり ❌
+   - 結論: cc-craft-kit のみが安全に使用可能
+
+2. **GitHub リポジトリ名の確認結果**:
+   - `cc-craft-kit`: 存在せず、利用可能 ✅
+   - Craft CMS 関連リポジトリは存在するが、直接的な競合はなし
+
+3. **総合評価**:
+   - 評価点: 87/100 点（最高評価）
+   - 商標リスク: 低リスク
+   - npm パッケージ: 取得可能
+   - GitHub リポジトリ: 利用可能
+   - cc-craft-kit（匠）との親和性: 高い（"craft" = 技巧）
+
+### 実施した変更
+
+- プロジェクト名: cc-craft-kit → cc-craft-kit
+- スラッシュコマンド: `/takumi:*` → `/cft:*`
+- npm パッケージ名: `takumi` → `cc-craft-kit`
+- 変更日時: 2025-11-18 10:40:00
+- 変更ファイル数: 30 ファイル
+- 変更ディレクトリ数: 1 ディレクトリ
+
+---
+
+## 8. 参考資料
 
 ### 証拠資料ディレクトリ
 
@@ -346,8 +385,8 @@ J-PlatPat（特許情報プラットフォーム）は Web ブラウザでの手
 - [特許情報プラットフォーム (J-PlatPat)](https://www.j-platpat.inpit.go.jp/)
 - [商標検索の使い方ガイド（特許庁）](https://www.jpo.go.jp/system/trademark/gaiyo/seidogaiyo/chizai04.html)
 - [Nice Classification（第11版）日本語版](https://www.jpo.go.jp/system/laws/rule/guideline/trademark/kokusai_bunrui/ncl11-jpn.html)
-- [npm: takumi パッケージ検索](https://www.npmjs.com/search?q=takumi)
-- [GitHub: takumi リポジトリ検索](https://github.com/search?q=takumi&type=repositories)
+- [npm: cc-craft-kit パッケージ検索](https://www.npmjs.com/search?q=cc-craft-kit)
+- [GitHub: cc-craft-kit リポジトリ検索](https://github.com/search?q=cc-craft-kit&type=repositories)
 
 ### テンプレートファイル
 

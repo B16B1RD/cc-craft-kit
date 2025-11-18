@@ -27,8 +27,8 @@ argument-hint: "<direction> <spec-id>"
 ## 使用例
 
 ```bash
-/takumi:github-sync to-github f6621295
-/takumi:github-sync from-github f6621295
+/cc-craft-kit:github-sync to-github f6621295
+/cc-craft-kit:github-sync from-github f6621295
 ```
 
 ---
@@ -36,11 +36,11 @@ argument-hint: "<direction> <spec-id>"
 以下のコマンドを実行して同期を実行してください。
 
 ```bash
-npx tsx .takumi/commands/github/sync.ts "$1" "$2"
+npx tsx .cc-craft-kit/commands/github/sync.ts "$1" "$2"
 ```
 
 同期が完了したら、結果を表示し、必要に応じて次のアクションを案内してください。
 
-- 仕様書の詳細確認: `/takumi:spec-get <spec-id>`
-- 逆方向の同期: `/takumi:github-sync <opposite-direction> <spec-id>`
-- フェーズ移行: `/takumi:spec-phase <spec-id> <phase>`
+- 仕様書の詳細確認: `/cc-craft-kit:spec-get <spec-id>`
+- 逆方向の同期: `/cc-craft-kit:github-sync <opposite-direction> <spec-id>`
+- フェーズ移行: `/cc-craft-kit:spec-phase <spec-id> <phase>`

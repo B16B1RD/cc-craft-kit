@@ -10,8 +10,8 @@
 ## 使用例
 
 ```bash
-/takumi:skill-create api-documentation "Generates comprehensive API documentation from code"
-/takumi:skill-create performance-analysis "Analyzes code performance and identifies bottlenecks"
+/cc-craft-kit:skill-create api-documentation "Generates comprehensive API documentation from code"
+/cc-craft-kit:skill-create performance-analysis "Analyzes code performance and identifies bottlenecks"
 ```
 
 ---
@@ -19,11 +19,11 @@
 以下のコマンドを実行してスキルを作成してください。
 
 ```bash
-npx tsx .takumi/commands/skill/create.ts "$1" "$2"
+npx tsx .cc-craft-kit/commands/skill/create.ts "$1" "$2"
 ```
 
 作成が完了したら、結果を要約して表示してください。
 
-- スキル一覧: `/takumi:skill-list`
+- スキル一覧: `/cc-craft-kit:skill-list`
 
 ARGUMENTS: $*

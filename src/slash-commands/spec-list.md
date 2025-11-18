@@ -15,9 +15,9 @@ argument-hint: "[phase] [limit]"
 ## 使用例
 
 ```bash
-/takumi:spec-list
-/takumi:spec-list requirements
-/takumi:spec-list design 50
+/cc-craft-kit:spec-list
+/cc-craft-kit:spec-list requirements
+/cc-craft-kit:spec-list design 50
 ```
 
 ---
@@ -25,11 +25,11 @@ argument-hint: "[phase] [limit]"
 以下のコマンドを実行して仕様書一覧を取得してください。
 
 ```bash
-npx tsx .takumi/commands/spec/list.ts "$1" "$2"
+npx tsx .cc-craft-kit/commands/spec/list.ts "$1" "$2"
 ```
 
 結果を要約して表示し、必要に応じて次のアクションを案内してください。
 
-- 仕様書の詳細確認: `/takumi:spec-get <spec-id>`
-- 新規仕様書の作成: `/takumi:spec-create "<name>" [description]`
-- フェーズでフィルタ: `/takumi:spec-list <phase>`
+- 仕様書の詳細確認: `/cc-craft-kit:spec-get <spec-id>`
+- 新規仕様書の作成: `/cc-craft-kit:spec-create "<name>" [description]`
+- フェーズでフィルタ: `/cc-craft-kit:spec-list <phase>`

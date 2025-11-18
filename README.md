@@ -1,10 +1,10 @@
-# Takumi（匠）- 統合開発キット
+# cc-craft-kit- 統合開発キット
 
 Claude Code 上で**仕様駆動開発（SDD）**、**GitHub Projects/Issues 完全連携**を実現する開発支援ツールキット。
 
 ## 🎯 コンセプト
 
-Takumi（匠）は、Claude Code 上のカスタムスラッシュコマンドで動作する軽量な開発支援ツールキットです。
+cc-craft-kit は、Claude Code 上のカスタムスラッシュコマンドで動作する軽量な開発支援ツールキットです。
 
 ### 核心的特徴
 
@@ -12,7 +12,7 @@ Takumi（匠）は、Claude Code 上のカスタムスラッシュコマンド�
 - **GitHub 完全統合**: Projects v2、Issue、Milestone の自動管理
 - **Issue ナレッジベース化**: 課題管理＋途中経過＋エラー対策＋Tips の統合記録
 - **仕様駆動開発**: Requirements → Design → Tasks → Implementation の構造化ワークフロー
-- **`.takumi/` ディレクトリ**: すべての機能が `.takumi/` に集約、既存プロジェクトと競合しない
+- **`.cc-craft-kit/` ディレクトリ**: すべての機能が `.cc-craft-kit/` に集約、既存プロジェクトと競合しない
 
 ## 🚀 クイックスタート
 
@@ -29,17 +29,17 @@ Takumi（匠）は、Claude Code 上のカスタムスラッシュコマンド�
 
 ```bash
 # 既存プロジェクトのルートディレクトリで実行
-git clone https://github.com/yourusername/takumi.git .takumi-repo
+git clone https://github.com/yourusername/cc-craft-kit.git .cc-craft-kit-repo
 
-# .takumi/ ディレクトリをコピー
-cp -r .takumi-repo/.takumi .
-cp -r .takumi-repo/.claude/commands/takumi .claude/commands/
+# .cc-craft-kit/ ディレクトリをコピー
+cp -r .cc-craft-kit-repo/.cc-craft-kit .
+cp -r .cc-craft-kit-repo/.claude/commands/cc-craft-kit .claude/commands/
 
-# .takumi/ の依存関係をインストール
-cd .takumi && npm install && cd ..
+# .cc-craft-kit/ の依存関係をインストール
+cd .cc-craft-kit && npm install && cd ..
 
 # クリーンアップ
-rm -rf .takumi-repo
+rm -rf .cc-craft-kit-repo
 ```
 
 ### 環境変数設定
@@ -68,7 +68,7 @@ echo "GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx" > .env
 Claude Code のチャットで以下のスラッシュコマンドを実行します。
 
 ```sh
-/takumi:init my-project
+/cc-craft-kit:init my-project
 ```
 
 ## 📚 使い方
@@ -79,40 +79,40 @@ Claude Code のチャットで以下のスラッシュコマンドを実行し�
 
 ```sh
 # プロジェクト状態確認
-/takumi:status
+/cc-craft-kit:status
 
 # 仕様書作成
-/takumi:spec-create "ユーザー認証機能" "メール/パスワード認証とOAuth2.0対応"
+/cc-craft-kit:spec-create "ユーザー認証機能" "メール/パスワード認証とOAuth2.0対応"
 
 # 仕様書一覧
-/takumi:spec-list
-/takumi:spec-list requirements  # フェーズでフィルタ
+/cc-craft-kit:spec-list
+/cc-craft-kit:spec-list requirements  # フェーズでフィルタ
 
 # 仕様書詳細表示
-/takumi:spec-get <spec-id>
+/cc-craft-kit:spec-get <spec-id>
 
 # フェーズ移行
-/takumi:spec-phase <spec-id> design
+/cc-craft-kit:spec-phase <spec-id> design
 ```
 
 ### GitHub統合
 
 ```sh
 # GitHub初期化
-/takumi:github-init <owner> <repo>
+/cc-craft-kit:github-init <owner> <repo>
 
 # Issue作成（仕様書作成時に自動作成される）
-/takumi:github-issue-create <spec-id>
+/cc-craft-kit:github-issue-create <spec-id>
 
 # Project自動追加の設定（.envファイルに追加）
 echo "GITHUB_PROJECT_NAME=My Project Board" >> .env
 
 # 双方向同期
-/takumi:github-sync to-github <spec-id>
-/takumi:github-sync from-github <spec-id>
+/cc-craft-kit:github-sync to-github <spec-id>
+/cc-craft-kit:github-sync from-github <spec-id>
 
 # 手動でProjectボード追加
-/takumi:github-project-add <spec-id> <project-number>
+/cc-craft-kit:github-project-add <spec-id> <project-number>
 ```
 
 #### Issue & Project 自動化
@@ -129,31 +129,31 @@ Project 追加が失敗した場合でも Issue 作成は成功し、警告メ�
 
 ```sh
 # 進捗記録
-/takumi:knowledge-progress <spec-id> "認証機能の基本実装が完了"
+/cc-craft-kit:knowledge-progress <spec-id> "認証機能の基本実装が完了"
 
 # エラー解決策記録
-/takumi:knowledge-error <spec-id> "CORSエラーが発生" "Access-Control-Allow-Originヘッダーを追加"
+/cc-craft-kit:knowledge-error <spec-id> "CORSエラーが発生" "Access-Control-Allow-Originヘッダーを追加"
 
 # Tips記録
-/takumi:knowledge-tip <spec-id> "performance" "useMemoを使ってレンダリングを最適化"
+/cc-craft-kit:knowledge-tip <spec-id> "performance" "useMemoを使ってレンダリングを最適化"
 ```
 
 ### 全コマンド一覧
 
 ```sh
-/takumi:init my-project              # プロジェクト初期化
-/takumi:status                       # 状態表示
-/takumi:spec-create "機能名" "説明"  # 仕様書作成
-/takumi:spec-list                    # 仕様書一覧
-/takumi:spec-get <id>                # 仕様書詳細
-/takumi:spec-phase <id> <phase>      # フェーズ更新
-/takumi:github-init <owner> <repo>   # GitHub統合初期化
-/takumi:github-issue-create <id>     # Issue作成
-/takumi:github-sync <dir> <id>       # GitHub同期
-/takumi:github-project-add <id> <num> # Project追加
-/takumi:knowledge-progress <id> <msg> # 進捗記録
-/takumi:knowledge-error <id> <err> <sol> # エラー記録
-/takumi:knowledge-tip <id> <cat> <tip>   # Tips記録
+/cc-craft-kit:init my-project              # プロジェクト初期化
+/cc-craft-kit:status                       # 状態表示
+/cc-craft-kit:spec-create "機能名" "説明"  # 仕様書作成
+/cc-craft-kit:spec-list                    # 仕様書一覧
+/cc-craft-kit:spec-get <id>                # 仕様書詳細
+/cc-craft-kit:spec-phase <id> <phase>      # フェーズ更新
+/cc-craft-kit:github-init <owner> <repo>   # GitHub統合初期化
+/cc-craft-kit:github-issue-create <id>     # Issue作成
+/cc-craft-kit:github-sync <dir> <id>       # GitHub同期
+/cc-craft-kit:github-project-add <id> <num> # Project追加
+/cc-craft-kit:knowledge-progress <id> <msg> # 進捗記録
+/cc-craft-kit:knowledge-error <id> <err> <sol> # エラー記録
+/cc-craft-kit:knowledge-tip <id> <cat> <tip>   # Tips記録
 ```
 
 ## 🏗️ アーキテクチャ
@@ -161,11 +161,11 @@ Project 追加が失敗した場合でも Issue 作成は成功し、警告メ�
 ### ディレクトリ構造
 
 ```text
-takumi/
+cc-craft-kit/
 ├── .claude/                 # Claude Code統合
-│   └── commands/takumi/     # スラッシュコマンド定義（src/slash-commands/へのシンボリックリンク）
+│   └── commands/cc-craft-kit/     # スラッシュコマンド定義（src/slash-commands/へのシンボリックリンク）
 ├── src/
-│   ├── commands/            # コマンド実装（Git管理、.takumi/にコピー）
+│   ├── commands/            # コマンド実装（Git管理、.cc-craft-kit/にコピー）
 │   │   ├── init.ts          # プロジェクト初期化
 │   │   ├── status.ts        # プロジェクト状態表示
 │   │   ├── spec/            # 仕様書管理
@@ -194,13 +194,13 @@ takumi/
 │   │   └── github/          # GitHub API (REST + GraphQL)
 │   ├── plugins/             # プラグインシステム
 │   └── scripts/             # ビルド・同期スクリプト
-│       ├── sync-dogfood.ts  # src/ → .takumi/ 同期
+│       ├── sync-dogfood.ts  # src/ → .cc-craft-kit/ 同期
 │       └── check-sync.ts    # 同期状態チェック
 ├── templates/               # 仕様書テンプレート
-└── .takumi/                 # ドッグフーディング環境（Git非管理）
+└── .cc-craft-kit/                 # ドッグフーディング環境（Git非管理）
     ├── commands/            # src/commands/ のコピー
     ├── slash-commands/      # src/slash-commands/ のコピー
-    ├── takumi.db            # SQLiteデータベース
+    ├── cc-craft-kit.db            # SQLiteデータベース
     ├── config.json          # プロジェクト設定
     └── specs/               # 仕様書ファイル (.md)
 ```
@@ -408,8 +408,8 @@ MIT License - 詳細は [LICENSE](LICENSE) を参照してください。
 
 ## 📮 コンタクト
 
-質問・提案・バグ報告は [Issues](https://github.com/yourusername/takumi/issues) へお願いします。
+質問・提案・バグ報告は [Issues](https://github.com/yourusername/cc-craft-kit/issues) へお願いします。
 
 ---
 
-**Takumi (匠)** - 匠の技で、開発ワークフローを磨き上げる。
+**cc-craft-kit (匠)** - 匠の技で、開発ワークフローを磨き上げる。

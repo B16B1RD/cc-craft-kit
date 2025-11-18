@@ -10,8 +10,8 @@
 ## 使用例
 
 ```bash
-/takumi:agent-create documentation-writer "Creates comprehensive documentation for code and APIs"
-/takumi:agent-create security-auditor "Performs security audits and identifies vulnerabilities"
+/cc-craft-kit:agent-create documentation-writer "Creates comprehensive documentation for code and APIs"
+/cc-craft-kit:agent-create security-auditor "Performs security audits and identifies vulnerabilities"
 ```
 
 ---
@@ -19,11 +19,11 @@
 以下のコマンドを実行してサブエージェントを作成してください。
 
 ```bash
-npx tsx .takumi/commands/agent/create.ts "$1" "$2"
+npx tsx .cc-craft-kit/commands/agent/create.ts "$1" "$2"
 ```
 
 作成が完了したら、結果を要約して表示してください。
 
-- サブエージェント一覧: `/takumi:agent-list`
+- サブエージェント一覧: `/cc-craft-kit:agent-list`
 
 ARGUMENTS: $*

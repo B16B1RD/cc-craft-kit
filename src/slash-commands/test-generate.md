@@ -25,10 +25,10 @@ argument-hint: "<file-pattern>"
 
 ```bash
 # 特定のファイルのテストを生成
-/takumi:test-generate "src/commands/spec/create.ts"
+/cc-craft-kit:test-generate "src/commands/spec/create.ts"
 
 # 複数ファイルのテストを生成
-/takumi:test-generate "src/commands/**/*.ts"
+/cc-craft-kit:test-generate "src/commands/**/*.ts"
 ```
 
 ---
@@ -36,7 +36,7 @@ argument-hint: "<file-pattern>"
 以下のコマンドを実行してテスト生成を開始してください。
 
 ```bash
-npx tsx .takumi/commands/quality/test-generate.ts "$1"
+npx tsx .cc-craft-kit/commands/quality/test-generate.ts "$1"
 ```
 
 ## 自動実行フロー

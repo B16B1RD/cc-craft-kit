@@ -25,13 +25,13 @@ argument-hint: "<file-pattern>"
 
 ```bash
 # 特定のファイルをリファクタリング
-/takumi:refactor "src/commands/spec/create.ts"
+/cc-craft-kit:refactor "src/commands/spec/create.ts"
 
 # ディレクトリ全体をリファクタリング
-/takumi:refactor "src/commands/**/*.ts"
+/cc-craft-kit:refactor "src/commands/**/*.ts"
 
 # プロジェクト全体をリファクタリング
-/takumi:refactor
+/cc-craft-kit:refactor
 ```
 
 ---
@@ -39,7 +39,7 @@ argument-hint: "<file-pattern>"
 以下のコマンドを実行してリファクタリングを開始してください。
 
 ```bash
-npx tsx .takumi/commands/quality/refactor.ts "$1"
+npx tsx .cc-craft-kit/commands/quality/refactor.ts "$1"
 ```
 
 ## 自動実行フロー

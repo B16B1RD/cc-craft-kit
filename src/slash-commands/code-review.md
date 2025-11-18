@@ -26,13 +26,13 @@ argument-hint: "<file-pattern>"
 
 ```bash
 # 特定のファイルをレビュー
-/takumi:code-review "src/commands/spec/create.ts"
+/cc-craft-kit:code-review "src/commands/spec/create.ts"
 
 # ディレクトリ全体をレビュー
-/takumi:code-review "src/commands/**/*.ts"
+/cc-craft-kit:code-review "src/commands/**/*.ts"
 
 # プロジェクト全体をレビュー
-/takumi:code-review
+/cc-craft-kit:code-review
 ```
 
 ---
@@ -40,7 +40,7 @@ argument-hint: "<file-pattern>"
 以下のコマンドを実行してコードレビューを開始してください。
 
 ```bash
-npx tsx .takumi/commands/quality/code-review.ts "$1"
+npx tsx .cc-craft-kit/commands/quality/code-review.ts "$1"
 ```
 
 ## 自動実行フロー

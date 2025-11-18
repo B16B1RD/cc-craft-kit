@@ -24,7 +24,7 @@ argument-hint: ""
 ## 使用例
 
 ```bash
-/takumi:schema-validate
+/cc-craft-kit:schema-validate
 ```
 
 ---
@@ -32,7 +32,7 @@ argument-hint: ""
 以下のコマンドを実行してスキーマ検証を開始してください。
 
 ```bash
-npx tsx .takumi/commands/quality/schema-validate.ts
+npx tsx .cc-craft-kit/commands/quality/schema-validate.ts
 ```
 
 ## 自動実行フロー

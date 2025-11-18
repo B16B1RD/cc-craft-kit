@@ -1,11 +1,11 @@
 ---
-description: "Takumiプロジェクトを初期化します"
+description: "cc-craft-kitプロジェクトを初期化します"
 argument-hint: "<project-name> [description]"
 ---
 
-# Takumiプロジェクト初期化
+# cc-craft-kitプロジェクト初期化
 
-指定されたプロジェクト名で Takumi プロジェクトを初期化します。
+指定されたプロジェクト名で cc-craft-kit プロジェクトを初期化します。
 
 ## 引数
 
@@ -14,14 +14,14 @@ argument-hint: "<project-name> [description]"
 
 ## 実行内容
 
-1. `.takumi`ディレクトリの作成
+1. `.cc-craft-kit`ディレクトリの作成
 2. 設定ファイル(`config.json`)の生成
 3. データベースの初期化
 
 ## 使用例
 
 ```bash
-/takumi:init my-awesome-app
+/cc-craft-kit:init my-awesome-app
 ```
 
 ---
@@ -29,11 +29,11 @@ argument-hint: "<project-name> [description]"
 以下のコマンドを実行してプロジェクトを初期化してください。
 
 ```bash
-npx tsx .takumi/commands/init.ts "$1"
+npx tsx .cc-craft-kit/commands/init.ts "$1"
 ```
 
 初期化が完了したら、結果を要約して表示し、必要に応じて次のアクションを案内してください。
 
-- GitHub 統合の設定: `/takumi:github-init <owner> <repo>`
-- プロジェクト状況の確認: `/takumi:status`
-- 新規仕様書の作成: `/takumi:spec-create "<name>" [description]`
+- GitHub 統合の設定: `/cc-craft-kit:github-init <owner> <repo>`
+- プロジェクト状況の確認: `/cc-craft-kit:status`
+- 新規仕様書の作成: `/cc-craft-kit:spec-create "<name>" [description]`

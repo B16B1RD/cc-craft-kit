@@ -21,7 +21,7 @@ argument-hint: "<spec-id> <message>"
 ## 使用例
 
 ```bash
-/takumi:knowledge-progress f6621295 "認証機能の基本実装が完了しました"
+/cc-craft-kit:knowledge-progress f6621295 "認証機能の基本実装が完了しました"
 ```
 
 ---
@@ -29,11 +29,11 @@ argument-hint: "<spec-id> <message>"
 以下のコマンドを実行して進捗を記録してください。
 
 ```bash
-npx tsx .takumi/commands/knowledge/progress.ts "$1" "$2"
+npx tsx .cc-craft-kit/commands/knowledge/progress.ts "$1" "$2"
 ```
 
 記録が完了したら、Issue URL を表示し、必要に応じて次のアクションを案内してください。
 
-- エラー解決策の記録: `/takumi:knowledge-error <spec-id> "<error>" "<solution>"`
-- Tips の記録: `/takumi:knowledge-tip <spec-id> "<category>" "<tip>"`
-- 仕様書の詳細確認: `/takumi:spec-get <spec-id>`
+- エラー解決策の記録: `/cc-craft-kit:knowledge-error <spec-id> "<error>" "<solution>"`
+- Tips の記録: `/cc-craft-kit:knowledge-tip <spec-id> "<category>" "<tip>"`
+- 仕様書の詳細確認: `/cc-craft-kit:spec-get <spec-id>`

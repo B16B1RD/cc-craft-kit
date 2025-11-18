@@ -22,7 +22,7 @@ argument-hint: "<spec-id> <error> <solution>"
 ## 使用例
 
 ```bash
-/takumi:knowledge-error f6621295 "CORS エラーが発生" "Access-Control-Allow-Origin ヘッダーを追加"
+/cc-craft-kit:knowledge-error f6621295 "CORS エラーが発生" "Access-Control-Allow-Origin ヘッダーを追加"
 ```
 
 ---
@@ -30,11 +30,11 @@ argument-hint: "<spec-id> <error> <solution>"
 以下のコマンドを実行してエラー解決策を記録してください。
 
 ```bash
-npx tsx .takumi/commands/knowledge/error.ts "$1" "$2" "$3"
+npx tsx .cc-craft-kit/commands/knowledge/error.ts "$1" "$2" "$3"
 ```
 
 記録が完了したら、Issue URL を表示し、必要に応じて次のアクションを案内してください。
 
-- 進捗の記録: `/takumi:knowledge-progress <spec-id> "<message>"`
-- Tips の記録: `/takumi:knowledge-tip <spec-id> "<category>" "<tip>"`
-- 仕様書の詳細確認: `/takumi:spec-get <spec-id>`
+- 進捗の記録: `/cc-craft-kit:knowledge-progress <spec-id> "<message>"`
+- Tips の記録: `/cc-craft-kit:knowledge-tip <spec-id> "<category>" "<tip>"`
+- 仕様書の詳細確認: `/cc-craft-kit:spec-get <spec-id>`

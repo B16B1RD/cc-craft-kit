@@ -27,7 +27,7 @@ argument-hint: "<spec-id> <project-number>"
 ## 使用例
 
 ```bash
-/takumi:github-project-add f6621295 1
+/cc-craft-kit:github-project-add f6621295 1
 ```
 
 ---
@@ -35,11 +35,11 @@ argument-hint: "<spec-id> <project-number>"
 以下のコマンドを実行して Project に追加してください。
 
 ```bash
-npx tsx .takumi/commands/github/project-add.ts "$1" "$2"
+npx tsx .cc-craft-kit/commands/github/project-add.ts "$1" "$2"
 ```
 
 追加が完了したら、Project URL を表示し、必要に応じて次のアクションを案内してください。
 
-- 仕様書の詳細確認: `/takumi:spec-get <spec-id>`
-- GitHub から同期: `/takumi:github-sync from-github <spec-id>`
-- プロジェクト状況の確認: `/takumi:status`
+- 仕様書の詳細確認: `/cc-craft-kit:spec-get <spec-id>`
+- GitHub から同期: `/cc-craft-kit:github-sync from-github <spec-id>`
+- プロジェクト状況の確認: `/cc-craft-kit:status`

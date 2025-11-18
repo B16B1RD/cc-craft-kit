@@ -24,7 +24,7 @@ argument-hint: ""
 ## 使用例
 
 ```bash
-/takumi:lint-check
+/cc-craft-kit:lint-check
 ```
 
 ---
@@ -32,7 +32,7 @@ argument-hint: ""
 以下のコマンドを実行して Lint チェックを開始してください。
 
 ```bash
-npx tsx .takumi/commands/quality/lint-check.ts
+npx tsx .cc-craft-kit/commands/quality/lint-check.ts
 ```
 
 ## 自動実行フロー

@@ -21,7 +21,7 @@ argument-hint: "<spec-id> <phase>"
 ## 使用例
 
 ```bash
-/takumi:spec-phase f6621295 design
+/cc-craft-kit:spec-phase f6621295 design
 ```
 
 ---
@@ -29,7 +29,7 @@ argument-hint: "<spec-id> <phase>"
 以下のコマンドを実行して仕様書のフェーズを更新してください。
 
 ```bash
-npx tsx .takumi/commands/spec/phase.ts "$1" "$2"
+npx tsx .cc-craft-kit/commands/spec/phase.ts "$1" "$2"
 ```
 
 ## フェーズ移行後の自動処理
@@ -38,17 +38,17 @@ npx tsx .takumi/commands/spec/phase.ts "$1" "$2"
 
 ### tasks フェーズに移行した場合
 
-1. **仕様書ファイルを読み込む**: Read ツールで `.takumi/specs/$1.md` を読み込む
+1. **仕様書ファイルを読み込む**: Read ツールで `.cc-craft-kit/specs/$1.md` を読み込む
 2. **受け入れ基準を解析**:「3. 受け入れ基準」セクションを確認し、実装すべき機能を理解する
 3. **タスクリストを生成**: TodoWrite ツールで実装タスクリストを作成する
    - 各受け入れ基準を実装可能な単位に分解
    - 依存関係と優先度を設定
 4. **仕様書にタスクセクションを追加**: Edit ツールで仕様書ファイルの末尾に「## 8. 実装タスクリスト」セクションを追加
-5. **GitHub に通知**: `/takumi:spec-update $1` で GitHub Issue に更新を通知
+5. **GitHub に通知**: `/cc-craft-kit:spec-update $1` で GitHub Issue に更新を通知
 
 ### implementation フェーズに移行した場合
 
-1. **仕様書ファイルを読み込む**: Read ツールで `.takumi/specs/$1.md` を読み込む
+1. **仕様書ファイルを読み込む**: Read ツールで `.cc-craft-kit/specs/$1.md` を読み込む
 2. **タスクリストを確認**:「8. 実装タスクリスト」セクションを確認
 3. **TodoWrite でタスクを表示**: TodoWrite ツールでタスクリストを表示し、進捗管理を開始
 
@@ -77,6 +77,6 @@ npx tsx .takumi/commands/spec/phase.ts "$1" "$2"
 
 requirements, design, completed フェーズの場合は、従来通りガイダンスメッセージを表示してください。
 
-- 仕様書の詳細確認: `/takumi:spec-get <spec-id>`
-- GitHub Issue 作成: `/takumi:github-issue-create <spec-id>`
-- 次のフェーズに移行: `/takumi:spec-phase <spec-id> <next-phase>`
+- 仕様書の詳細確認: `/cc-craft-kit:spec-get <spec-id>`
+- GitHub Issue 作成: `/cc-craft-kit:github-issue-create <spec-id>`
+- 次のフェーズに移行: `/cc-craft-kit:spec-phase <spec-id> <next-phase>`

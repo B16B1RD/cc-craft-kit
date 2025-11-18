@@ -1,5 +1,5 @@
 {
-  "name": "takumi",
+  "name": "cc-craft-kit",
   "version": "0.1.0",
   "description": "統合開発キット - Claude Code上でTDD/SDD/GitHub完全連携を実現",
   "keywords": [
@@ -10,7 +10,7 @@
     "agile",
     "development-toolkit"
   ],
-  "author": "Takumi Project Contributors",
+  "author": "cc-craft-kit Project Contributors",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -29,8 +29,8 @@
     "typecheck": "tsc --noEmit",
     "textlint": "textlint \"./**/*.md\" --ignore-path .gitignore",
     "textlint:fix": "textlint --fix \"./**/*.md\" --ignore-path .gitignore",
-    "markdownlint": "markdownlint-cli2 \"**/*.md\" \"#node_modules\" \"#.takumi\"",
-    "markdownlint:fix": "markdownlint-cli2 --fix \"**/*.md\" \"#node_modules\" \"#.takumi\"",
+    "markdownlint": "markdownlint-cli2 \"**/*.md\" \"#node_modules\" \"#.cc-craft-kit\"",
+    "markdownlint:fix": "markdownlint-cli2 --fix \"**/*.md\" \"#node_modules\" \"#.cc-craft-kit\"",
     "db:migrate": "tsx src/core/database/migrate.ts",
     "check:sync": "tsx src/scripts/check-sync.ts",
     "sync:dogfood": "tsx src/scripts/sync-dogfood.ts",

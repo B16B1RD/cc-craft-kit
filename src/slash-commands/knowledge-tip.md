@@ -22,7 +22,7 @@ argument-hint: "<spec-id> <category> <tip>"
 ## 使用例
 
 ```bash
-/takumi:knowledge-tip f6621295 "performance" "useMemo を使ってレンダリングを最適化"
+/cc-craft-kit:knowledge-tip f6621295 "performance" "useMemo を使ってレンダリングを最適化"
 ```
 
 ---
@@ -30,11 +30,11 @@ argument-hint: "<spec-id> <category> <tip>"
 以下のコマンドを実行して Tips を記録してください。
 
 ```bash
-npx tsx .takumi/commands/knowledge/tip.ts "$1" "$2" "$3"
+npx tsx .cc-craft-kit/commands/knowledge/tip.ts "$1" "$2" "$3"
 ```
 
 記録が完了したら、Issue URL を表示し、必要に応じて次のアクションを案内してください。
 
-- 進捗の記録: `/takumi:knowledge-progress <spec-id> "<message>"`
-- エラー解決策の記録: `/takumi:knowledge-error <spec-id> "<error>" "<solution>"`
-- 仕様書の詳細確認: `/takumi:spec-get <spec-id>`
+- 進捗の記録: `/cc-craft-kit:knowledge-progress <spec-id> "<message>"`
+- エラー解決策の記録: `/cc-craft-kit:knowledge-error <spec-id> "<error>" "<solution>"`
+- 仕様書の詳細確認: `/cc-craft-kit:spec-get <spec-id>`

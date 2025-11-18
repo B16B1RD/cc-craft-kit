@@ -20,7 +20,7 @@ tags: [project]
 ## 使用例
 
 ```bash
-/takumi:spec-update f6621295
+/cc-craft-kit:spec-update f6621295
 ```
 
 ---
@@ -28,7 +28,7 @@ tags: [project]
 以下のコマンドを実行して仕様書の更新を通知してください。
 
 ```bash
-npx tsx .takumi/commands/spec/update.ts "$1"
+npx tsx .cc-craft-kit/commands/spec/update.ts "$1"
 ```
 
 更新が完了したら、結果を要約して表示し、GitHub Issue のリンクを案内してください。

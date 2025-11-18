@@ -1,8 +1,8 @@
-# Takumi アーキテクチャドキュメント
+# cc-craft-kit アーキテクチャドキュメント
 
 ## 概要
 
-Takumi は**モジュラーモノリス**パターンを採用した、拡張可能なアーキテクチャを持つ開発支援ツールキットです。
+cc-craft-kit は**モジュラーモノリス**パターンを採用した、拡張可能なアーキテクチャを持つ開発支援ツールキットです。
 
 ## アーキテクチャ図
 
@@ -11,9 +11,9 @@ Takumi は**モジュラーモノリス**パターンを採用した、拡張可
 │                     Claude Code                           │
 │  ┌─────────────────┐  ┌──────────────┐  ┌──────────────┐  │
 │  │ Slash Commands  │  │   Skills     │  │  Subagents   │  │
-│  │  /takumi:init   │  │  takumi-tdd  │  │ spec-reviewer│  │
-│  │  /takumi:spec   │  │  takumi-sdd  │  │ task-planner │  │
-│  │  /takumi:task   │  │              │  │              │  │
+│  │  /cc-craft-kit:init   │  │  cc-craft-kit-tdd  │  │ spec-reviewer│  │
+│  │  /cc-craft-kit:spec   │  │  cc-craft-kit-sdd  │  │ task-planner │  │
+│  │  /cc-craft-kit:task   │  │              │  │              │  │
 │  └────────┬────────┘  └──────┬───────┘  └──────┬───────┘  │
 │           │                  │                 │          │
 │           └──────────────────┴─────────────────┘          │
@@ -21,7 +21,7 @@ Takumi は**モジュラーモノリス**パターンを採用した、拡張可
 └──────────────────────────────┼────────────────────────────┘
                                │ Slash Command
 ┌──────────────────────────────┼────────────────────────────┐
-│                  Takumi Slash Commands                    │
+│                  cc-craft-kit Slash Commands                    │
 │  ┌─────────────────────────────────────────────────────┐  │
 │  │              Core Modules (Modular Monolith)        │  │
 │  │  ┌────────────┐  ┌────────────┐  ┌─────────────┐    │  │
@@ -39,10 +39,10 @@ Takumi は**モジュラーモノリス**パターンを採用した、拡張可
 │                                                           │
 │  ┌─────────────────────────────────────────────────────┐  │
 │  │           Slash Commands                            │  │
-│  │  • /takumi:init                                     │  │
-│  │  • /takumi:spec-create/list/get/phase               │  │
-│  │  • /takumi:github-init/issue-create/sync/project-add│  │
-│  │  • /takumi:knowledge-progress/error/tip             │  │
+│  │  • /cc-craft-kit:init                                     │  │
+│  │  • /cc-craft-kit:spec-create/list/get/phase               │  │
+│  │  • /cc-craft-kit:github-init/issue-create/sync/project-add│  │
+│  │  • /cc-craft-kit:knowledge-progress/error/tip             │  │
 │  └─────────────────────────────────────────────────────┘  │
 └───────────────────────────────────────────────────────────┘
                               │
@@ -59,7 +59,7 @@ Takumi は**モジュラーモノリス**パターンを採用した、拡張可
 
 ### 1. Slash Command Interface
 
-スラッシュコマンドは、Claude Code と Takumi の中核機能を橋渡しします。
+スラッシュコマンドは、Claude Code と cc-craft-kit の中核機能を橋渡しします。
 
 **責務**。
 
@@ -72,7 +72,7 @@ Takumi は**モジュラーモノリス**パターンを採用した、拡張可
 
 - スラッシュコマンド定義: `src/slash-commands/*.md`
 - コマンド実装: `src/commands/*.ts`
-- 実行環境: `.takumi/commands/` (ドッグフーディング用)
+- 実行環境: `.cc-craft-kit/commands/` (ドッグフーディング用)
 
 ### 2. Database Layer
 
@@ -145,7 +145,7 @@ type EventMap = {
 **プラグインインターフェース**。
 
 ```typescript
-interface TakumiPlugin {
+interface cc-craft-kitPlugin {
   name: string;
   version: string;
   onInit?(context: PluginContext): void | Promise<void>;
@@ -159,9 +159,9 @@ interface TakumiPlugin {
 ### 1. 仕様書作成フロー
 
 ```text
-1. User: スラッシュコマンド実行 (/takumi:spec-create "機能名" "説明")
+1. User: スラッシュコマンド実行 (/cc-craft-kit:spec-create "機能名" "説明")
    ↓
-2. Slash Command: .takumi/commands/spec/create.ts を npx tsx で実行
+2. Slash Command: .cc-craft-kit/commands/spec/create.ts を npx tsx で実行
    ↓
 3. spec/create.ts: 引数バリデーション
    ↓
@@ -302,7 +302,7 @@ interface TakumiPlugin {
 モジュラーモノリスから段階的に分離します。
 
 ```text
-Takumi Gateway
+cc-craft-kit Gateway
 ├── Spec Service
 ├── Task Service
 ├── GitHub Service
