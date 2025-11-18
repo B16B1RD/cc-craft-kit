@@ -20,8 +20,8 @@ import { validateSpecId } from '../utils/validation.js';
 /**
  * GitHub設定を取得
  */
-function getGitHubConfig(takumiDir: string): { owner: string; repo: string } | null {
-  const configPath = join(takumiDir, 'config.json');
+function getGitHubConfig(ccCraftKitDir: string): { owner: string; repo: string } | null {
+  const configPath = join(ccCraftKitDir, 'config.json');
   if (!existsSync(configPath)) {
     return null;
   }
@@ -46,10 +46,10 @@ export async function addSpecToProject(
   options: { color: boolean } = { color: true }
 ): Promise<void> {
   const cwd = process.cwd();
-  const takumiDir = join(cwd, '.takumi');
+  const ccCraftKitDir = join(cwd, '.cc-craft-kit');
 
   // プロジェクト初期化チェック
-  if (!existsSync(takumiDir)) {
+  if (!existsSync(ccCraftKitDir)) {
     throw createProjectNotInitializedError();
   }
 
@@ -63,7 +63,7 @@ export async function addSpecToProject(
   }
 
   // GitHub設定チェック
-  const githubConfig = getGitHubConfig(takumiDir);
+  const githubConfig = getGitHubConfig(ccCraftKitDir);
   if (!githubConfig) {
     throw createGitHubNotConfiguredError();
   }
@@ -90,7 +90,7 @@ export async function addSpecToProject(
 
   if (!spec.github_issue_id) {
     throw new Error(
-      'Spec has no linked GitHub Issue. Create an issue first with "/takumi:github-issue-create".'
+      'Spec has no linked GitHub Issue. Create an issue first with "/cft:github-issue-create".'
     );
   }
 
@@ -128,7 +128,7 @@ export async function addSpecToProject(
     console.log(
       `  • View project: https://github.com/${githubConfig.owner}/${githubConfig.repo}/projects/${projectNumber}`
     );
-    console.log(`  • Sync spec: /takumi:github-sync to-github ${spec.id.substring(0, 8)}`);
+    console.log(`  • Sync spec: /cft:github-sync to-github ${spec.id.substring(0, 8)}`);
     console.log('');
   } catch (error) {
     if (error instanceof Error) {

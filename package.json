@@ -35,9 +35,13 @@
     "check:sync": "tsx src/scripts/check-sync.ts",
     "sync:dogfood": "tsx src/scripts/sync-dogfood.ts",
     "sync:dogfood:dry": "tsx src/scripts/sync-dogfood.ts --dry-run --verbose",
-    "build:dogfood": "npm run build && npm run sync:dogfood",
+    "build:dogfood": "npm run sync:dogfood",
     "migrate:structure": "tsx src/scripts/migrate-structure.ts",
     "migrate:structure:dry": "tsx src/scripts/migrate-structure.ts --dry-run --verbose",
+    "replace:takumi": "tsx src/scripts/replace-takumi-references.ts",
+    "replace:takumi:dry": "tsx src/scripts/replace-takumi-references.ts --dry-run",
+    "migrate:takumi": "tsx src/scripts/migrate-takumi-to-cc-craft-kit.ts",
+    "migrate:takumi:dry": "tsx src/scripts/migrate-takumi-to-cc-craft-kit.ts --dry-run",
     "prepare": "husky"
   },
   "dependencies": {

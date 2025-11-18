@@ -22,10 +22,10 @@ export async function updateSpecPhase(
   options: { color: boolean } = { color: true }
 ): Promise<void> {
   const cwd = process.cwd();
-  const takumiDir = join(cwd, '.takumi');
+  const ccCraftKitDir = join(cwd, '.cc-craft-kit');
 
   // プロジェクト初期化チェック
-  if (!existsSync(takumiDir)) {
+  if (!existsSync(ccCraftKitDir)) {
     throw createProjectNotInitializedError();
   }
 
@@ -71,7 +71,7 @@ export async function updateSpecPhase(
     .execute();
 
   // Markdownファイル更新（フェーズ情報を更新）
-  const specPath = join(takumiDir, 'specs', `${spec.id}.md`);
+  const specPath = join(ccCraftKitDir, 'specs', `${spec.id}.md`);
   if (existsSync(specPath)) {
     console.log(formatInfo('Updating spec file...', options.color));
     let content = readFileSync(specPath, 'utf-8');
@@ -109,22 +109,20 @@ export async function updateSpecPhase(
     case 'requirements':
       console.log('  • Define requirements in the spec file');
       console.log('  • Add background, objectives, and acceptance criteria');
-      console.log('  • Move to design: /takumi:spec-phase ' + spec.id.substring(0, 8) + ' design');
+      console.log('  • Move to design: /cft:spec-phase ' + spec.id.substring(0, 8) + ' design');
       break;
 
     case 'design':
       console.log('  • Create detailed design in the spec file');
       console.log('  • Add architecture, API design, and data models');
-      console.log('  • Move to tasks: /takumi:spec-phase ' + spec.id.substring(0, 8) + ' tasks');
+      console.log('  • Move to tasks: /cft:spec-phase ' + spec.id.substring(0, 8) + ' tasks');
       break;
 
     case 'tasks':
       console.log('  • Break down into implementable tasks');
       console.log('  • Estimate effort and dependencies');
       console.log(
-        '  • Move to implementation: /takumi:spec-phase ' +
-          spec.id.substring(0, 8) +
-          ' implementation'
+        '  • Move to implementation: /cft:spec-phase ' + spec.id.substring(0, 8) + ' implementation'
       );
       break;
 
@@ -132,7 +130,7 @@ export async function updateSpecPhase(
       console.log('  • Implement the tasks');
       console.log('  • Write tests and documentation');
       console.log(
-        '  • Move to completed: /takumi:spec-phase ' + spec.id.substring(0, 8) + ' completed'
+        '  • Move to completed: /cft:spec-phase ' + spec.id.substring(0, 8) + ' completed'
       );
       break;
 

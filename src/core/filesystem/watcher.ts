@@ -1,7 +1,7 @@
 /**
  * ファイルシステム監視サービス
  *
- * `.takumi/specs/` ディレクトリの変更を監視し、
+ * `.cc-craft-kit/specs/` ディレクトリの変更を監視し、
  * 仕様書ファイルが更新されたときにイベントを発火する
  */
 
@@ -69,7 +69,7 @@ export class SpecFileWatcher {
 
   constructor(
     private db: Kysely<Database>,
-    private takumiDir: string,
+    private ccCraftKitDir: string,
     private options: WatcherOptions = {}
   ) {
     this.options = {
@@ -89,7 +89,7 @@ export class SpecFileWatcher {
       return;
     }
 
-    const specsDir = join(this.takumiDir, 'specs');
+    const specsDir = join(this.ccCraftKitDir, 'specs');
 
     if (!existsSync(specsDir)) {
       throw new Error(`Specs directory not found: ${specsDir}`);

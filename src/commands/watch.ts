@@ -19,10 +19,10 @@ export async function watchSpecFiles(
   }
 ): Promise<void> {
   const cwd = process.cwd();
-  const takumiDir = join(cwd, '.takumi');
+  const ccCraftKitDir = join(cwd, '.cc-craft-kit');
 
   // プロジェクト初期化チェック
-  if (!existsSync(takumiDir)) {
+  if (!existsSync(ccCraftKitDir)) {
     throw createProjectNotInitializedError();
   }
 
@@ -35,7 +35,7 @@ export async function watchSpecFiles(
   const db = getDatabase();
 
   // ウォッチャー作成
-  const watcher = new SpecFileWatcher(db, takumiDir, {
+  const watcher = new SpecFileWatcher(db, ccCraftKitDir, {
     debounceMs: 500,
     logLevel: options.logLevel,
   });
@@ -76,7 +76,7 @@ export async function watchSpecFiles(
 
     console.log(formatSuccess('File watcher started successfully!', options.color));
     console.log('');
-    console.log(formatInfo('Watching for changes in .takumi/specs/', options.color));
+    console.log(formatInfo('Watching for changes in .cc-craft-kit/specs/', options.color));
     console.log(formatInfo('File changes will automatically update GitHub Issues', options.color));
     console.log('');
     console.log(formatInfo('Press Ctrl+C to stop', options.color));

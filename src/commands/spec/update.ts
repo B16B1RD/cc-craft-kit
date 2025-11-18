@@ -21,10 +21,10 @@ export async function updateSpec(
   options: { color: boolean } = { color: true }
 ): Promise<void> {
   const cwd = process.cwd();
-  const takumiDir = join(cwd, '.takumi');
+  const ccCraftKitDir = join(cwd, '.cc-craft-kit');
 
   // プロジェクト初期化チェック
-  if (!existsSync(takumiDir)) {
+  if (!existsSync(ccCraftKitDir)) {
     throw createProjectNotInitializedError();
   }
 

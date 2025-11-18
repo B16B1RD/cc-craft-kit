@@ -48,7 +48,7 @@ function getCommitTargets(phase: Phase, specId: string): string[] {
   }
 
   // その他のフェーズでは仕様書ファイルのみ
-  return [`.takumi/specs/${specId}.md`];
+  return [`.cc-craft-kit/specs/${specId}.md`];
 }
 
 /**

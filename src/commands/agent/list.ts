@@ -23,7 +23,7 @@ async function main(): Promise<void> {
     if (subagents.length === 0) {
       console.log(chalk.yellow('No subagents found.'));
       console.log('\nTo create a subagent:');
-      console.log('  /takumi:agent-create <name> <description>');
+      console.log('  /cft:agent-create <name> <description>');
       return;
     }
 
@@ -46,7 +46,7 @@ async function main(): Promise<void> {
     }
 
     console.log('\n' + chalk.bold('Next actions:'));
-    console.log('  • Create a subagent: /takumi:agent-create <name> <description>');
+    console.log('  • Create a subagent: /cft:agent-create <name> <description>');
   } catch (error) {
     console.error(chalk.red('Error loading subagents:'), error);
     process.exit(1);

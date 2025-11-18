@@ -15,7 +15,7 @@ export interface DatabaseConfig {
 /**
  * デフォルト設定
  */
-const DEFAULT_DB_PATH = path.join(process.cwd(), '.takumi', 'takumi.db');
+const DEFAULT_DB_PATH = path.join(process.cwd(), '.cc-craft-kit', 'cc-craft-kit.db');
 
 /**
  * Kyselyデータベースインスタンスを作成

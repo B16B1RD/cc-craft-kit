@@ -33,24 +33,24 @@ export async function initProject(
   options: { color: boolean } = { color: true }
 ): Promise<void> {
   const cwd = process.cwd();
-  const takumiDir = join(cwd, '.takumi');
-  const specsDir = join(takumiDir, 'specs');
-  const configPath = join(takumiDir, 'config.json');
+  const ccCraftKitDir = join(cwd, '.cc-craft-kit');
+  const specsDir = join(ccCraftKitDir, 'specs');
+  const configPath = join(ccCraftKitDir, 'config.json');
 
   // 既存プロジェクトチェック
-  if (existsSync(takumiDir)) {
+  if (existsSync(ccCraftKitDir)) {
     throw createProjectAlreadyInitializedError();
   }
 
   // プロジェクト名のデフォルト値
-  const name = projectName || 'takumi-project';
+  const name = projectName || 'cc-craft-kit-project';
 
-  console.log(formatHeading('Initializing Takumi Project', 1, options.color));
+  console.log(formatHeading('Initializing cc-craft-kit Project', 1, options.color));
   console.log('');
 
-  // .takumi/ ディレクトリ作成
-  console.log(formatInfo('Creating .takumi directory...', options.color));
-  mkdirSync(takumiDir, { recursive: true });
+  // .cc-craft-kit/ ディレクトリ作成
+  console.log(formatInfo('Creating .cc-craft-kit directory...', options.color));
+  mkdirSync(ccCraftKitDir, { recursive: true });
   mkdirSync(specsDir, { recursive: true });
 
   // データベース初期化
@@ -72,14 +72,14 @@ export async function initProject(
   console.log(formatSuccess('Project initialized successfully!', options.color));
   console.log('');
   console.log(formatKeyValue('Project name', name, options.color));
-  console.log(formatKeyValue('Directory', takumiDir, options.color));
-  console.log(formatKeyValue('Database', join(takumiDir, 'takumi.db'), options.color));
+  console.log(formatKeyValue('Directory', ccCraftKitDir, options.color));
+  console.log(formatKeyValue('Database', join(ccCraftKitDir, 'cc-craft-kit.db'), options.color));
   console.log(formatKeyValue('Config', configPath, options.color));
   console.log('');
   console.log('Next steps:');
-  console.log('  1. Create a spec: /takumi:spec-create "<name>"');
-  console.log('  2. Configure GitHub: /takumi:github-init <owner> <repo>');
-  console.log('  3. Check status: /takumi:status');
+  console.log('  1. Create a spec: /cft:spec-create "<name>"');
+  console.log('  2. Configure GitHub: /cft:github-init <owner> <repo>');
+  console.log('  3. Check status: /cft:status');
 }
 
 // CLI エントリポイント

@@ -19,14 +19,14 @@ const EXCLUDE_PATTERNS = [
   '.git',
   '*.db',
   '*.db-journal',
-  '.takumi/specs',
-  '.takumi/takumi.db',
+  '.cc-craft-kit/specs',
+  '.cc-craft-kit/cc-craft-kit.db',
 ];
 
 /**
  * 対象ファイル拡張子
  */
-const TARGET_EXTENSIONS = ['.ts', '.js', '.json', '.md'];
+const TARGET_EXTENSIONS = ['.ts', '.json', '.md'];
 
 /**
  * スキャンオプション
@@ -116,11 +116,11 @@ function shouldExclude(filePath: string): boolean {
 }
 
 /**
- * src/ と .takumi/ のファイルをスキャン
+ * src/ と .cc-craft-kit/ のファイルをスキャン
  */
 export async function scanProjectFiles(
   options: ScanOptions = {}
-): Promise<{ srcFiles: FileInfo[]; takumiFiles: FileInfo[] }> {
+): Promise<{ srcFiles: FileInfo[]; ccCraftKitFiles: FileInfo[] }> {
   const { baseDir = process.cwd(), verbose = false } = options;
 
   if (verbose) {
@@ -128,12 +128,12 @@ export async function scanProjectFiles(
   }
 
   const srcFiles: FileInfo[] = [];
-  const takumiFiles: FileInfo[] = [];
+  const ccCraftKitFiles: FileInfo[] = [];
 
   // src/ 配下のディレクトリをスキャン
   for (const dir of SCAN_DIRECTORIES) {
     const srcDir = path.join(baseDir, 'src', dir);
-    const takumiDir = path.join(baseDir, '.takumi', dir);
+    const ccCraftKitDir = path.join(baseDir, '.cc-craft-kit', dir);
 
     // src/ をスキャン
     try {
@@ -154,14 +154,14 @@ export async function scanProjectFiles(
       }
     }
 
-    // .takumi/ をスキャン
+    // .cc-craft-kit/ をスキャン
     try {
-      await fs.access(takumiDir);
+      await fs.access(ccCraftKitDir);
       if (verbose) {
-        console.log(`📂 Scanning .takumi/${dir}/...`);
+        console.log(`📂 Scanning .cc-craft-kit/${dir}/...`);
       }
-      const files = await scanDirectory(takumiDir, { ...options, baseDir });
-      takumiFiles.push(
+      const files = await scanDirectory(ccCraftKitDir, { ...options, baseDir });
+      ccCraftKitFiles.push(
         ...files.map((f) => ({
           relativePath: path.join(dir, f.relativePath),
           absolutePath: f.absolutePath,
@@ -169,17 +169,17 @@ export async function scanProjectFiles(
       );
     } catch {
       if (verbose) {
-        console.log(`⚠️  .takumi/${dir}/ does not exist, skipping...`);
+        console.log(`⚠️  .cc-craft-kit/${dir}/ does not exist, skipping...`);
       }
     }
   }
 
   if (verbose) {
     console.log(`\n✓ Found ${srcFiles.length} files in src/`);
-    console.log(`✓ Found ${takumiFiles.length} files in .takumi/\n`);
+    console.log(`✓ Found ${ccCraftKitFiles.length} files in .cc-craft-kit/\n`);
   }
 
-  return { srcFiles, takumiFiles };
+  return { srcFiles, ccCraftKitFiles };
 }
 
 /**
@@ -251,8 +251,8 @@ export async function calculateFileHashes(
 export interface FileDiff {
   path: string;
   srcHash: string | null;
-  takumiHash: string | null;
-  status: 'modified' | 'missing_in_takumi' | 'extra_in_takumi';
+  ccCraftKitHash: string | null;
+  status: 'modified' | 'missing_in_cc_craft_kit' | 'extra_in_cc_craft_kit';
 }
 
 /**
@@ -265,45 +265,45 @@ export interface SyncCheckResult {
 }
 
 /**
- * src/ と .takumi/ の差分を検出
+ * src/ と .cc-craft-kit/ の差分を検出
  */
 export function detectDifferences(
   srcHashes: Map<string, string>,
-  takumiHashes: Map<string, string>
+  ccCraftKitHashes: Map<string, string>
 ): FileDiff[] {
   const diffs: FileDiff[] = [];
 
   // src/ にあるファイルをチェック
   for (const [path, srcHash] of srcHashes.entries()) {
-    const takumiHash = takumiHashes.get(path);
+    const ccCraftKitHash = ccCraftKitHashes.get(path);
 
-    if (!takumiHash) {
-      // .takumi/ に存在しない
+    if (!ccCraftKitHash) {
+      // .cc-craft-kit/ に存在しない
       diffs.push({
         path,
         srcHash,
-        takumiHash: null,
-        status: 'missing_in_takumi',
+        ccCraftKitHash: null,
+        status: 'missing_in_cc_craft_kit',
       });
-    } else if (srcHash !== takumiHash) {
+    } else if (srcHash !== ccCraftKitHash) {
       // ハッシュが異なる
       diffs.push({
         path,
         srcHash,
-        takumiHash,
+        ccCraftKitHash,
         status: 'modified',
       });
     }
   }
 
-  // .takumi/ にのみ存在するファイルをチェック
-  for (const [path, takumiHash] of takumiHashes.entries()) {
+  // .cc-craft-kit/ にのみ存在するファイルをチェック
+  for (const [path, ccCraftKitHash] of ccCraftKitHashes.entries()) {
     if (!srcHashes.has(path)) {
       diffs.push({
         path,
         srcHash: null,
-        takumiHash,
-        status: 'extra_in_takumi',
+        ccCraftKitHash,
+        status: 'extra_in_cc_craft_kit',
       });
     }
   }
@@ -318,16 +318,16 @@ export async function checkSync(options: ScanOptions = {}): Promise<SyncCheckRes
   const { verbose = false } = options;
 
   // ファイルスキャン
-  const { srcFiles, takumiFiles } = await scanProjectFiles(options);
+  const { srcFiles, ccCraftKitFiles } = await scanProjectFiles(options);
 
   // ハッシュ計算
   const srcHashes = await calculateFileHashes(srcFiles, { verbose });
-  const takumiHashes = await calculateFileHashes(takumiFiles, { verbose });
+  const ccCraftKitHashes = await calculateFileHashes(ccCraftKitFiles, { verbose });
 
   // 差分検出
-  const diffs = detectDifferences(srcHashes, takumiHashes);
+  const diffs = detectDifferences(srcHashes, ccCraftKitHashes);
 
-  const totalFiles = Math.max(srcFiles.length, takumiFiles.length);
+  const totalFiles = Math.max(srcFiles.length, ccCraftKitFiles.length);
   const inSync = diffs.length === 0;
 
   return {
@@ -352,29 +352,29 @@ export function printDiffReport(
 
   if (result.inSync) {
     console.log('✅ All files are in sync!');
-    console.log(`   src/ and .takumi/ are identical.\n`);
+    console.log(`   src/ and .cc-craft-kit/ are identical.\n`);
     return;
   }
 
   // ステータスごとに分類
   const modified = result.diffs.filter((d) => d.status === 'modified');
-  const missingInTakumi = result.diffs.filter((d) => d.status === 'missing_in_takumi');
-  const extraInTakumi = result.diffs.filter((d) => d.status === 'extra_in_takumi');
+  const missingInTakumi = result.diffs.filter((d) => d.status === 'missing_in_cc_craft_kit');
+  const extraInTakumi = result.diffs.filter((d) => d.status === 'extra_in_cc_craft_kit');
 
   if (modified.length > 0) {
     console.log(`⚠️  Modified files (${modified.length}):`);
     modified.forEach((diff) => {
       console.log(`   - ${diff.path}`);
       if (showHash) {
-        console.log(`     src/:    ${diff.srcHash}`);
-        console.log(`     .takumi/: ${diff.takumiHash}`);
+        console.log(`     src/:           ${diff.srcHash}`);
+        console.log(`     .cc-craft-kit/: ${diff.ccCraftKitHash}`);
       }
     });
     console.log('');
   }
 
   if (missingInTakumi.length > 0) {
-    console.log(`❌ Missing in .takumi/ (${missingInTakumi.length}):`);
+    console.log(`❌ Missing in .cc-craft-kit/ (${missingInTakumi.length}):`);
     missingInTakumi.forEach((diff) => {
       console.log(`   - ${diff.path}`);
       if (showHash) {
@@ -385,11 +385,11 @@ export function printDiffReport(
   }
 
   if (extraInTakumi.length > 0) {
-    console.log(`🔹 Extra in .takumi/ (${extraInTakumi.length}):`);
+    console.log(`🔹 Extra in .cc-craft-kit/ (${extraInTakumi.length}):`);
     extraInTakumi.forEach((diff) => {
       console.log(`   - ${diff.path}`);
       if (showHash) {
-        console.log(`     .takumi/: ${diff.takumiHash}`);
+        console.log(`     .cc-craft-kit/: ${diff.ccCraftKitHash}`);
       }
     });
     console.log('');

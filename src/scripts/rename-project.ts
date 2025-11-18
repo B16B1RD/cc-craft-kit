@@ -75,7 +75,7 @@ async function getAllFiles(dir: string, extensions: string[] = []): Promise<stri
         const subFiles = await getAllFiles(fullPath, extensions);
         files.push(...subFiles);
       } else if (entry.isFile()) {
-        if (extensions.length === 0 || extensions.some(ext => entry.name.endsWith(ext))) {
+        if (extensions.length === 0 || extensions.some((ext) => entry.name.endsWith(ext))) {
           files.push(fullPath);
         }
       }
@@ -183,7 +183,7 @@ export async function renameProject(config: RenameConfig): Promise<RenameResult>
       { from: /Takumi（匠）/g, to: 'cc-craft-kit' },
       { from: /Takumi/g, to: 'cc-craft-kit' },
       { from: /takumi/g, to: 'cc-craft-kit' },
-      { from: /\/takumi:/g, to: '/cft:' },
+      { from: /\/cft:/g, to: '/cft:' },
       { from: /\.claude\/commands\/takumi\//g, to: '.claude/commands/cft/' },
     ];
 
@@ -254,7 +254,7 @@ async function main() {
     baseDir: process.cwd(),
     oldName: 'takumi',
     newName: 'cc-craft-kit',
-    oldCommand: '/takumi:',
+    oldCommand: '/cft:',
     newCommand: '/cft:',
   };
 

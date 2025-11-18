@@ -169,7 +169,7 @@ async function createSymlink(
 }
 
 /**
- * .takumi/commands/ → src/commands/ へ移動
+ * .cc-craft-kit/commands/ → src/commands/ へ移動
  */
 async function migrateCommands(config: MigrationConfig): Promise<{
   movedFiles: string[];
@@ -179,11 +179,11 @@ async function migrateCommands(config: MigrationConfig): Promise<{
   const movedFiles: string[] = [];
   const errors: Array<{ file: string; error: string }> = [];
 
-  const sourceDir = path.join(baseDir, '.takumi', 'commands');
+  const sourceDir = path.join(baseDir, '.cc-craft-kit', 'commands');
   const destDir = path.join(baseDir, 'src', 'commands');
 
   if (verbose) {
-    console.log('📦 Migrating .takumi/commands/ → src/commands/...\n');
+    console.log('📦 Migrating .cc-craft-kit/commands/ → src/commands/...\n');
   }
 
   // ソースディレクトリが存在するか確認
@@ -191,7 +191,7 @@ async function migrateCommands(config: MigrationConfig): Promise<{
     await fs.access(sourceDir);
   } catch {
     if (verbose) {
-      console.log('⚠️  .takumi/commands/ does not exist, skipping...\n');
+      console.log('⚠️  .cc-craft-kit/commands/ does not exist, skipping...\n');
     }
     return { movedFiles, errors };
   }
@@ -215,7 +215,7 @@ async function migrateCommands(config: MigrationConfig): Promise<{
   }
 
   if (verbose) {
-    console.log(`\n✓ Migrated ${movedFiles.length} files from .takumi/commands/\n`);
+    console.log(`\n✓ Migrated ${movedFiles.length} files from .cc-craft-kit/commands/\n`);
   }
 
   return { movedFiles, errors };
@@ -334,7 +334,7 @@ export async function migrate(config: MigrationConfig): Promise<MigrationResult>
       return result;
     }
 
-    // .takumi/commands/ → src/commands/
+    // .cc-craft-kit/commands/ → src/commands/
     const commandsResult = await migrateCommands(config);
     result.movedFiles.push(...commandsResult.movedFiles);
     result.errors.push(...commandsResult.errors);

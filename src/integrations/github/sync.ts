@@ -81,7 +81,7 @@ export class GitHubSyncService {
 
 **同期日時:** ${new Date().toLocaleString('ja-JP')}
 **フェーズ:** ${spec.phase}
-**最新の仕様書:** [\`.takumi/specs/${spec.id}.md\`](../../.takumi/specs/${spec.id}.md)
+**最新の仕様書:** [\`.cc-craft-kit/specs/${spec.id}.md\`](../../.cc-craft-kit/specs/${spec.id}.md)
 `;
 
       try {
@@ -235,7 +235,7 @@ export class GitHubSyncService {
     const fs = await import('fs/promises');
     const path = await import('path');
 
-    const specFilePath = path.join(process.cwd(), '.takumi', 'specs', `${spec.id}.md`);
+    const specFilePath = path.join(process.cwd(), '.cc-craft-kit', 'specs', `${spec.id}.md`);
 
     try {
       const specContent = await fs.readFile(specFilePath, 'utf-8');

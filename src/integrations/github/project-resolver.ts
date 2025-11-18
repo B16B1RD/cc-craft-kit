@@ -40,10 +40,10 @@ interface ProjectConfig {
  * 3. config.json の project_id にフォールバック
  */
 export async function resolveProjectId(
-  takumiDir: string,
+  ccCraftKitDir: string,
   githubToken: string | null = null
 ): Promise<number | null> {
-  const configPath = join(takumiDir, 'config.json');
+  const configPath = join(ccCraftKitDir, 'config.json');
 
   if (!existsSync(configPath)) {
     return null;

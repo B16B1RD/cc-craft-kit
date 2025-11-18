@@ -88,11 +88,11 @@ export async function createSpec(
   options: { color: boolean } = { color: true }
 ): Promise<void> {
   const cwd = process.cwd();
-  const takumiDir = join(cwd, '.takumi');
-  const specsDir = join(takumiDir, 'specs');
+  const ccCraftKitDir = join(cwd, '.cc-craft-kit');
+  const specsDir = join(ccCraftKitDir, 'specs');
 
   // プロジェクト初期化チェック
-  if (!existsSync(takumiDir)) {
+  if (!existsSync(ccCraftKitDir)) {
     throw createProjectNotInitializedError();
   }
 
@@ -166,8 +166,8 @@ export async function createSpec(
   console.log('');
   console.log('Next steps:');
   console.log('  1. Edit the spec file to define requirements');
-  console.log('  2. View the spec: /takumi:spec-get ' + id.substring(0, 8));
-  console.log('  3. Move to design phase: /takumi:spec-phase ' + id.substring(0, 8) + ' design');
+  console.log('  2. View the spec: /cft:spec-get ' + id.substring(0, 8));
+  console.log('  3. Move to design phase: /cft:spec-phase ' + id.substring(0, 8) + ' design');
 }
 
 // CLI エントリポイント

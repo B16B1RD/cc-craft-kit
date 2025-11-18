@@ -17,8 +17,8 @@ import { validateSpecId } from '../utils/validation.js';
 /**
  * GitHub設定を取得
  */
-function getGitHubConfig(takumiDir: string): { owner: string; repo: string } | null {
-  const configPath = join(takumiDir, 'config.json');
+function getGitHubConfig(ccCraftKitDir: string): { owner: string; repo: string } | null {
+  const configPath = join(ccCraftKitDir, 'config.json');
   if (!existsSync(configPath)) {
     return null;
   }
@@ -43,10 +43,10 @@ export async function recordProgress(
   options: { color: boolean } = { color: true }
 ): Promise<void> {
   const cwd = process.cwd();
-  const takumiDir = join(cwd, '.takumi');
+  const ccCraftKitDir = join(cwd, '.cc-craft-kit');
 
   // プロジェクト初期化チェック
-  if (!existsSync(takumiDir)) {
+  if (!existsSync(ccCraftKitDir)) {
     throw createProjectNotInitializedError();
   }
 
@@ -54,7 +54,7 @@ export async function recordProgress(
   validateSpecId(specId);
 
   // GitHub設定チェック
-  const githubConfig = getGitHubConfig(takumiDir);
+  const githubConfig = getGitHubConfig(ccCraftKitDir);
   if (!githubConfig) {
     throw createGitHubNotConfiguredError();
   }
@@ -81,7 +81,7 @@ export async function recordProgress(
 
   if (!spec.github_issue_id) {
     throw new Error(
-      'Spec has no linked GitHub Issue. Create an issue first with "/takumi:github-issue-create".'
+      'Spec has no linked GitHub Issue. Create an issue first with "/cft:github-issue-create".'
     );
   }
 
@@ -132,10 +132,10 @@ export async function recordErrorSolution(
   options: { color: boolean } = { color: true }
 ): Promise<void> {
   const cwd = process.cwd();
-  const takumiDir = join(cwd, '.takumi');
+  const ccCraftKitDir = join(cwd, '.cc-craft-kit');
 
   // プロジェクト初期化チェック
-  if (!existsSync(takumiDir)) {
+  if (!existsSync(ccCraftKitDir)) {
     throw createProjectNotInitializedError();
   }
 
@@ -143,7 +143,7 @@ export async function recordErrorSolution(
   validateSpecId(specId);
 
   // GitHub設定チェック
-  const githubConfig = getGitHubConfig(takumiDir);
+  const githubConfig = getGitHubConfig(ccCraftKitDir);
   if (!githubConfig) {
     throw createGitHubNotConfiguredError();
   }
@@ -170,7 +170,7 @@ export async function recordErrorSolution(
 
   if (!spec.github_issue_id) {
     throw new Error(
-      'Spec has no linked GitHub Issue. Create an issue first with "/takumi:github-issue-create".'
+      'Spec has no linked GitHub Issue. Create an issue first with "/cft:github-issue-create".'
     );
   }
 
@@ -222,10 +222,10 @@ export async function recordTip(
   options: { color: boolean } = { color: true }
 ): Promise<void> {
   const cwd = process.cwd();
-  const takumiDir = join(cwd, '.takumi');
+  const ccCraftKitDir = join(cwd, '.cc-craft-kit');
 
   // プロジェクト初期化チェック
-  if (!existsSync(takumiDir)) {
+  if (!existsSync(ccCraftKitDir)) {
     throw createProjectNotInitializedError();
   }
 
@@ -233,7 +233,7 @@ export async function recordTip(
   validateSpecId(specId);
 
   // GitHub設定チェック
-  const githubConfig = getGitHubConfig(takumiDir);
+  const githubConfig = getGitHubConfig(ccCraftKitDir);
   if (!githubConfig) {
     throw createGitHubNotConfiguredError();
   }
@@ -260,7 +260,7 @@ export async function recordTip(
 
   if (!spec.github_issue_id) {
     throw new Error(
-      'Spec has no linked GitHub Issue. Create an issue first with "/takumi:github-issue-create".'
+      'Spec has no linked GitHub Issue. Create an issue first with "/cft:github-issue-create".'
     );
   }
 

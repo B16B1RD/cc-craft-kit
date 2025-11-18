@@ -2,7 +2,6 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { checkSync } from './check-sync.js';
 
 /**
  * 同期オプション
@@ -53,30 +52,91 @@ async function copyFile(
 }
 
 /**
- * ファイルを削除
+ * ディレクトリを再帰的にコピー
  */
-async function deleteFile(
-  filePath: string,
+async function copyDirectory(
+  srcDir: string,
+  destDir: string,
   options: { dryRun?: boolean; verbose?: boolean } = {}
-): Promise<void> {
+): Promise<number> {
   const { dryRun = false, verbose = false } = options;
+  let copiedCount = 0;
 
-  if (dryRun) {
-    if (verbose) {
-      console.log(`[DRY RUN] Would delete: ${filePath}`);
+  // ソースディレクトリが存在しない場合はスキップ
+  try {
+    await fs.access(srcDir);
+  } catch {
+    return copiedCount;
+  }
+
+  // ディレクトリ内のファイルを取得
+  const entries = await fs.readdir(srcDir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const srcPath = path.join(srcDir, entry.name);
+    const destPath = path.join(destDir, entry.name);
+
+    if (entry.isDirectory()) {
+      // サブディレクトリを再帰的にコピー
+      copiedCount += await copyDirectory(srcPath, destPath, options);
+    } else if (entry.isFile()) {
+      // ファイルをコピー
+      await copyFile(srcPath, destPath, { dryRun, verbose });
+      copiedCount++;
     }
-    return;
   }
 
-  await fs.unlink(filePath);
-
-  if (verbose) {
-    console.log(`✓ Deleted: ${filePath}`);
-  }
+  return copiedCount;
 }
 
 /**
- * src/ から .takumi/ へ同期
+ * ディレクトリ内の不要なファイルを削除
+ */
+async function cleanDirectory(
+  dir: string,
+  options: { dryRun?: boolean; verbose?: boolean } = {}
+): Promise<number> {
+  const { dryRun = false, verbose = false } = options;
+  let deletedCount = 0;
+
+  // ディレクトリが存在しない場合はスキップ
+  try {
+    await fs.access(dir);
+  } catch {
+    return deletedCount;
+  }
+
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const filePath = path.join(dir, entry.name);
+
+    if (entry.isDirectory()) {
+      // サブディレクトリを再帰的にクリーン
+      deletedCount += await cleanDirectory(filePath, options);
+    } else if (entry.isFile()) {
+      // .js および .d.ts ファイルを削除
+      if (entry.name.endsWith('.js') || entry.name.endsWith('.d.ts')) {
+        if (dryRun) {
+          if (verbose) {
+            console.log(`[DRY RUN] Would delete: ${filePath}`);
+          }
+        } else {
+          await fs.unlink(filePath);
+          if (verbose) {
+            console.log(`✓ Deleted: ${filePath}`);
+          }
+        }
+        deletedCount++;
+      }
+    }
+  }
+
+  return deletedCount;
+}
+
+/**
+ * src/ から .cc-craft-kit/ へ同期
  */
 export async function syncSourceToTakumi(options: SyncOptions = {}): Promise<SyncResult> {
   const { dryRun = false, verbose = false, baseDir = process.cwd() } = options;
@@ -90,43 +150,40 @@ export async function syncSourceToTakumi(options: SyncOptions = {}): Promise<Syn
 
   try {
     if (verbose) {
-      console.log('🔄 Syncing src/ to .takumi/...\n');
+      console.log('🔄 Syncing src/ to .cc-craft-kit/...\n');
     }
 
-    // 整合性チェック実行
-    const checkResult = await checkSync({ baseDir, verbose: false });
+    // src/ から .cc-craft-kit/ へコピーするディレクトリ
+    const directories = ['commands', 'core', 'integrations', 'plugins', 'scripts'];
 
-    if (checkResult.inSync) {
-      if (verbose) {
-        console.log('✅ Already in sync. Nothing to do.\n');
-      }
-      return result;
-    }
-
+    // 古い .js と .d.ts ファイルを削除
     if (verbose) {
-      console.log(`📋 Found ${checkResult.diffs.length} differences\n`);
+      console.log('🧹 Cleaning old JavaScript files...\n');
+    }
+    for (const dir of directories) {
+      const destDir = path.join(baseDir, '.cc-craft-kit', dir);
+      try {
+        const deleted = await cleanDirectory(destDir, { dryRun, verbose });
+        result.deletedFiles += deleted;
+      } catch (error) {
+        // クリーンエラーは警告のみ
+        if (verbose) {
+          console.warn(`⚠️  Failed to clean ${dir}:`, error);
+        }
+      }
     }
 
-    // 差分を処理
-    for (const diff of checkResult.diffs) {
+    // TypeScript ファイルをコピー
+    for (const dir of directories) {
+      const srcDir = path.join(baseDir, 'src', dir);
+      const destDir = path.join(baseDir, '.cc-craft-kit', dir);
+
       try {
-        if (diff.status === 'modified' || diff.status === 'missing_in_takumi') {
-          // src/ から .takumi/ へコピー
-          const srcPath = path.join(baseDir, 'src', diff.path);
-          const takumiPath = path.join(baseDir, '.takumi', diff.path);
-
-          await copyFile(srcPath, takumiPath, { dryRun, verbose });
-          result.copiedFiles++;
-        } else if (diff.status === 'extra_in_takumi') {
-          // .takumi/ から削除
-          const takumiPath = path.join(baseDir, '.takumi', diff.path);
-
-          await deleteFile(takumiPath, { dryRun, verbose });
-          result.deletedFiles++;
-        }
+        const copied = await copyDirectory(srcDir, destDir, { dryRun, verbose });
+        result.copiedFiles += copied;
       } catch (error) {
         result.errors.push({
-          file: diff.path,
+          file: dir,
           error: error instanceof Error ? error.message : String(error),
         });
         result.success = false;
@@ -176,11 +233,11 @@ export async function syncSlashCommands(options: SyncOptions = {}): Promise<Sync
 
   try {
     if (verbose) {
-      console.log('🔄 Syncing src/slash-commands/ to .takumi/slash-commands/...\n');
+      console.log('🔄 Syncing src/slash-commands/ to .cc-craft-kit/slash-commands/...\n');
     }
 
     const sourceDir = path.join(baseDir, 'src', 'slash-commands');
-    const destDir = path.join(baseDir, '.takumi', 'slash-commands');
+    const destDir = path.join(baseDir, '.cc-craft-kit', 'slash-commands');
 
     // ソースディレクトリが存在しない場合はスキップ
     try {
@@ -237,7 +294,7 @@ export async function syncAll(options: SyncOptions = {}): Promise<boolean> {
     console.log('🚀 Starting full sync...\n');
   }
 
-  // src/ → .takumi/ 同期
+  // dist/ → .cc-craft-kit/ 同期
   const sourceResult = await syncSourceToTakumi(options);
 
   // .claude/commands/ 同期

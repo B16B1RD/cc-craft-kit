@@ -54,18 +54,18 @@ export async function showStatus(
   options: OutputOptions = { format: 'table', color: true }
 ): Promise<void> {
   const cwd = process.cwd();
-  const takumiDir = join(cwd, '.takumi');
-  const configPath = join(takumiDir, 'config.json');
+  const ccCraftKitDir = join(cwd, '.cc-craft-kit');
+  const configPath = join(ccCraftKitDir, 'config.json');
 
   // プロジェクト初期化チェック
-  if (!existsSync(takumiDir)) {
+  if (!existsSync(ccCraftKitDir)) {
     throw createProjectNotInitializedError();
   }
 
   // 設定ファイル読み込み
   const config: ProjectConfig = JSON.parse(readFileSync(configPath, 'utf-8'));
 
-  console.log(formatHeading('Takumi Project Status', 1, options.color));
+  console.log(formatHeading('cc-craft-kit Project Status', 1, options.color));
   console.log('');
 
   // プロジェクト情報
@@ -78,7 +78,7 @@ export async function showStatus(
       options.color
     )
   );
-  console.log(formatKeyValue('Directory', takumiDir, options.color));
+  console.log(formatKeyValue('Directory', ccCraftKitDir, options.color));
   console.log('');
 
   // GitHub 連携状態
@@ -89,7 +89,7 @@ export async function showStatus(
     );
 
     // Project ID を解決
-    const projectId = await resolveProjectId(takumiDir);
+    const projectId = await resolveProjectId(ccCraftKitDir);
     console.log(
       formatKeyValue('Project ID', projectId ? `#${projectId}` : '(not set)', options.color)
     );
@@ -100,7 +100,7 @@ export async function showStatus(
     console.log('');
   } else {
     console.log(
-      formatInfo('GitHub is not configured. Run "/takumi:github-init" to set up.', options.color)
+      formatInfo('GitHub is not configured. Run "/cft:github-init" to set up.', options.color)
     );
     console.log('');
   }
@@ -178,14 +178,14 @@ export async function showStatus(
   // 次のアクション提案
   console.log(formatHeading('Suggested Actions', 2, options.color));
   if (specs.length === 0) {
-    console.log('  • Create your first spec: /takumi:spec-create "<name>"');
+    console.log('  • Create your first spec: /cft:spec-create "<name>"');
   }
   if (!config.github) {
-    console.log('  • Configure GitHub: /takumi:github-init <owner> <repo>');
+    console.log('  • Configure GitHub: /cft:github-init <owner> <repo>');
   }
   if (specs.length > 0) {
-    console.log('  • View specs: /takumi:spec-list');
-    console.log('  • Create a spec: /takumi:spec-create "<name>"');
+    console.log('  • View specs: /cft:spec-list');
+    console.log('  • Create a spec: /cft:spec-create "<name>"');
   }
 }
 

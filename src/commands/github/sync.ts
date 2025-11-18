@@ -20,8 +20,8 @@ import { validateSpecId } from '../utils/validation.js';
 /**
  * GitHub設定を取得
  */
-function getGitHubConfig(takumiDir: string): { owner: string; repo: string } | null {
-  const configPath = join(takumiDir, 'config.json');
+function getGitHubConfig(ccCraftKitDir: string): { owner: string; repo: string } | null {
+  const configPath = join(ccCraftKitDir, 'config.json');
   if (!existsSync(configPath)) {
     return null;
   }
@@ -45,10 +45,10 @@ export async function syncToGitHub(
   options: { color: boolean } = { color: true }
 ): Promise<void> {
   const cwd = process.cwd();
-  const takumiDir = join(cwd, '.takumi');
+  const ccCraftKitDir = join(cwd, '.cc-craft-kit');
 
   // プロジェクト初期化チェック
-  if (!existsSync(takumiDir)) {
+  if (!existsSync(ccCraftKitDir)) {
     throw createProjectNotInitializedError();
   }
 
@@ -56,7 +56,7 @@ export async function syncToGitHub(
   validateSpecId(specId);
 
   // GitHub設定チェック
-  const githubConfig = getGitHubConfig(takumiDir);
+  const githubConfig = getGitHubConfig(ccCraftKitDir);
   if (!githubConfig) {
     throw createGitHubNotConfiguredError();
   }
@@ -138,10 +138,10 @@ export async function syncFromGitHub(
   options: { color: boolean } = { color: true }
 ): Promise<void> {
   const cwd = process.cwd();
-  const takumiDir = join(cwd, '.takumi');
+  const ccCraftKitDir = join(cwd, '.cc-craft-kit');
 
   // プロジェクト初期化チェック
-  if (!existsSync(takumiDir)) {
+  if (!existsSync(ccCraftKitDir)) {
     throw createProjectNotInitializedError();
   }
 
@@ -149,7 +149,7 @@ export async function syncFromGitHub(
   validateSpecId(specId);
 
   // GitHub設定チェック
-  const githubConfig = getGitHubConfig(takumiDir);
+  const githubConfig = getGitHubConfig(ccCraftKitDir);
   if (!githubConfig) {
     throw createGitHubNotConfiguredError();
   }

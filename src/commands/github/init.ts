@@ -26,11 +26,11 @@ export async function initGitHub(
   options: { color: boolean } = { color: true }
 ): Promise<void> {
   const cwd = process.cwd();
-  const takumiDir = join(cwd, '.takumi');
-  const configPath = join(takumiDir, 'config.json');
+  const ccCraftKitDir = join(cwd, '.cc-craft-kit');
+  const configPath = join(ccCraftKitDir, 'config.json');
 
   // プロジェクト初期化チェック
-  if (!existsSync(takumiDir)) {
+  if (!existsSync(ccCraftKitDir)) {
     throw createProjectNotInitializedError();
   }
 
@@ -102,13 +102,13 @@ export async function initGitHub(
   console.log(formatHeading('Next Actions', 2, options.color));
   console.log('');
   console.log('  • Create GitHub Issue from spec:');
-  console.log(`    /takumi:github-issue-create <spec-id>`);
+  console.log(`    /cft:github-issue-create <spec-id>`);
   console.log('');
   console.log('  • Sync spec to GitHub:');
-  console.log(`    /takumi:github-sync to-github <spec-id>`);
+  console.log(`    /cft:github-sync to-github <spec-id>`);
   console.log('');
   console.log('  • Sync GitHub to spec:');
-  console.log(`    /takumi:github-sync from-github <spec-id>`);
+  console.log(`    /cft:github-sync from-github <spec-id>`);
   console.log('');
 
   if (!githubToken) {

@@ -161,7 +161,7 @@ export function createProjectAlreadyInitializedError(): CLIError {
   return new CLIError(
     'Project is already initialized',
     ERROR_CODES.PROJECT_ALREADY_INITIALIZED,
-    'A .takumi directory already exists in this location.',
+    'A .cc-craft-kit directory already exists in this location.',
     {}
   );
 }

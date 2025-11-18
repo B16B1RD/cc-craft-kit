@@ -62,7 +62,7 @@ export class CodeQualityAnalyzer
       const reportContent = this.generateReport(analysis);
       const reportPath = path.join(
         process.cwd(),
-        '.takumi',
+        '.cc-craft-kit',
         'reports',
         `code-quality-${context.specId}.md`
       );

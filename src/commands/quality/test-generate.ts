@@ -8,7 +8,7 @@
 export async function testGenerate(filePattern: string): Promise<void> {
   if (!filePattern) {
     console.error('Error: File pattern is required');
-    console.error('Usage: /takumi:test-generate "<file-pattern>"');
+    console.error('Usage: /cft:test-generate "<file-pattern>"');
     process.exit(1);
   }
 

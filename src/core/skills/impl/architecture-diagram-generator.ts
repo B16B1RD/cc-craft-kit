@@ -62,7 +62,7 @@ export class ArchitectureDiagramGenerator
       }
 
       // ファイル保存
-      const outputDir = path.join(process.cwd(), '.takumi', 'diagrams');
+      const outputDir = path.join(process.cwd(), '.cc-craft-kit', 'diagrams');
       await fs.mkdir(outputDir, { recursive: true });
       const outputPath = path.join(outputDir, `architecture-${context.specId}.${fileExtension}`);
       await fs.writeFile(outputPath, diagramContent, 'utf-8');

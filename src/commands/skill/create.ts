@@ -15,10 +15,10 @@ async function main(): Promise<void> {
   if (!name || descriptionParts.length === 0) {
     console.error(chalk.red('Error: Missing required arguments'));
     console.log('\nUsage:');
-    console.log('  /takumi:skill-create <name> <description>');
+    console.log('  /cft:skill-create <name> <description>');
     console.log('\nExample:');
     console.log(
-      '  /takumi:skill-create api-documentation "Generates comprehensive API documentation from code"'
+      '  /cft:skill-create api-documentation "Generates comprehensive API documentation from code"'
     );
     process.exit(1);
   }
@@ -177,7 +177,7 @@ When using this skill, provide results in the following format:
     console.log(`     - ${skillsDir}/templates/ (template files)`);
     console.log('  4. Test the skill by using it in your workflow');
     console.log('\n' + chalk.bold('List skills:'));
-    console.log('  /takumi:skill-list');
+    console.log('  /cft:skill-list');
   } catch (error) {
     console.error(chalk.red('Error creating skill:'), error);
     process.exit(1);

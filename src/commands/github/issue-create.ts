@@ -18,8 +18,8 @@ import { validateSpecId } from '../utils/validation.js';
 /**
  * GitHub設定を取得
  */
-function getGitHubConfig(takumiDir: string): { owner: string; repo: string } | null {
-  const configPath = join(takumiDir, 'config.json');
+function getGitHubConfig(ccCraftKitDir: string): { owner: string; repo: string } | null {
+  const configPath = join(ccCraftKitDir, 'config.json');
   if (!existsSync(configPath)) {
     return null;
   }
@@ -43,10 +43,10 @@ export async function createGitHubIssue(
   options: { color: boolean } = { color: true }
 ): Promise<void> {
   const cwd = process.cwd();
-  const takumiDir = join(cwd, '.takumi');
+  const ccCraftKitDir = join(cwd, '.cc-craft-kit');
 
   // プロジェクト初期化チェック
-  if (!existsSync(takumiDir)) {
+  if (!existsSync(ccCraftKitDir)) {
     throw createProjectNotInitializedError();
   }
 
@@ -54,7 +54,7 @@ export async function createGitHubIssue(
   validateSpecId(specId);
 
   // GitHub設定チェック
-  const githubConfig = getGitHubConfig(takumiDir);
+  const githubConfig = getGitHubConfig(ccCraftKitDir);
   if (!githubConfig) {
     throw createGitHubNotConfiguredError();
   }
@@ -105,7 +105,7 @@ export async function createGitHubIssue(
   console.log('');
 
   // Markdownファイルを読み込んでIssue bodyとして使用
-  const specPath = join(takumiDir, 'specs', `${spec.id}.md`);
+  const specPath = join(ccCraftKitDir, 'specs', `${spec.id}.md`);
   let body = '';
   if (existsSync(specPath)) {
     body = readFileSync(specPath, 'utf-8');
@@ -164,12 +164,8 @@ export async function createGitHubIssue(
     console.log(formatHeading('Next Actions', 2, options.color));
     console.log('');
     console.log(`  • View issue: ${issue.html_url}`);
-    console.log(
-      `  • Sync spec to GitHub: /takumi:github-sync to-github ${spec.id.substring(0, 8)}`
-    );
-    console.log(
-      `  • Sync GitHub to spec: /takumi:github-sync from-github ${spec.id.substring(0, 8)}`
-    );
+    console.log(`  • Sync spec to GitHub: /cft:github-sync to-github ${spec.id.substring(0, 8)}`);
+    console.log(`  • Sync GitHub to spec: /cft:github-sync from-github ${spec.id.substring(0, 8)}`);
     console.log('');
   } catch (error) {
     if (error instanceof Error) {

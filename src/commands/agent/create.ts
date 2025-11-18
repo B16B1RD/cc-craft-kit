@@ -15,9 +15,9 @@ async function main(): Promise<void> {
   if (!name || descriptionParts.length === 0) {
     console.error(chalk.red('Error: Missing required arguments'));
     console.log('\nUsage:');
-    console.log('  /takumi:agent-create <name> <description>');
+    console.log('  /cft:agent-create <name> <description>');
     console.log('\nExample:');
-    console.log('  /takumi:agent-create my-agent "A helpful agent for specific tasks"');
+    console.log('  /cft:agent-create my-agent "A helpful agent for specific tasks"');
     process.exit(1);
   }
 
@@ -121,7 +121,7 @@ Provide your output in a clear, structured format:
     console.log('  3. Define clear responsibilities and guidelines');
     console.log('  4. Test the agent by invoking it in your workflow');
     console.log('\n' + chalk.bold('List subagents:'));
-    console.log('  /takumi:agent-list');
+    console.log('  /cft:agent-list');
   } catch (error) {
     console.error(chalk.red('Error creating subagent:'), error);
     process.exit(1);

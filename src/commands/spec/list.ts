@@ -18,10 +18,10 @@ export async function listSpecs(
   options: OutputOptions = { format: 'table', color: true }
 ): Promise<void> {
   const cwd = process.cwd();
-  const takumiDir = join(cwd, '.takumi');
+  const ccCraftKitDir = join(cwd, '.cc-craft-kit');
 
   // プロジェクト初期化チェック
-  if (!existsSync(takumiDir)) {
+  if (!existsSync(ccCraftKitDir)) {
     throw createProjectNotInitializedError();
   }
 
@@ -71,7 +71,7 @@ export async function listSpecs(
   if (specs.length === 0) {
     console.log('No specifications found.');
     console.log('');
-    console.log('Create your first spec: /takumi:spec-create "<name>"');
+    console.log('Create your first spec: /cft:spec-create "<name>"');
     return;
   }
 
@@ -90,10 +90,10 @@ export async function listSpecs(
 
   // 次のアクション
   console.log('Next actions:');
-  console.log('  • View a spec: /takumi:spec-get <id>');
-  console.log('  • Create a spec: /takumi:spec-create "<name>"');
+  console.log('  • View a spec: /cft:spec-get <id>');
+  console.log('  • Create a spec: /cft:spec-create "<name>"');
   if (!phase) {
-    console.log('  • Filter by phase: /takumi:spec-list <phase>');
+    console.log('  • Filter by phase: /cft:spec-list <phase>');
     console.log(`    Available phases: ${VALID_PHASES.join(', ')}`);
   }
 }

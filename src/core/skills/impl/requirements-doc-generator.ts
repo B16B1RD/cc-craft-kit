@@ -55,7 +55,7 @@ export class RequirementsDocGenerator
       const content = await templateEngine.renderRequirements(vars);
 
       // ファイル保存
-      const outputDir = path.join(process.cwd(), '.takumi', 'specs');
+      const outputDir = path.join(process.cwd(), '.cc-craft-kit', 'specs');
       await fs.mkdir(outputDir, { recursive: true });
       const outputPath = path.join(outputDir, `${input.specName}-requirements.md`);
       await fs.writeFile(outputPath, content, 'utf-8');

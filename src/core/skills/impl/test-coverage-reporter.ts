@@ -58,7 +58,7 @@ export class TestCoverageReporter
       const reportContent = this.generateReport(coverageData, input.thresholds);
       const reportPath = path.join(
         process.cwd(),
-        '.takumi',
+        '.cc-craft-kit',
         'reports',
         `test-coverage-${context.specId}.md`
       );

@@ -16,8 +16,8 @@ import { mapPhaseToStatus, type Phase } from '../../integrations/github/phase-st
 /**
  * GitHub設定を取得
  */
-function getGitHubConfig(takumiDir: string): { owner: string; repo: string } | null {
-  const configPath = join(takumiDir, 'config.json');
+function getGitHubConfig(ccCraftKitDir: string): { owner: string; repo: string } | null {
+  const configPath = join(ccCraftKitDir, 'config.json');
   if (!existsSync(configPath)) {
     return null;
   }
@@ -54,8 +54,8 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
         }
 
         const cwd = process.cwd();
-        const takumiDir = join(cwd, '.takumi');
-        const githubConfig = getGitHubConfig(takumiDir);
+        const ccCraftKitDir = join(cwd, '.cc-craft-kit');
+        const githubConfig = getGitHubConfig(ccCraftKitDir);
 
         if (!githubConfig) {
           // GitHub設定がない場合はスキップ
@@ -79,7 +79,7 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
         }
 
         // Markdownファイルを読み込んでIssue bodyとして使用
-        const specPath = join(takumiDir, 'specs', `${spec.id}.md`);
+        const specPath = join(ccCraftKitDir, 'specs', `${spec.id}.md`);
         let body = '';
         if (existsSync(specPath)) {
           body = readFileSync(specPath, 'utf-8');
@@ -129,7 +129,7 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
 
         // Project に自動追加
         try {
-          const projectNumber = await resolveProjectId(takumiDir, githubToken);
+          const projectNumber = await resolveProjectId(ccCraftKitDir, githubToken);
 
           if (projectNumber) {
             const projects = new GitHubProjects(client);
@@ -187,8 +187,8 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
         }
 
         const cwd = process.cwd();
-        const takumiDir = join(cwd, '.takumi');
-        const githubConfig = getGitHubConfig(takumiDir);
+        const ccCraftKitDir = join(cwd, '.cc-craft-kit');
+        const githubConfig = getGitHubConfig(ccCraftKitDir);
 
         if (!githubConfig) {
           return;
@@ -225,7 +225,7 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
 **変更前:** ${event.data.oldPhase}
 **変更後:** ${event.data.newPhase}
 **変更日時:** ${new Date().toLocaleString('ja-JP')}
-**最新の仕様書:** [\`.takumi/specs/${spec.id}.md\`](../../.takumi/specs/${spec.id}.md)
+**最新の仕様書:** [\`.cc-craft-kit/specs/${spec.id}.md\`](../../.cc-craft-kit/specs/${spec.id}.md)
 `;
 
         try {
@@ -244,7 +244,7 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
         // Project ステータス更新
         if (spec.github_project_item_id) {
           try {
-            const projectNumber = await resolveProjectId(takumiDir, githubToken);
+            const projectNumber = await resolveProjectId(ccCraftKitDir, githubToken);
             if (!projectNumber) {
               return;
             }
@@ -276,7 +276,7 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
 
 **完了日時:** ${new Date().toLocaleString('ja-JP')}
 **最終フェーズ:** completed
-**仕様書:** [\`.takumi/specs/${spec.id}.md\`](../../.takumi/specs/${spec.id}.md)
+**仕様書:** [\`.cc-craft-kit/specs/${spec.id}.md\`](../../.cc-craft-kit/specs/${spec.id}.md)
 `;
 
             await issues.addComment(
@@ -308,8 +308,8 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
       }
 
       const cwd = process.cwd();
-      const takumiDir = join(cwd, '.takumi');
-      const githubConfig = getGitHubConfig(takumiDir);
+      const ccCraftKitDir = join(cwd, '.cc-craft-kit');
+      const githubConfig = getGitHubConfig(ccCraftKitDir);
 
       if (!githubConfig) {
         return;
@@ -360,8 +360,8 @@ ${data.message}
       }
 
       const cwd = process.cwd();
-      const takumiDir = join(cwd, '.takumi');
-      const githubConfig = getGitHubConfig(takumiDir);
+      const ccCraftKitDir = join(cwd, '.cc-craft-kit');
+      const githubConfig = getGitHubConfig(ccCraftKitDir);
 
       if (!githubConfig) {
         return;
@@ -416,8 +416,8 @@ ${data.solution}
       }
 
       const cwd = process.cwd();
-      const takumiDir = join(cwd, '.takumi');
-      const githubConfig = getGitHubConfig(takumiDir);
+      const ccCraftKitDir = join(cwd, '.cc-craft-kit');
+      const githubConfig = getGitHubConfig(ccCraftKitDir);
 
       if (!githubConfig) {
         return;
@@ -475,8 +475,8 @@ ${data.content}
       }
 
       const cwd = process.cwd();
-      const takumiDir = join(cwd, '.takumi');
-      const githubConfig = getGitHubConfig(takumiDir);
+      const ccCraftKitDir = join(cwd, '.cc-craft-kit');
+      const githubConfig = getGitHubConfig(ccCraftKitDir);
 
       if (!githubConfig) {
         return;
@@ -493,7 +493,7 @@ ${data.content}
       }
 
       // 仕様書ファイルを読み込む
-      const specPath = join(takumiDir, 'specs', `${spec.id}.md`);
+      const specPath = join(ccCraftKitDir, 'specs', `${spec.id}.md`);
       if (!existsSync(specPath)) {
         console.warn(`Warning: Spec file not found: ${specPath}`);
         return;
@@ -522,7 +522,7 @@ ${data.content}
 仕様書が更新されました。Issue 本文を最新の内容で更新しました。
 
 **更新日時:** ${new Date().toLocaleString('ja-JP')}
-**最新の仕様書:** [\`.takumi/specs/${spec.id}.md\`](../../.takumi/specs/${spec.id}.md)
+**最新の仕様書:** [\`.cc-craft-kit/specs/${spec.id}.md\`](../../.cc-craft-kit/specs/${spec.id}.md)
 `;
 
       try {
