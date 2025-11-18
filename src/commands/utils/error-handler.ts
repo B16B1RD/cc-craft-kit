@@ -143,7 +143,7 @@ export function createDatabaseNotInitializedError(): CLIError {
   return new CLIError(
     'Database is not initialized',
     ERROR_CODES.DATABASE_NOT_INITIALIZED,
-    'Run "takumi init" to initialize the project.',
+    'Run "/cft:init" to initialize the project.',
     {}
   );
 }
@@ -152,7 +152,7 @@ export function createProjectNotInitializedError(): CLIError {
   return new CLIError(
     'Project is not initialized',
     ERROR_CODES.PROJECT_NOT_INITIALIZED,
-    'Run "takumi init <project-name>" to initialize a new project.',
+    'Run "/cft:init <project-name>" to initialize a new project.',
     {}
   );
 }
@@ -170,7 +170,7 @@ export function createSpecNotFoundError(specId: string): CLIError {
   return new CLIError(
     `Spec not found: ${specId}`,
     ERROR_CODES.SPEC_NOT_FOUND,
-    'Check the spec ID and try again. Use "takumi spec list" to see all specs.',
+    'Check the spec ID and try again. Use "/cft:spec-list" to see all specs.',
     { specId }
   );
 }
@@ -198,7 +198,7 @@ export function createGitHubNotConfiguredError(): CLIError {
   return new CLIError(
     'GitHub is not configured',
     ERROR_CODES.GITHUB_NOT_CONFIGURED,
-    'Run "takumi github init <owner> <repo>" to configure GitHub integration.',
+    'Run "/cft:github-init <owner> <repo>" to configure GitHub integration.',
     {}
   );
 }

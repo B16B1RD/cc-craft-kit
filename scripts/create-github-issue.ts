@@ -37,7 +37,7 @@ interface DatabaseSchema {
 async function createGitHubIssue() {
   const token = process.env.GITHUB_TOKEN;
   const owner = process.env.GITHUB_OWNER;
-  const repo = 'takumi';
+  const repo = 'cc-craft-kit';
 
   if (!token || !owner) {
     console.error('❌ GITHUB_TOKEN または GITHUB_OWNER が設定されていません');
@@ -81,22 +81,22 @@ async function createGitHubIssue() {
 
 ---
 
-**Takumi Spec ID**: \`${spec.id}\`
+**cc-craft-kit Spec ID**: \`${spec.id}\`
 **フェーズ**: \`${spec.phase}\`
 **作成日**: ${new Date(spec.created_at).toLocaleString()}
 
 ---
 
-このIssueはTakumiで管理されているSpecと同期されています。
+このIssueはcc-craft-kitで管理されているSpecと同期されています。
 
 ### 📝 進捗記録
-<!-- Takumiから自動記録 -->
+<!-- cc-craft-kitから自動記録 -->
 
 ### 🐛 エラー解決策
-<!-- Takumiから自動記録 -->
+<!-- cc-craft-kitから自動記録 -->
 
 ### 💡 Tips
-<!-- Takumiから自動記録 -->
+<!-- cc-craft-kitから自動記録 -->
 `,
       labels: ['spec', `phase:${spec.phase}`],
     });
@@ -122,7 +122,7 @@ async function createGitHubIssue() {
         entity_type: 'spec',
         entity_id: spec.id,
         github_id: String(issue.number),
-        sync_direction: 'takumi_to_github',
+        sync_direction: 'cc_craft_kit_to_github',
         synced_at: new Date().toISOString(),
         metadata: JSON.stringify({
           issue_url: issue.html_url,
@@ -137,7 +137,7 @@ async function createGitHubIssue() {
     console.log('\n📌 次のステップ:');
     console.log('  1. Issue にコメントして進捗記録のテスト');
     console.log('  2. Requirementsフェーズを承認してDesignフェーズへ移行');
-    console.log('  3. Takumiを使って実際にWebUIダッシュボードを開発');
+    console.log('  3. cc-craft-kitを使って実際にWebUIダッシュボードを開発');
 
     await kysely.destroy();
     db.close();

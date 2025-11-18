@@ -18,8 +18,8 @@ export class BacklogPlugin implements Plugin {
     name: 'backlog',
     version: '1.0.0',
     description: 'Backlog API integration for issue and wiki management',
-    author: 'Takumi Team',
-    homepage: 'https://github.com/takumi/plugins/backlog',
+    author: 'cc-craft-kit Team',
+    homepage: 'https://github.com/B16B1RD/cc-craft-kit',
     tags: ['backlog', 'issue-tracking', 'project-management'],
     dependencies: {
       axios: '^1.6.0',

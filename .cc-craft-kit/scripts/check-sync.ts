@@ -358,8 +358,8 @@ export function printDiffReport(
 
   // ステータスごとに分類
   const modified = result.diffs.filter((d) => d.status === 'modified');
-  const missingInTakumi = result.diffs.filter((d) => d.status === 'missing_in_cc_craft_kit');
-  const extraInTakumi = result.diffs.filter((d) => d.status === 'extra_in_cc_craft_kit');
+  const missingInCcCraftKit = result.diffs.filter((d) => d.status === 'missing_in_cc_craft_kit');
+  const extraInCcCraftKit = result.diffs.filter((d) => d.status === 'extra_in_cc_craft_kit');
 
   if (modified.length > 0) {
     console.log(`⚠️  Modified files (${modified.length}):`);
@@ -373,9 +373,9 @@ export function printDiffReport(
     console.log('');
   }
 
-  if (missingInTakumi.length > 0) {
-    console.log(`❌ Missing in .cc-craft-kit/ (${missingInTakumi.length}):`);
-    missingInTakumi.forEach((diff) => {
+  if (missingInCcCraftKit.length > 0) {
+    console.log(`❌ Missing in .cc-craft-kit/ (${missingInCcCraftKit.length}):`);
+    missingInCcCraftKit.forEach((diff) => {
       console.log(`   - ${diff.path}`);
       if (showHash) {
         console.log(`     src/: ${diff.srcHash}`);
@@ -384,9 +384,9 @@ export function printDiffReport(
     console.log('');
   }
 
-  if (extraInTakumi.length > 0) {
-    console.log(`🔹 Extra in .cc-craft-kit/ (${extraInTakumi.length}):`);
-    extraInTakumi.forEach((diff) => {
+  if (extraInCcCraftKit.length > 0) {
+    console.log(`🔹 Extra in .cc-craft-kit/ (${extraInCcCraftKit.length}):`);
+    extraInCcCraftKit.forEach((diff) => {
       console.log(`   - ${diff.path}`);
       if (showHash) {
         console.log(`     .cc-craft-kit/: ${diff.ccCraftKitHash}`);

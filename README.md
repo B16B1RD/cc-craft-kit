@@ -27,19 +27,30 @@ cc-craft-kit は、Claude Code 上のカスタムスラッシュコマンドで�
 
 ### インストール
 
+#### 方法1: curl コマンド経由（推奨）
+
 ```bash
-# 既存プロジェクトのルートディレクトリで実行
-git clone https://github.com/yourusername/cc-craft-kit.git .cc-craft-kit-repo
+# カレントディレクトリにインストール
+curl -fsSL https://cc-craft-kit.dev/install.sh | sh
 
-# .cc-craft-kit/ ディレクトリをコピー
-cp -r .cc-craft-kit-repo/.cc-craft-kit .
-cp -r .cc-craft-kit-repo/.claude/commands/cc-craft-kit .claude/commands/
+# 指定したディレクトリにインストール
+curl -fsSL https://cc-craft-kit.dev/install.sh | sh -s -- /path/to/project
 
-# .cc-craft-kit/ の依存関係をインストール
-cd .cc-craft-kit && npm install && cd ..
+# 新規ディレクトリを作成してインストール
+curl -fsSL https://cc-craft-kit.dev/install.sh | sh -s -- --project my-new-project
+```
 
-# クリーンアップ
-rm -rf .cc-craft-kit-repo
+インストール後、Claude Code で `/cft:init my-project` を実行してプロジェクトを初期化します。
+
+#### 方法2: 開発者向けクローン
+
+開発に参加する場合や、最新のソースコードから実行する場合は、以下の手順でクローンします。
+
+```bash
+git clone https://github.com/B16B1RD/cc-craft-kit.git
+cd cc-craft-kit
+npm install
+npm run sync:dogfood
 ```
 
 ### 環境変数設定

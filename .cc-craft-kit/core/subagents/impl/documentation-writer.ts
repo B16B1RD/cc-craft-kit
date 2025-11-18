@@ -197,7 +197,7 @@ MIT
 
 ## 作成者
 
-Takumi (匠) - Claude Code開発支援ツールキット
+cc-craft-kit - Claude Code開発支援ツールキット
 `;
 
     return {

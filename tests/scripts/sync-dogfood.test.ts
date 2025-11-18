@@ -2,14 +2,14 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { tmpdir } from 'os';
-import { syncSourceToTakumi, syncSlashCommands, syncAll } from '../../src/scripts/sync-dogfood.js';
+import { syncSourceToCcCraftKit, syncSlashCommands, syncAll } from '../../src/scripts/sync-dogfood.js';
 
 describe('sync-dogfood', () => {
   let testDir: string;
 
   beforeEach(async () => {
     // 一時ディレクトリを作成
-    testDir = await fs.mkdtemp(path.join(tmpdir(), 'takumi-sync-test-'));
+    testDir = await fs.mkdtemp(path.join(tmpdir(), 'cc-craft-kit-sync-test-'));
   });
 
   afterEach(async () => {
@@ -21,7 +21,7 @@ describe('sync-dogfood', () => {
     }
   });
 
-  describe('syncSourceToTakumi', () => {
+  describe('syncSourceToCcCraftKit', () => {
     it('should copy modified files from src/ to .cc-craft-kit/', async () => {
       // src/ と .cc-craft-kit/ を作成
       const srcDir = path.join(testDir, 'src', 'core');
@@ -35,7 +35,7 @@ describe('sync-dogfood', () => {
       await fs.writeFile(path.join(ccCraftKitDir, 'file.ts'), 'old content');
 
       // 同期実行
-      const result = await syncSourceToTakumi({ baseDir: testDir, verbose: false });
+      const result = await syncSourceToCcCraftKit({ baseDir: testDir, verbose: false });
 
       // 検証
       expect(result.success).toBe(true);
@@ -57,15 +57,15 @@ describe('sync-dogfood', () => {
       // .cc-craft-kit/ ディレクトリは存在しない状態
 
       // 同期実行
-      const result = await syncSourceToTakumi({ baseDir: testDir, verbose: false });
+      const result = await syncSourceToCcCraftKit({ baseDir: testDir, verbose: false });
 
       // 検証
       expect(result.success).toBe(true);
       expect(result.copiedFiles).toBe(1);
 
       // ファイルが作成されたか確認
-      const takumiPath = path.join(testDir, '.cc-craft-kit', 'core', 'new-file.ts');
-      const content = await fs.readFile(takumiPath, 'utf-8');
+      const ccCraftKitPath = path.join(testDir, '.cc-craft-kit', 'core', 'new-file.ts');
+      const content = await fs.readFile(ccCraftKitPath, 'utf-8');
       expect(content).toBe('content');
     });
 
@@ -79,7 +79,7 @@ describe('sync-dogfood', () => {
       await fs.writeFile(path.join(ccCraftKitDir, 'extra-file.ts'), 'old content');
 
       // 同期実行
-      const result = await syncSourceToTakumi({ baseDir: testDir, verbose: false });
+      const result = await syncSourceToCcCraftKit({ baseDir: testDir, verbose: false });
 
       // 検証
       expect(result.success).toBe(true);
@@ -105,7 +105,7 @@ describe('sync-dogfood', () => {
       await fs.writeFile(path.join(ccCraftKitDir, 'file.ts'), 'same content');
 
       // 同期実行
-      const result = await syncSourceToTakumi({ baseDir: testDir, verbose: false });
+      const result = await syncSourceToCcCraftKit({ baseDir: testDir, verbose: false });
 
       // 検証
       expect(result.success).toBe(true);
@@ -125,7 +125,7 @@ describe('sync-dogfood', () => {
       await fs.writeFile(path.join(ccCraftKitDir, 'file.ts'), 'old content');
 
       // Dry-run モードで同期実行
-      const result = await syncSourceToTakumi({ baseDir: testDir, dryRun: true, verbose: false });
+      const result = await syncSourceToCcCraftKit({ baseDir: testDir, dryRun: true, verbose: false });
 
       // 検証
       expect(result.success).toBe(true);

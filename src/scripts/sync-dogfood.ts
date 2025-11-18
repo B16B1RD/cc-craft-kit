@@ -138,7 +138,7 @@ async function cleanDirectory(
 /**
  * src/ から .cc-craft-kit/ へ同期
  */
-export async function syncSourceToTakumi(options: SyncOptions = {}): Promise<SyncResult> {
+export async function syncSourceToCcCraftKit(options: SyncOptions = {}): Promise<SyncResult> {
   const { dryRun = false, verbose = false, baseDir = process.cwd() } = options;
 
   const result: SyncResult = {
@@ -295,7 +295,7 @@ export async function syncAll(options: SyncOptions = {}): Promise<boolean> {
   }
 
   // dist/ → .cc-craft-kit/ 同期
-  const sourceResult = await syncSourceToTakumi(options);
+  const sourceResult = await syncSourceToCcCraftKit(options);
 
   // .claude/commands/ 同期
   const commandsResult = await syncSlashCommands(options);

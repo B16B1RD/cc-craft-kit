@@ -96,7 +96,7 @@ jobs:
         with:
           files: ./coverage/lcov.info
           flags: unittests
-          name: codecov-takumi
+          name: codecov-cc-craft-kit
 
   check-sync:
     runs-on: ubuntu-latest

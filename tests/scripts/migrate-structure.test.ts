@@ -13,7 +13,7 @@ describe('migrate-structure', () => {
 
   beforeEach(async () => {
     // 一時ディレクトリを作成
-    testDir = await fs.mkdtemp(path.join(tmpdir(), 'takumi-migrate-test-'));
+    testDir = await fs.mkdtemp(path.join(tmpdir(), 'cc-craft-kit-migrate-test-'));
   });
 
   afterEach(async () => {

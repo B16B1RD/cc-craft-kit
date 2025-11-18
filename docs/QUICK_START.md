@@ -10,19 +10,42 @@
 
 ## ステップ1: インストール
 
+### 方法1: curl コマンド経由（推奨）
+
+cc-craft-kit を既存プロジェクトにインストールします。
+
+```bash
+# カレントディレクトリにインストール
+curl -fsSL https://cc-craft-kit.dev/install.sh | sh
+
+# 指定したディレクトリにインストール
+curl -fsSL https://cc-craft-kit.dev/install.sh | sh -s -- /path/to/project
+
+# 新規ディレクトリを作成してインストール
+curl -fsSL https://cc-craft-kit.dev/install.sh | sh -s -- --project my-new-project
+```
+
+インストールスクリプトは以下を自動的に実行します。
+
+- `.cc-craft-kit/` ディレクトリの作成
+- `.claude/commands/cft` シンボリックリンクの作成
+- `.env` ファイルの生成
+- プロジェクトの初期化
+
+### 方法2: 開発者向けクローン
+
+開発に参加する場合や、最新のソースコードから実行する場合は、以下の手順でクローンします。
+
 ```bash
 # リポジトリクローン
-git clone https://github.com/yourusername/cc-craft-kit.git
+git clone https://github.com/B16B1RD/cc-craft-kit.git
 cd cc-craft-kit
 
 # 依存関係インストール
 npm install
 
-# ビルド
-npm run build
-
-# データベース初期化
-npm run db:migrate
+# ドッグフーディング環境へ同期
+npm run sync:dogfood
 ```
 
 ## ステップ2: 環境変数設定
@@ -70,16 +93,7 @@ Organization の Projects を使用する場合のみ、Fine-grained PAT が利�
 
 注意: Fine-grained PAT は個人アカウントの Projects v2 には対応していません（2025 年 1 月時点）。個人アカウントで Projects を使用する場合は、必ず Classic PAT を使用してください。
 
-## ステップ3: ドッグフーディング環境のセットアップ
-
-cc-craft-kit 自身を使って開発するため、`.cc-craft-kit/` ディレクトリに TypeScript ファイルを同期します。
-
-```bash
-# TypeScript ファイルを同期
-npm run sync:dogfood
-```
-
-## ステップ4: プロジェクト初期化
+## ステップ3: プロジェクト初期化
 
 Claude Code CLI 内で、cc-craft-kit プロジェクトを初期化します。
 
@@ -93,7 +107,7 @@ Claude Code CLI 内で、cc-craft-kit プロジェクトを初期化します。
 - `.cc-craft-kit/config.json` - プロジェクト設定
 - `.cc-craft-kit/cc-craft-kit.db` - SQLite データベース
 
-## ステップ5: 最初の仕様書作成
+## ステップ4: 最初の仕様書作成
 
 新しい仕様書を作成します。Claude Code でスラッシュコマンドを使用します。
 
@@ -111,7 +125,7 @@ Claude Code が以下の質問をします。
 
 回答すると、Requirements 定義書が自動生成されます。
 
-## ステップ6: 仕様書の一覧確認
+## ステップ5: 仕様書の一覧確認
 
 作成した仕様書を確認します。
 
@@ -125,7 +139,7 @@ Claude Code が以下の質問をします。
 /cft:spec-list requirements
 ```
 
-## ステップ7: プロジェクト状況確認
+## ステップ6: プロジェクト状況確認
 
 プロジェクト全体の状況を確認します。
 

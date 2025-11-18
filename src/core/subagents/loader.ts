@@ -2,7 +2,7 @@
  * サブエージェント定義ファイルのローダー
  *
  * Claude Code形式のサブエージェント定義ファイル（Markdown + YAML frontmatter）を
- * 読み込んで、Takumiのサブエージェントレジストリに登録する機能を提供します。
+ * 読み込んで、cc-craft-kitのサブエージェントレジストリに登録する機能を提供します。
  */
 
 import fs from 'fs/promises';
@@ -66,7 +66,7 @@ async function loadSubagentDefinition(filePath: string): Promise<SubagentDefinit
 }
 
 /**
- * Claude Code形式のサブエージェントをTakumiのSubagentインターフェースに変換
+ * Claude Code形式のサブエージェントをcc-craft-kitのSubagentインターフェースに変換
  */
 class SubagentAdapter implements Subagent {
   constructor(private definition: SubagentDefinition) {}

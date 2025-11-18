@@ -119,8 +119,8 @@ export class GitHubWebhookHandler {
 
     if (!spec) return;
 
-    // Takumiによる自動コメントは無視
-    if (comment.body.includes('🤖 Takumi')) {
+    // cc-craft-kitによる自動コメントは無視
+    if (comment.body.includes('🤖 cc-craft-kit')) {
       return;
     }
 

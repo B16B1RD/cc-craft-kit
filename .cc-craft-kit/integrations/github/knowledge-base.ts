@@ -250,7 +250,7 @@ export class GitHubKnowledgeBase {
     }
 
     comment += `---\n`;
-    comment += `*🤖 Takumi Knowledge Base - ${new Date().toISOString()}*`;
+    comment += `*🤖 cc-craft-kit Knowledge Base - ${new Date().toISOString()}*`;
 
     return comment;
   }
@@ -282,7 +282,7 @@ export class GitHubKnowledgeBase {
     }
 
     comment += `---\n`;
-    comment += `*🤖 Takumi Knowledge Base - ${new Date().toISOString()}*`;
+    comment += `*🤖 cc-craft-kit Knowledge Base - ${new Date().toISOString()}*`;
 
     return comment;
   }
@@ -310,7 +310,7 @@ export class GitHubKnowledgeBase {
     }
 
     comment += `---\n`;
-    comment += `*🤖 Takumi Knowledge Base - ${new Date().toISOString()}*`;
+    comment += `*🤖 cc-craft-kit Knowledge Base - ${new Date().toISOString()}*`;
 
     return comment;
   }

@@ -2,7 +2,7 @@
  * スキル定義ファイルのローダー
  *
  * Claude Code形式のスキル定義ファイル（SKILL.md + YAML frontmatter）を
- * 読み込んで、Takumiのスキルレジストリに登録する機能を提供します。
+ * 読み込んで、cc-craft-kitのスキルレジストリに登録する機能を提供します。
  */
 
 import fs from 'fs/promises';
@@ -130,7 +130,7 @@ function inferCategory(description: string): SkillCategory {
 }
 
 /**
- * Claude Code形式のスキルをTakumiのSkillインターフェースに変換
+ * Claude Code形式のスキルをcc-craft-kitのSkillインターフェースに変換
  */
 class SkillAdapter implements Skill {
   private definition: SkillDefinition;

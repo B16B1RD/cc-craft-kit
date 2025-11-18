@@ -2,21 +2,21 @@
 set -e
 
 # ========================================
-# Takumi インストールスクリプト
+# cc-craft-kit インストールスクリプト
 # ========================================
-# このスクリプトは、Git 操作なしで Takumi を任意のプロジェクトにインストールします。
+# このスクリプトは、Git 操作なしで cc-craft-kit を任意のプロジェクトにインストールします。
 #
 # 使用方法:
-#   curl -fsSL https://takumi.dev/install.sh | sh
-#   curl -fsSL https://takumi.dev/install.sh | sh -s -- /path/to/project
-#   curl -fsSL https://takumi.dev/install.sh | sh -s -- --project my-app
+#   curl -fsSL https://cc-craft-kit.dev/install.sh | sh
+#   curl -fsSL https://cc-craft-kit.dev/install.sh | sh -s -- /path/to/project
+#   curl -fsSL https://cc-craft-kit.dev/install.sh | sh -s -- --project my-app
 #
 # ========================================
 
 # ========================================
 # グローバル変数
 # ========================================
-TAKUMI_REPO="B16B1RD/takumi"
+TAKUMI_REPO="B16B1RD/cc-craft-kit"
 TAKUMI_BASE_URL="https://github.com/${TAKUMI_REPO}"
 TAKUMI_RELEASES_API="https://api.github.com/repos/${TAKUMI_REPO}/releases/latest"
 INSTALL_DIR="."
@@ -183,7 +183,7 @@ fetch_latest_version() {
 # ========================================
 
 download_archive() {
-  info "Takumi $LATEST_VERSION をダウンロードしています..."
+  info "cc-craft-kit $LATEST_VERSION をダウンロードしています..."
 
   # 一時ファイル作成
   TEMP_FILE=$(mktemp) || {
@@ -247,24 +247,24 @@ create_symlink() {
   mkdir -p "$INSTALL_DIR/.claude/commands"
 
   # 既存のシンボリックリンクを削除
-  if [ -L "$INSTALL_DIR/.claude/commands/takumi" ] || [ -d "$INSTALL_DIR/.claude/commands/takumi" ]; then
-    rm -rf "$INSTALL_DIR/.claude/commands/takumi"
+  if [ -L "$INSTALL_DIR/.claude/commands/cft" ] || [ -d "$INSTALL_DIR/.claude/commands/cft" ]; then
+    rm -rf "$INSTALL_DIR/.claude/commands/cft"
   fi
 
   # OS 別のシンボリックリンク作成
   OS=$(detect_os)
   if [ "$OS" = "windows" ]; then
     # Windows: cmd //c mklink を試行
-    cmd //c mklink //D "$INSTALL_DIR\\.claude\\commands\\takumi" "$INSTALL_DIR\\.cc-craft-kit\\commands" 2>/dev/null || \
-    ln -s "$INSTALL_DIR/.cc-craft-kit/commands" "$INSTALL_DIR/.claude/commands/takumi" 2>/dev/null || {
-      warn "シンボリックリンクの作成に失敗しました。\n手動で作成してください: ln -s $INSTALL_DIR/.cc-craft-kit/commands $INSTALL_DIR/.claude/commands/takumi"
+    cmd //c mklink //D "$INSTALL_DIR\\.claude\\commands\\cft" "$INSTALL_DIR\\.cc-craft-kit\\commands" 2>/dev/null || \
+    ln -s "$INSTALL_DIR/.cc-craft-kit/commands" "$INSTALL_DIR/.claude/commands/cft" 2>/dev/null || {
+      warn "シンボリックリンクの作成に失敗しました。\n手動で作成してください: ln -s $INSTALL_DIR/.cc-craft-kit/commands $INSTALL_DIR/.claude/commands/cft"
       return
     }
   else
     # Linux/macOS: 相対パスでシンボリックリンク作成
     cd "$INSTALL_DIR/.claude/commands"
-    ln -s "../../.cc-craft-kit/commands" takumi || {
-      warn "シンボリックリンクの作成に失敗しました。\n手動で作成してください: ln -s ../../.cc-craft-kit/commands $INSTALL_DIR/.claude/commands/takumi"
+    ln -s "../../.cc-craft-kit/commands" cft || {
+      warn "シンボリックリンクの作成に失敗しました。\n手動で作成してください: ln -s ../../.cc-craft-kit/commands $INSTALL_DIR/.claude/commands/cft"
       cd - >/dev/null
       return
     }
@@ -298,13 +298,13 @@ generate_env() {
 # ========================================
 
 init_project() {
-  info "Takumi プロジェクトを初期化しています..."
+  info "cc-craft-kit プロジェクトを初期化しています..."
 
   cd "$INSTALL_DIR"
-  if npx tsx .cc-craft-kit/commands/init.ts "My Project" "Takumi project" >/dev/null 2>&1; then
+  if npx tsx .cc-craft-kit/commands/init.ts "My Project" "cc-craft-kit project" >/dev/null 2>&1; then
     success "プロジェクト初期化完了"
   else
-    warn "プロジェクトの初期化に失敗しました。\n手動で実行してください: /takumi:init"
+    warn "プロジェクトの初期化に失敗しました。\n手動で実行してください: /cft:init"
   fi
 }
 
@@ -314,12 +314,12 @@ init_project() {
 
 show_success() {
   echo ""
-  success "Takumi のインストールが完了しました！"
+  success "cc-craft-kit のインストールが完了しました！"
   echo ""
   echo "次のステップ:"
   echo "  1. .env ファイルを編集して GitHub トークンを設定"
-  echo "  2. 実行: /takumi:status"
-  echo "  3. 仕様書を作成: /takumi:spec-create \"機能名\""
+  echo "  2. 実行: /cft:status"
+  echo "  3. 仕様書を作成: /cft:spec-create \"機能名\""
   echo ""
   echo "詳細なドキュメント: $TAKUMI_BASE_URL"
   echo ""
@@ -331,11 +331,11 @@ show_success() {
 
 show_help() {
   cat << EOF
-Takumi インストールスクリプト
+cc-craft-kit インストールスクリプト
 
 使用方法:
-  curl -fsSL https://takumi.dev/install.sh | sh
-  curl -fsSL https://takumi.dev/install.sh | sh -s -- [オプション]
+  curl -fsSL https://cc-craft-kit.dev/install.sh | sh
+  curl -fsSL https://cc-craft-kit.dev/install.sh | sh -s -- [オプション]
 
 オプション:
   (引数なし)              カレントディレクトリにインストール
@@ -346,16 +346,16 @@ Takumi インストールスクリプト
 
 例:
   # カレントディレクトリにインストール
-  curl -fsSL https://takumi.dev/install.sh | sh
+  curl -fsSL https://cc-craft-kit.dev/install.sh | sh
 
   # 指定したディレクトリにインストール
-  curl -fsSL https://takumi.dev/install.sh | sh -s -- /path/to/my-project
+  curl -fsSL https://cc-craft-kit.dev/install.sh | sh -s -- /path/to/my-project
 
   # 新規ディレクトリを作成してインストール
-  curl -fsSL https://takumi.dev/install.sh | sh -s -- --project my-new-project
+  curl -fsSL https://cc-craft-kit.dev/install.sh | sh -s -- --project my-new-project
 
   # 特定バージョンをインストール
-  curl -fsSL https://takumi.dev/install.sh | sh -s -- --version v1.0.0
+  curl -fsSL https://cc-craft-kit.dev/install.sh | sh -s -- --version v1.0.0
 
 詳細: $TAKUMI_BASE_URL
 EOF
@@ -393,7 +393,7 @@ main() {
   done
 
   # インストール開始
-  info "Takumi のインストールを開始します..."
+  info "cc-craft-kit のインストールを開始します..."
   echo ""
 
   check_prerequisites

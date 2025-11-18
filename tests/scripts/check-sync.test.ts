@@ -17,7 +17,7 @@ describe('check-sync', () => {
 
   beforeEach(async () => {
     // 一時ディレクトリを作成
-    testDir = await fs.mkdtemp(path.join(tmpdir(), 'takumi-test-'));
+    testDir = await fs.mkdtemp(path.join(tmpdir(), 'cc-craft-kit-test-'));
   });
 
   afterEach(async () => {
@@ -164,12 +164,12 @@ describe('check-sync', () => {
         ['file2.ts', 'hash2_modified'],
       ]);
 
-      const takumiHashes = new Map([
+      const ccCraftKitHashes = new Map([
         ['file1.ts', 'hash1'],
         ['file2.ts', 'hash2_original'],
       ]);
 
-      const diffs = detectDifferences(srcHashes, takumiHashes);
+      const diffs = detectDifferences(srcHashes, ccCraftKitHashes);
 
       expect(diffs).toHaveLength(1);
       expect(diffs[0]).toEqual({
@@ -186,18 +186,18 @@ describe('check-sync', () => {
         ['file2.ts', 'hash2'],
       ]);
 
-      const takumiHashes = new Map([
+      const ccCraftKitHashes = new Map([
         ['file1.ts', 'hash1'],
       ]);
 
-      const diffs = detectDifferences(srcHashes, takumiHashes);
+      const diffs = detectDifferences(srcHashes, ccCraftKitHashes);
 
       expect(diffs).toHaveLength(1);
       expect(diffs[0]).toEqual({
         path: 'file2.ts',
         srcHash: 'hash2',
         takumiHash: null,
-        status: 'missing_in_takumi',
+        status: 'missing_in_cc_craft_kit',
       });
     });
 
@@ -206,19 +206,19 @@ describe('check-sync', () => {
         ['file1.ts', 'hash1'],
       ]);
 
-      const takumiHashes = new Map([
+      const ccCraftKitHashes = new Map([
         ['file1.ts', 'hash1'],
         ['file2.ts', 'hash2'],
       ]);
 
-      const diffs = detectDifferences(srcHashes, takumiHashes);
+      const diffs = detectDifferences(srcHashes, ccCraftKitHashes);
 
       expect(diffs).toHaveLength(1);
       expect(diffs[0]).toEqual({
         path: 'file2.ts',
         srcHash: null,
         takumiHash: 'hash2',
-        status: 'extra_in_takumi',
+        status: 'extra_in_cc_craft_kit',
       });
     });
 
@@ -229,19 +229,19 @@ describe('check-sync', () => {
         ['missing.ts', 'hash_missing'],
       ]);
 
-      const takumiHashes = new Map([
+      const ccCraftKitHashes = new Map([
         ['same.ts', 'hash_same'],
         ['modified.ts', 'hash_modified_old'],
         ['extra.ts', 'hash_extra'],
       ]);
 
-      const diffs = detectDifferences(srcHashes, takumiHashes);
+      const diffs = detectDifferences(srcHashes, ccCraftKitHashes);
 
       expect(diffs).toHaveLength(3);
 
       const modified = diffs.find((d) => d.status === 'modified');
-      const missing = diffs.find((d) => d.status === 'missing_in_takumi');
-      const extra = diffs.find((d) => d.status === 'extra_in_takumi');
+      const missing = diffs.find((d) => d.status === 'missing_in_cc_craft_kit');
+      const extra = diffs.find((d) => d.status === 'extra_in_cc_craft_kit');
 
       expect(modified?.path).toBe('modified.ts');
       expect(missing?.path).toBe('missing.ts');
@@ -254,12 +254,12 @@ describe('check-sync', () => {
         ['file2.ts', 'hash2'],
       ]);
 
-      const takumiHashes = new Map([
+      const ccCraftKitHashes = new Map([
         ['file1.ts', 'hash1'],
         ['file2.ts', 'hash2'],
       ]);
 
-      const diffs = detectDifferences(srcHashes, takumiHashes);
+      const diffs = detectDifferences(srcHashes, ccCraftKitHashes);
 
       expect(diffs).toHaveLength(0);
     });

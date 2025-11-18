@@ -259,7 +259,7 @@ ${spec.description || '説明なし'}
 - 更新日時: ${spec.updated_at}
 
 ---
-*このIssueはTakumiにより自動管理されています*
+*このIssueはcc-craft-kitにより自動管理されています*
       `.trim();
     }
   }
@@ -275,7 +275,7 @@ ${spec.description || '説明なし'}
       implementation: 'phase:implementation',
       completed: 'phase:completed',
     };
-    return labelMap[phase] || 'takumi';
+    return labelMap[phase] || 'cc-craft-kit';
   }
 
   /**
@@ -292,7 +292,7 @@ ${spec.description || '説明なし'}
    */
   private async extractRepoName(_owner: string): Promise<string> {
     // TODO: config.jsonから取得する実装
-    return 'takumi';
+    return 'cc-craft-kit';
   }
 
   /**

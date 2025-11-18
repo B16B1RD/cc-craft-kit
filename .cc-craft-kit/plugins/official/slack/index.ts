@@ -18,8 +18,8 @@ export class SlackPlugin implements Plugin {
     name: 'slack',
     version: '1.0.0',
     description: 'Slack integration for notifications and team communication',
-    author: 'Takumi Team',
-    homepage: 'https://github.com/takumi/plugins/slack',
+    author: 'cc-craft-kit Team',
+    homepage: 'https://github.com/B16B1RD/cc-craft-kit',
     tags: ['slack', 'notifications', 'team-communication'],
     dependencies: {
       '@slack/web-api': '^6.0.0',

@@ -20,9 +20,9 @@ interface Config {
 }
 
 async function initProject() {
-  const projectName = 'takumi';
-  const description = 'Takumiプロジェクト自体の開発管理（ドッグフーディング）';
-  const githubRepo = 'B16B1RD/takumi';
+  const projectName = 'cc-craft-kit';
+  const description = 'cc-craft-kitプロジェクト自体の開発管理（ドッグフーディング）';
+  const githubRepo = 'B16B1RD/cc-craft-kit';
 
   const projectRoot = path.resolve(__dirname, '..');
   const ccCraftKitDir = path.join(projectRoot, '.cc-craft-kit');
@@ -30,7 +30,7 @@ async function initProject() {
   const configFile = path.join(ccCraftKitDir, 'config.json');
   const dbPath = path.join(ccCraftKitDir, 'cc-craft-kit.db');
 
-  console.log('🚀 Takumiプロジェクトを初期化しています...');
+  console.log('🚀 cc-craft-kitプロジェクトを初期化しています...');
 
   // .cc-craft-kitディレクトリ作成
   await fs.mkdir(ccCraftKitDir, { recursive: true });
