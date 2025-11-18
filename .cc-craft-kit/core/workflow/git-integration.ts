@@ -6,6 +6,7 @@ import { execSync } from 'node:child_process';
 import { Kysely } from 'kysely';
 import { Database } from '../database/schema.js';
 import { EventBus, WorkflowEvent } from './event-bus.js';
+import { getErrorHandler } from '../errors/error-handler.js';
 
 /**
  * フェーズ型定義
@@ -87,9 +88,15 @@ async function handlePhaseChangeCommit(
   try {
     // Gitリポジトリ確認
     if (!isGitRepository()) {
-      if (process.env.DEBUG) {
-        console.warn('Warning: Not a Git repository. Skipping auto-commit.');
-      }
+      const errorHandler = getErrorHandler();
+      await errorHandler.handle(new Error('Not a Git repository'), {
+        event: 'spec.phase_changed',
+        specId: event.specId,
+        oldPhase: event.data.oldPhase,
+        newPhase: event.data.newPhase,
+        action: 'git_auto_commit',
+        message: 'Skipping auto-commit',
+      });
       return;
     }
 
@@ -116,12 +123,27 @@ async function handlePhaseChangeCommit(
     if (result.success) {
       console.log(`\n✓ Auto-committed: ${message}`);
     } else {
-      console.error(`\nWarning: Failed to auto-commit: ${result.error}`);
-      console.error('You can commit manually with: git add . && git commit');
+      const errorHandler = getErrorHandler();
+      await errorHandler.handle(new Error(result.error || 'Git commit failed'), {
+        event: 'spec.phase_changed',
+        specId: event.specId,
+        oldPhase: event.data.oldPhase,
+        newPhase: event.data.newPhase,
+        action: 'git_auto_commit',
+        commitMessage: message,
+        files,
+      });
+      console.log('You can commit manually with: git add . && git commit\n');
     }
   } catch (error) {
     // エラーが発生してもフェーズ変更は成功させる
-    console.error('Warning: Error in Git auto-commit handler:', error);
+    const errorHandler = getErrorHandler();
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    await errorHandler.handle(errorObj, {
+      event: 'spec.phase_changed',
+      specId: event.specId,
+      action: 'git_auto_commit',
+    });
   }
 }
 

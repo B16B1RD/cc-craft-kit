@@ -166,6 +166,32 @@ export class ErrorHandler {
   constructor(private db?: Kysely<Database>) {}
 
   /**
+   * センシティブ情報を含むフィールドを除外
+   */
+  static sanitizeMetadata(metadata: Record<string, unknown>): Record<string, unknown> {
+    const sanitized = { ...metadata };
+
+    // センシティブキーワードを含むフィールドを削除
+    const sensitiveKeys = ['token', 'password', 'apikey', 'secret', 'authorization'];
+
+    Object.keys(sanitized).forEach((key) => {
+      if (sensitiveKeys.some((sensitive) => key.toLowerCase().includes(sensitive))) {
+        delete sanitized[key];
+      }
+    });
+
+    // ネストされたオブジェクトも再帰的にサニタイズ
+    Object.keys(sanitized).forEach((key) => {
+      const value = sanitized[key];
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        sanitized[key] = ErrorHandler.sanitizeMetadata(value as Record<string, unknown>);
+      }
+    });
+
+    return sanitized;
+  }
+
+  /**
    * エラーを処理
    */
   async handle(error: Error, context?: ErrorMetadata): Promise<void> {
@@ -218,6 +244,14 @@ export class ErrorHandler {
           ? 'error'
           : (error.level as 'debug' | 'info' | 'warn' | 'error');
 
+      // メタデータをサニタイズ
+      const sanitizedMetadata = error.metadata
+        ? ErrorHandler.sanitizeMetadata(error.metadata as Record<string, unknown>)
+        : undefined;
+      const sanitizedContext = context
+        ? ErrorHandler.sanitizeMetadata(context as Record<string, unknown>)
+        : undefined;
+
       await this.db
         .insertInto('logs')
         .values({
@@ -232,8 +266,8 @@ export class ErrorHandler {
             category: error.category,
             statusCode: error.statusCode,
             originalLevel: error.level, // 元のレベルも保存
-            metadata: error.metadata,
-            context,
+            metadata: sanitizedMetadata,
+            context: sanitizedContext,
             stack: error.stack,
           }),
           timestamp: new Date().toISOString(),

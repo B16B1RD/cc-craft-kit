@@ -9,4 +9,4 @@ afterAll(async () => {
 });
 
 // テストタイムアウト設定
-jest.setTimeout(10000);
+// jest.setTimeout(10000); // ESM モードでは使用できないためコメントアウト

@@ -156,7 +156,27 @@ export async function showStatus(
     console.log('');
   }
 
-  // 最近の活動（ログから取得）
+  // 最近のエラーログ（error と warn のみを表示）
+  const errorLogs = await db
+    .selectFrom('logs')
+    .select(['level', 'message', 'timestamp'])
+    .where('level', 'in', ['error', 'warn'])
+    .orderBy('timestamp', 'desc')
+    .limit(10)
+    .execute();
+
+  if (errorLogs.length > 0) {
+    console.log(formatHeading('Recent Error Logs', 2, options.color));
+    const errorLogRows = errorLogs.map((log) => [
+      new Date(log.timestamp).toLocaleTimeString(),
+      log.level,
+      log.message.substring(0, 60) + (log.message.length > 60 ? '...' : ''),
+    ]);
+    console.log(formatTable(['Time', 'Level', 'Message'], errorLogRows, options));
+    console.log('');
+  }
+
+  // 最近の活動（すべてのログから取得）
   const logs = await db
     .selectFrom('logs')
     .select(['level', 'message', 'timestamp'])

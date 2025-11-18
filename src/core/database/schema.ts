@@ -17,7 +17,7 @@ export type SpecPhase =
 export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'review' | 'done';
 
 // GitHub同期対象エンティティ
-export type GitHubEntityType = 'spec' | 'task' | 'issue' | 'project';
+export type GitHubEntityType = 'spec' | 'task' | 'issue' | 'project' | 'sub_issue';
 
 /**
  * Specs テーブル - 仕様書管理
@@ -86,6 +86,7 @@ export interface GitHubSyncTable {
   entity_id: string; // spec_id or task_id
   github_id: string; // GitHub Issue ID or Project ID
   github_number: number | null; // GitHub Issue番号
+  github_node_id: string | null; // GraphQL で使用する Node ID (Sub Issue 対応)
   last_synced_at: ColumnType<Date, string | undefined, string>;
   sync_status: 'success' | 'failed' | 'pending';
   error_message: string | null;

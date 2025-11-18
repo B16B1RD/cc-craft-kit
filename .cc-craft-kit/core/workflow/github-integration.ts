@@ -12,6 +12,38 @@ import { GitHubIssues } from '../../integrations/github/issues.js';
 import { GitHubProjects } from '../../integrations/github/projects.js';
 import { resolveProjectId } from '../../integrations/github/project-resolver.js';
 import { mapPhaseToStatus, type Phase } from '../../integrations/github/phase-status-mapper.js';
+import { SubIssueManager } from '../../integrations/github/sub-issues.js';
+import { parseTaskListFromSpec } from '../utils/task-parser.js';
+import { getErrorHandler } from '../errors/error-handler.js';
+
+/**
+ * エラーをログに記録
+ */
+async function logError(
+  level: 'error' | 'warn' | 'info',
+  message: string,
+  error: unknown,
+  context: Record<string, unknown>
+): Promise<void> {
+  const errorHandler = getErrorHandler();
+  const errorObj = error instanceof Error ? error : new Error(String(error));
+
+  await errorHandler.handle(errorObj, {
+    ...context,
+    originalMessage: message,
+  });
+
+  // デバッグモードではコンソール出力も行う
+  if (process.env.DEBUG === '1') {
+    if (level === 'error') {
+      console.error(message, error);
+    } else if (level === 'warn') {
+      console.warn(message, error);
+    } else {
+      console.log(message, error);
+    }
+  }
+}
 
 /**
  * GitHub設定を取得
@@ -161,17 +193,23 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
           }
         } catch (projectError) {
           // Project 追加失敗は警告のみ（Issue 作成は成功）
-          console.warn('Warning: Failed to add issue to project:', projectError);
-          console.warn(
-            'You can add it manually with: takumi github project add <spec-id> <project-number>\n'
+          await logError('warn', 'Failed to add issue to GitHub Project', projectError, {
+            event: 'spec.created',
+            specId: event.specId,
+            action: 'add_to_project',
+          });
+          console.log(
+            'You can add it manually with: /cft:github-project-add <spec-id> <project-number>\n'
           );
         }
       } catch (error) {
         // エラーが発生しても仕様書作成自体は成功させる
-        console.error('Warning: Failed to create GitHub issue automatically:', error);
-        console.error(
-          'You can create the issue manually with: takumi github issue create <spec-id>\n'
-        );
+        await logError('error', 'Failed to create GitHub issue automatically', error, {
+          event: 'spec.created',
+          specId: event.specId,
+          action: 'create_issue',
+        });
+        console.log('You can create the issue manually with: /cft:github-issue-create <spec-id>\n');
       }
     }
   );
@@ -236,7 +274,18 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
             phaseChangeComment
           );
         } catch (commentError) {
-          console.warn('Warning: Failed to add phase change comment:', commentError);
+          await logError(
+            'warn',
+            'Failed to add phase change comment to GitHub Issue',
+            commentError,
+            {
+              event: 'spec.phase_changed',
+              specId: event.specId,
+              oldPhase: event.data.oldPhase,
+              newPhase: event.data.newPhase,
+              action: 'add_comment',
+            }
+          );
         }
 
         // ========== ここから新規追加: Project ステータス更新 ==========
@@ -261,11 +310,66 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
             console.log(`✓ Updated project status to "${newStatus}"`);
           } catch (projectError) {
             // Project 更新失敗は警告のみ（Issue 更新は成功）
-            console.warn('Warning: Failed to update project status:', projectError);
+            await logError('warn', 'Failed to update GitHub Project status', projectError, {
+              event: 'spec.phase_changed',
+              specId: event.specId,
+              oldPhase: event.data.oldPhase,
+              newPhase: event.data.newPhase,
+              action: 'update_project_status',
+            });
           }
         }
 
         // ========== ここまで新規追加 ==========
+
+        // tasks フェーズ移行時に Sub Issue を自動作成
+        if (event.data.newPhase === 'tasks') {
+          try {
+            const specPath = join(ccCraftKitDir, 'specs', `${spec.id}.md`);
+            if (!existsSync(specPath)) {
+              await logError(
+                'warn',
+                'Spec file not found for Sub Issue creation',
+                new Error('File not found'),
+                {
+                  event: 'spec.phase_changed',
+                  specId: event.specId,
+                  newPhase: event.data.newPhase,
+                  action: 'create_sub_issues',
+                  specPath,
+                }
+              );
+              return;
+            }
+
+            // 仕様書からタスクリストを解析
+            const taskList = await parseTaskListFromSpec(specPath);
+
+            if (taskList.length === 0) {
+              console.log('No tasks found in spec file, skipping Sub Issue creation');
+              return;
+            }
+
+            // Sub Issue を作成
+            const subIssueManager = new SubIssueManager(db);
+            await subIssueManager.createSubIssuesFromTaskList({
+              owner: githubConfig.owner,
+              repo: githubConfig.repo,
+              parentIssueNumber: spec.github_issue_id,
+              taskList,
+              githubToken,
+            });
+
+            console.log(`✓ Created ${taskList.length} Sub Issues for spec ${spec.name}`);
+          } catch (subIssueError) {
+            await logError('warn', 'Failed to create Sub Issues', subIssueError, {
+              event: 'spec.phase_changed',
+              specId: event.specId,
+              newPhase: event.data.newPhase,
+              action: 'create_sub_issues',
+            });
+          }
+        }
 
         // completed フェーズで Issue をクローズ
         if (event.data.newPhase === 'completed') {
@@ -290,11 +394,20 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
 
             console.log(`✓ GitHub Issue #${spec.github_issue_id} closed automatically`);
           } catch (closeError) {
-            console.warn('Warning: Failed to close GitHub issue:', closeError);
+            await logError('warn', 'Failed to close GitHub Issue', closeError, {
+              event: 'spec.phase_changed',
+              specId: event.specId,
+              newPhase: event.data.newPhase,
+              action: 'close_issue',
+            });
           }
         }
       } catch (error) {
-        console.error('Warning: Failed to update GitHub issue labels:', error);
+        await logError('error', 'Failed to update GitHub Issue labels and status', error, {
+          event: 'spec.phase_changed',
+          specId: event.specId,
+          action: 'update_issue',
+        });
       }
     }
   );
@@ -344,10 +457,17 @@ ${data.message}
           comment
         );
       } catch (commentError) {
-        console.warn('Warning: Failed to add progress comment:', commentError);
+        await logError('warn', 'Failed to add progress comment to GitHub Issue', commentError, {
+          event: 'knowledge.progress_recorded',
+          specId: event.specId,
+          action: 'add_comment',
+        });
       }
     } catch (error) {
-      console.error('Warning: Failed to handle knowledge.progress_recorded event:', error);
+      await logError('error', 'Failed to handle knowledge.progress_recorded event', error, {
+        event: 'knowledge.progress_recorded',
+        specId: event.specId,
+      });
     }
   });
 
@@ -400,10 +520,22 @@ ${data.solution}
           comment
         );
       } catch (commentError) {
-        console.warn('Warning: Failed to add error solution comment:', commentError);
+        await logError(
+          'warn',
+          'Failed to add error solution comment to GitHub Issue',
+          commentError,
+          {
+            event: 'knowledge.error_recorded',
+            specId: event.specId,
+            action: 'add_comment',
+          }
+        );
       }
     } catch (error) {
-      console.error('Warning: Failed to handle knowledge.error_recorded event:', error);
+      await logError('error', 'Failed to handle knowledge.error_recorded event', error, {
+        event: 'knowledge.error_recorded',
+        specId: event.specId,
+      });
     }
   });
 
@@ -459,10 +591,17 @@ ${data.content}
           comment
         );
       } catch (commentError) {
-        console.warn('Warning: Failed to add tip comment:', commentError);
+        await logError('warn', 'Failed to add tip comment to GitHub Issue', commentError, {
+          event: 'knowledge.tip_recorded',
+          specId: event.specId,
+          action: 'add_comment',
+        });
       }
     } catch (error) {
-      console.error('Warning: Failed to handle knowledge.tip_recorded event:', error);
+      await logError('error', 'Failed to handle knowledge.tip_recorded event', error, {
+        event: 'knowledge.tip_recorded',
+        specId: event.specId,
+      });
     }
   });
 
@@ -495,7 +634,17 @@ ${data.content}
       // 仕様書ファイルを読み込む
       const specPath = join(ccCraftKitDir, 'specs', `${spec.id}.md`);
       if (!existsSync(specPath)) {
-        console.warn(`Warning: Spec file not found: ${specPath}`);
+        await logError(
+          'warn',
+          'Spec file not found for GitHub Issue update',
+          new Error('File not found'),
+          {
+            event: 'spec.updated',
+            specId: event.specId,
+            action: 'update_issue',
+            specPath,
+          }
+        );
         return;
       }
 
@@ -513,7 +662,11 @@ ${data.content}
           body: specContent,
         });
       } catch (updateError) {
-        console.warn('Warning: Failed to update issue body:', updateError);
+        await logError('warn', 'Failed to update GitHub Issue body', updateError, {
+          event: 'spec.updated',
+          specId: event.specId,
+          action: 'update_issue_body',
+        });
       }
 
       // 仕様書更新をコメントで記録
@@ -533,10 +686,70 @@ ${data.content}
           updateComment
         );
       } catch (commentError) {
-        console.warn('Warning: Failed to add spec update comment:', commentError);
+        await logError('warn', 'Failed to add spec update comment to GitHub Issue', commentError, {
+          event: 'spec.updated',
+          specId: event.specId,
+          action: 'add_comment',
+        });
       }
     } catch (error) {
-      console.error('Warning: Failed to handle spec.updated event:', error);
+      await logError('error', 'Failed to handle spec.updated event', error, {
+        event: 'spec.updated',
+        specId: event.specId,
+      });
     }
   });
+
+  // task.completed → Sub Issue ステータス更新
+  eventBus.on<{ taskId: string }>(
+    'task.completed',
+    async (event: WorkflowEvent<{ taskId: string }>) => {
+      try {
+        const githubToken = process.env.GITHUB_TOKEN;
+        if (!githubToken) {
+          return;
+        }
+
+        const ccCraftKitDir = join(process.cwd(), '.cc-craft-kit');
+        const githubConfig = getGitHubConfig(ccCraftKitDir);
+
+        if (!githubConfig) {
+          return;
+        }
+
+        // タスク ID を取得
+        const taskId = event.data.taskId || event.taskId;
+        if (!taskId) {
+          await logError(
+            'warn',
+            'task.completed event missing taskId',
+            new Error('Missing taskId'),
+            {
+              event: 'task.completed',
+              specId: event.specId,
+              action: 'update_sub_issue_status',
+            }
+          );
+          return;
+        }
+
+        // Sub Issue のステータスを closed に更新
+        const subIssueManager = new SubIssueManager(db);
+        await subIssueManager.updateSubIssueStatus(taskId, 'closed', githubToken);
+
+        console.log(`✓ Closed Sub Issue for task ${taskId}`);
+      } catch (error) {
+        // Sub Issue が存在しない場合は警告のみ
+        if (error instanceof Error && error.message.includes('Sub issue not found')) {
+          console.log(`No Sub Issue found for task, skipping status update`);
+        } else {
+          await logError('warn', 'Failed to update Sub Issue status', error, {
+            event: 'task.completed',
+            specId: event.specId,
+            action: 'update_sub_issue_status',
+          });
+        }
+      }
+    }
+  );
 }
