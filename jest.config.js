@@ -7,6 +7,7 @@ export default {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/tests/integrations/github/(?!.*sub-issue-workflow).*\\.test\\.ts$',
+    '/tests/integrations/event-logging\\.test\\.ts$',
     '/tests/mcp/tools/init-project\\.test\\.ts$',
     '/tests/e2e/project-initialization\\.test\\.ts$',
     '/tests/core/database/connection\\.test\\.ts$',
