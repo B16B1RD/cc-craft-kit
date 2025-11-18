@@ -93,10 +93,7 @@ async function findFiles(patterns: string[]): Promise<string[]> {
   return allFiles;
 }
 
-async function replaceInFile(
-  filePath: string,
-  dryRun: boolean
-): Promise<ReplacementResult | null> {
+async function replaceInFile(filePath: string, dryRun: boolean): Promise<ReplacementResult | null> {
   try {
     const content = await fs.readFile(filePath, 'utf-8');
     let newContent = content;

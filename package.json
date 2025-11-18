@@ -17,7 +17,6 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "tsc",
     "pretest": "npm run lint:all",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -35,7 +34,6 @@
     "check:sync": "tsx src/scripts/check-sync.ts",
     "sync:dogfood": "tsx src/scripts/sync-dogfood.ts",
     "sync:dogfood:dry": "tsx src/scripts/sync-dogfood.ts --dry-run --verbose",
-    "build:dogfood": "npm run sync:dogfood",
     "migrate:structure": "tsx src/scripts/migrate-structure.ts",
     "migrate:structure:dry": "tsx src/scripts/migrate-structure.ts --dry-run --verbose",
     "replace:takumi": "tsx src/scripts/replace-takumi-references.ts",

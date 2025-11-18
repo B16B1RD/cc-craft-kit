@@ -278,11 +278,9 @@ CREATE TABLE github_sync (
 ### スクリプト
 
 ```bash
-# ビルド
-npm run build
-
-# 開発モード(ホットリロード)
-npm run dev
+# 開発
+# cc-craft-kit は TypeScript を直接実行するため、ビルド不要です
+# すべてのコマンドは npx tsx で直接実行されます
 
 # テスト
 npm test

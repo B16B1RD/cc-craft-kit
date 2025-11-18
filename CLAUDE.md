@@ -18,10 +18,9 @@ cc-craft-kit プロジェクトは、**自分自身を使って開発する（�
 | **`src/`** | **ソースコード** | ✅ | 開発時に編集する本体のTypeScriptコード |
 | **`src/commands/`** | CLI実装 | ✅ | スラッシュコマンドから実行されるCLI実装 |
 | **`src/slash-commands/`** | スラッシュコマンド定義 | ✅ | Claude Codeのスラッシュコマンド定義 (`.md`) |
-| **`src/scripts/`** | ビルド・同期スクリプト | ✅ | 整合性チェック、自動同期、マイグレーションツール |
+| **`src/scripts/`** | 同期・マイグレーションスクリプト | ✅ | 整合性チェック、自動同期、マイグレーションツール |
 | **`.claude/commands/cc-craft-kit/`** | シンボリックリンク | ✅ | `src/slash-commands/` へのシンボリックリンク |
-| **`dist/`** | ビルド成果物 | ❌ | `npm run build` で `src/` からコンパイルされる（パッケージ配布用） |
-| **`.cc-craft-kit/`** | **インストール先** | ❌ | cc-craft-kit自身がcc-craft-kitを使うためのインストール先（ドッグフーディング用） |
+| **`.cc-craft-kit/`** | **インストール先** | ❌ | cc-craft-kit 自身が cc-craft-kit を使うためのインストール先（ドッグフーディング用） |
 
 ### 開発フロー
 
@@ -73,14 +72,11 @@ npm run check:sync
 
 ## よく使うコマンド
 
-### ビルド・開発
+### 開発
 
 ```bash
-# TypeScriptビルド
-npm run build
-
-# 開発モード（ホットリロード）
-npm run dev
+# cc-craft-kit は TypeScript を直接実行するため、ビルド不要です
+# すべてのコマンドは npx tsx で直接実行されます
 
 # 型チェック
 npm run typecheck
@@ -177,9 +173,6 @@ npm run sync:dogfood
 
 # Dry-runモード（変更内容を確認のみ）
 npm run sync:dogfood:dry
-
-# ビルド + 同期（一括実行）
-npm run build:dogfood
 
 # 構造マイグレーション（初回のみ）
 npm run migrate:structure
@@ -584,15 +577,15 @@ eventBus.on('spec:created', async (spec) => {
 - **同期を忘れない**: `src/` を編集したら `npm run sync:dogfood` を実行
 - **CI/CD での整合性チェック**: プルリクエスト時に `npm run check:sync` を実行して差分がないことを確認
 - **マイグレーション実行前は必ずバックアップ**: `npm run migrate:structure:dry` で Dry-run を実行してから本番実行
-- **ビルドエラーは即座に修正**: `npm run build` でエラーが出た場合は、同期前に修正すること
+- **型エラーは即座に修正**: `npx tsc --noEmit` でエラーが出た場合は、同期前に修正すること
 
 ## トラブルシューティング
 
-### CLIが起動しない
+### コマンドが起動しない
 
-1. `npm run build`でビルドエラーがないか確認
-2. `.env`ファイルが正しく設定されているか確認
-3. `npm run dev`で詳細なエラーログを確認
+1. `npx tsc --noEmit` で型エラーがないか確認
+2. `.env` ファイルが正しく設定されているか確認
+3. `npm run sync:dogfood` で同期が正常に完了しているか確認
 
 ### データベースエラー
 

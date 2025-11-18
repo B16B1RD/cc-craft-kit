@@ -72,10 +72,7 @@ async function checkDestinationExists(): Promise<boolean> {
  * Create backup of source directory
  */
 async function createBackup(options: MigrationOptions): Promise<string> {
-  const timestamp = new Date()
-    .toISOString()
-    .replace(/[:.]/g, '-')
-    .substring(0, 19);
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
   const backupPath = `${TAKUMI_DIR}${BACKUP_SUFFIX}-${timestamp}`;
 
   console.log(`Creating backup: ${backupPath}`);
@@ -203,9 +200,7 @@ async function migrate(options: MigrationOptions): Promise<MigrationResult> {
 
     // 3. Check if destination already exists (without force)
     if ((await checkDestinationExists()) && !options.force) {
-      result.errors.push(
-        `${CC_CRAFT_KIT_DIR} already exists. Use --force to overwrite.`
-      );
+      result.errors.push(`${CC_CRAFT_KIT_DIR} already exists. Use --force to overwrite.`);
       console.error(`❌ ${result.errors[0]}\n`);
       return result;
     }
@@ -299,10 +294,7 @@ async function countFiles(dir: string): Promise<number> {
 /**
  * Rollback migration by restoring from backup
  */
-async function rollback(
-  backupPath: string,
-  options: MigrationOptions
-): Promise<void> {
+async function rollback(backupPath: string, options: MigrationOptions): Promise<void> {
   try {
     console.log(`Rolling back from: ${backupPath}`);
 
@@ -321,9 +313,7 @@ async function rollback(
     console.log('✓ Rollback completed successfully\n');
   } catch (error) {
     console.error('❌ Rollback failed:', (error as Error).message);
-    console.error(
-      `Manual intervention required. Backup is at: ${backupPath}\n`
-    );
+    console.error(`Manual intervention required. Backup is at: ${backupPath}\n`);
   }
 }
 
@@ -333,9 +323,7 @@ async function rollback(
 async function promptCleanup(options: MigrationOptions): Promise<void> {
   if (options.dryRun) {
     console.log('Cleanup options:');
-    console.log(
-      `  • Remove old directory: rm -rf ${TAKUMI_DIR} (after confirming migration)`
-    );
+    console.log(`  • Remove old directory: rm -rf ${TAKUMI_DIR} (after confirming migration)`);
     return;
   }
 
