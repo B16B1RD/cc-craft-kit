@@ -97,28 +97,32 @@ export class SpecFileWatcher {
 
     this.log('info', `Starting file watcher for: ${specsDir}`);
 
-    this.watcher = chokidar.watch(`${specsDir}/*.md`, {
-      persistent: true,
-      ignoreInitial: true, // 初回スキャンは無視
-      awaitWriteFinish: {
-        stabilityThreshold: 100, // ファイル書き込みが安定するまで待つ
-        pollInterval: 50,
-      },
-      ignored: this.options.ignored,
-    });
-
-    this.watcher
-      .on('change', (path: string) => this.handleFileChange(path, 'change'))
-      .on('add', (path: string) => this.handleFileChange(path, 'add'))
-      .on('unlink', (path: string) => this.handleFileChange(path, 'unlink'))
-      .on('error', (error: unknown) => {
-        const message = error instanceof Error ? error.message : String(error);
-        this.log('error', `Watcher error: ${message}`);
-      })
-      .on('ready', () => {
-        this.isRunning = true;
-        this.log('info', 'File watcher is ready');
+    return new Promise((resolve, reject) => {
+      this.watcher = chokidar.watch(`${specsDir}/*.md`, {
+        persistent: true,
+        ignoreInitial: true, // 初回スキャンは無視
+        awaitWriteFinish: {
+          stabilityThreshold: 100, // ファイル書き込みが安定するまで待つ
+          pollInterval: 50,
+        },
+        ignored: this.options.ignored,
       });
+
+      this.watcher
+        .on('change', (path: string) => this.handleFileChange(path, 'change'))
+        .on('add', (path: string) => this.handleFileChange(path, 'add'))
+        .on('unlink', (path: string) => this.handleFileChange(path, 'unlink'))
+        .on('error', (error: unknown) => {
+          const message = error instanceof Error ? error.message : String(error);
+          this.log('error', `Watcher error: ${message}`);
+          reject(new Error(message));
+        })
+        .on('ready', () => {
+          this.isRunning = true;
+          this.log('info', 'File watcher is ready');
+          resolve();
+        });
+    });
   }
 
   /**
