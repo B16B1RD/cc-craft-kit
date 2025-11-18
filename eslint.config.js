@@ -25,6 +25,10 @@ export default [
         URL: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',
+        fetch: 'readonly',
+        RequestInit: 'readonly',
+        Response: 'readonly',
+        crypto: 'readonly',
       },
     },
     plugins: {

@@ -3,14 +3,28 @@ export default {
   testEnvironment: 'node',
   roots: ['<rootDir>/src', '<rootDir>/tests'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
-  testPathIgnorePatterns: ['/node_modules/', '/tests/integrations/github/'],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/tests/integrations/github/(?!.*sub-issue-workflow).*\\.test\\.ts$',
+  ],
   maxWorkers: 1, // テストを順次実行してDB競合を回避
   transform: {
     '^.+\\.ts$': [
       'ts-jest',
       {
         useESM: true,
-        tsconfig: 'tsconfig.test.json',
+        tsconfig: {
+          module: 'ES2022',
+          target: 'ES2022',
+          moduleResolution: 'NodeNext',
+          esModuleInterop: true,
+          allowSyntheticDefaultImports: true,
+          resolveJsonModule: true,
+          strict: true,
+          experimentalDecorators: true,
+          emitDecoratorMetadata: true,
+          types: ['node', 'jest'],
+        },
       },
     ],
   },

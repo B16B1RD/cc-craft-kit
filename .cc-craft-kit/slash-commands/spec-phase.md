@@ -34,7 +34,7 @@ npx tsx .cc-craft-kit/commands/spec/phase.ts "$1" "$2"
 
 ## フェーズ移行後の自動処理
 
-**重要**: フェーズ移行が完了したら、ユーザーに確認を求めずに、以下の処理を**自動的に実行**してください。
+重要: フェーズ移行が完了したら、ユーザーに確認を求めずに、以下の処理を**自動的に実行**してください。
 
 ### tasks フェーズに移行した場合
 
@@ -44,7 +44,7 @@ npx tsx .cc-craft-kit/commands/spec/phase.ts "$1" "$2"
    - 各受け入れ基準を実装可能な単位に分解
    - 依存関係と優先度を設定
 4. **仕様書にタスクセクションを追加**: Edit ツールで仕様書ファイルの末尾に「## 8. 実装タスクリスト」セクションを追加
-5. **GitHub に通知**: `/cc-craft-kit:spec-update $1` で GitHub Issue に更新を通知
+5. **GitHub へ通知**: `/cc-craft-kit:spec-update $1` で GitHub Issue の更新を通知
 
 ### implementation フェーズに移行した場合
 
