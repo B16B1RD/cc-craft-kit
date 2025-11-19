@@ -75,57 +75,32 @@ export async function ensureGitHubIssue(
     return { issueNumber: null, wasCreated: false };
   }
 
-  // 2. Issue 存在チェック（specs.github_issue_id を確認）
+  // 2. 仕様書情報を取得
   const spec = await db
     .selectFrom('specs')
     .where('id', '=', specId)
-    .select(['github_issue_id'])
+    .select(['github_issue_id', 'phase', 'name'])
     .executeTakeFirst();
 
-  if (spec?.github_issue_id) {
-    // データベースに Issue 番号が記録されている場合、GitHub API で実際に存在するか確認
-    try {
-      const client = new GitHubClient({ token: githubToken });
-      const issues = new GitHubIssues(client);
-
-      const issue = await issues.get(githubConfig.owner, githubConfig.repo, spec.github_issue_id);
-
-      // Issue が存在し、かつ open 状態の場合は何もしない
-      if (issue.state === 'open') {
-        return { issueNumber: spec.github_issue_id, wasCreated: false };
-      }
-
-      // Issue が closed 状態の場合は再作成しない（closed のまま維持）
-      console.log(
-        `ℹ Issue #${spec.github_issue_id} is closed. Keeping the association without recreating.`
-      );
-      return { issueNumber: spec.github_issue_id, wasCreated: false };
-    } catch (error: unknown) {
-      // 410 Gone または 404 Not Found の場合は Issue が削除されているため、再作成が必要
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (
-        errorMessage.includes('410') ||
-        errorMessage.includes('404') ||
-        errorMessage.includes('Not Found') ||
-        errorMessage.includes('deleted')
-      ) {
-        console.warn(`⚠️  Issue #${spec.github_issue_id} not found on GitHub. Will recreate.`);
-
-        // データベースから古い Issue 番号をクリア
-        await db
-          .updateTable('specs')
-          .set({ github_issue_id: null })
-          .where('id', '=', specId)
-          .execute();
-      } else {
-        // その他のエラー（ネットワークエラー等）の場合は、Issue が存在すると仮定
-        console.warn(`Warning: Failed to verify Issue #${spec.github_issue_id}:`, error);
-        return { issueNumber: spec.github_issue_id, wasCreated: false };
-      }
-    }
+  if (!spec) {
+    console.warn(`⚠️  Spec ${specId} not found in database`);
+    return { issueNumber: null, wasCreated: false };
   }
 
-  // 3. Issue 自動作成
+  // 3. completed フェーズの仕様書はスキップ（Issue は既にクローズ済みと想定）
+  if (spec.phase === 'completed') {
+    // completed の仕様書は Issue 作成不要（既にクローズ済み）
+    return { issueNumber: spec.github_issue_id, wasCreated: false };
+  }
+
+  // 4. Issue 存在チェック
+  if (spec.github_issue_id) {
+    // データベースに Issue 番号が記録されている場合は、そのまま返す（API 呼び出しを削減）
+    // Issue の状態確認は必要時のみ行う（status コマンド等）
+    return { issueNumber: spec.github_issue_id, wasCreated: false };
+  }
+
+  // 5. Issue 自動作成
   console.log(`ℹ Auto-recovering GitHub Issue for spec ${specId}...`);
 
   try {
@@ -143,7 +118,7 @@ export async function ensureGitHubIssue(
       createIfNotExists: true,
     });
 
-    // 4. GitHub Project に追加
+    // 6. GitHub Project に追加
     try {
       const cwd = process.cwd();
       const ccCraftKitDir = join(cwd, '.cc-craft-kit');
@@ -165,7 +140,7 @@ export async function ensureGitHubIssue(
 
     console.log(`✓ GitHub Issue created automatically: #${issueNumber}`);
 
-    // 5. リカバリーログ記録
+    // 7. リカバリーログ記録
     await db
       .insertInto('logs')
       .values({

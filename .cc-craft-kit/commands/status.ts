@@ -178,10 +178,11 @@ export async function showStatus(
   console.log('');
 
   // GitHub Issue 未作成の仕様書を集計
-  // specs.github_issue_id が NULL の仕様書を検索
+  // specs.github_issue_id が NULL の仕様書を検索（completed フェーズを除外）
   const specsWithoutIssue = await db
     .selectFrom('specs')
     .where('github_issue_id', 'is', null)
+    .where('phase', '!=', 'completed')
     .select(['id', 'name', 'phase'])
     .execute();
 
@@ -189,53 +190,19 @@ export async function showStatus(
     console.log(
       formatKeyValue('Issue 未作成の仕様書', `${specsWithoutIssue.length} 件`, options.color)
     );
-    console.log(formatInfo('  自動作成を開始します...', options.color));
-    console.log('');
+    console.log(formatInfo('  手動で Issue を作成してください:', options.color));
 
-    // 自動リカバリー実行
-    const { ensureGitHubIssue } = await import('../integrations/github/ensure-issue.js');
-
-    let successCount = 0;
-    let failureCount = 0;
-
-    // レート制限を考慮して並列処理（最大5件同時）
-    const BATCH_SIZE = 5;
-    for (let i = 0; i < specsWithoutIssue.length; i += BATCH_SIZE) {
-      const batch = specsWithoutIssue.slice(i, i + BATCH_SIZE);
-
-      const results = await Promise.allSettled(
-        batch.map(async (spec) => {
-          const result = await ensureGitHubIssue(db, spec.id);
-          return { spec, result };
-        })
-      );
-
-      for (const promise of results) {
-        if (promise.status === 'fulfilled' && promise.value.result.wasCreated) {
-          successCount++;
-        } else if (promise.status === 'rejected') {
-          failureCount++;
-        }
-      }
-
-      // レート制限回避のため、バッチ間で少し待機
-      if (i + BATCH_SIZE < specsWithoutIssue.length) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
+    // 最初の3件のみ表示
+    const displaySpecs = specsWithoutIssue.slice(0, 3);
+    for (const spec of displaySpecs) {
+      console.log(formatInfo(`    • ${spec.name} (${spec.phase})`, options.color));
+      console.log(formatInfo(`      /cft:github-issue-create ${spec.id.substring(0, 8)}`, options.color));
     }
 
-    console.log('');
-    if (successCount > 0) {
-      console.log(formatInfo(`✓ ${successCount} 件の Issue を自動作成しました`, options.color));
+    if (specsWithoutIssue.length > 3) {
+      console.log(formatInfo(`    ... and ${specsWithoutIssue.length - 3} more`, options.color));
     }
-    if (failureCount > 0) {
-      console.log(
-        formatInfo(
-          `⚠ ${failureCount} 件の Issue 作成に失敗しました（詳細はログを確認）`,
-          options.color
-        )
-      );
-    }
+
     console.log('');
   }
 

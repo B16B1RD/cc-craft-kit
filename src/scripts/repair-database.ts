@@ -3,95 +3,23 @@
  * データベース修復スクリプト
  *
  * ファイルシステム内の仕様書ファイルを読み込み、データベースに再登録します。
+ * DatabaseIntegrityChecker を使用して整合性チェックを実施し、
+ * SpecFileValidator を使用して不正なメタデータを自動修正します。
  */
 
 import { readdir, readFile } from 'fs/promises';
 import { join } from 'path';
 import { getDatabase } from '../core/database/connection.js';
-
-interface SpecMetadata {
-  id: string;
-  name: string;
-  phase: string;
-  createdAt: string;
-  updatedAt: string;
-  description?: string;
-}
-
-/**
- * 仕様書ファイルからメタデータを抽出
- */
-function parseSpecFile(content: string): SpecMetadata | null {
-  const lines = content.split('\n');
-
-  // タイトル（1行目）
-  const titleMatch = lines[0]?.match(/^# (.+)$/);
-  if (!titleMatch) return null;
-  const name = titleMatch[1];
-
-  // メタデータ行を探す
-  let id = '';
-  let phase = '';
-  let createdAt = '';
-  let updatedAt = '';
-
-  for (const line of lines) {
-    const idMatch = line.match(/^\*\*仕様書 ID:\*\* (.+)$/);
-    if (idMatch) id = idMatch[1];
-
-    const phaseMatch = line.match(/^\*\*フェーズ:\*\* (.+)$/);
-    if (phaseMatch) phase = phaseMatch[1];
-
-    const createdMatch = line.match(/^\*\*作成日時:\*\* (.+)$/);
-    if (createdMatch) createdAt = createdMatch[1];
-
-    const updatedMatch = line.match(/^\*\*更新日時:\*\* (.+)$/);
-    if (updatedMatch) updatedAt = updatedMatch[1];
-  }
-
-  if (!id || !phase || !createdAt || !updatedAt) {
-    return null;
-  }
-
-  // 背景セクションから説明を抽出
-  const backgroundIndex = lines.findIndex((line) => line.includes('### 背景'));
-  let description = '';
-  if (backgroundIndex !== -1) {
-    // 背景の次の行から、次のセクションまでを取得
-    for (let i = backgroundIndex + 2; i < lines.length; i++) {
-      const line = lines[i];
-      if (line.startsWith('#') || line.startsWith('**')) break;
-      if (line.trim()) {
-        description = line.trim();
-        break;
-      }
-    }
-  }
-
-  return {
-    id,
-    name,
-    phase,
-    createdAt,
-    updatedAt,
-    description: description || `${name}の仕様書`,
-  };
-}
-
-/**
- * 日時文字列をISO形式に変換
- */
-function parseDateTime(dateStr: string): string {
-  // "2025/11/18 21:54:20" -> "2025-11-18T21:54:20Z"
-  const match = dateStr.match(/^(\d{4})\/(\d{2})\/(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/);
-  if (!match) {
-    console.warn(`Invalid date format: ${dateStr}, using current time`);
-    return new Date().toISOString();
-  }
-
-  const [, year, month, day, hour, minute, second] = match;
-  return `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
-}
+import {
+  checkDatabaseIntegrity,
+  formatIntegrityCheckResult,
+} from '../core/validators/database-integrity-checker.js';
+import {
+  parseSpecFile,
+  validateMetadata,
+  fixSpecFileMetadata,
+  parseDateTime,
+} from '../core/validators/spec-file-validator.js';
 
 /**
  * メイン処理
@@ -100,19 +28,39 @@ async function main() {
   console.log('# Database Repair Tool\n');
 
   const specsDir = join(process.cwd(), '.cc-craft-kit', 'specs');
-  const db = await getDatabase();
+  const db = getDatabase();
 
-  // 既存のデータベース内容を確認
+  // ステップ1: 整合性チェック実行
+  console.log('📋 Step 1: Running integrity check...\n');
+  const integrityResult = await checkDatabaseIntegrity(db, specsDir);
+  console.log(formatIntegrityCheckResult(integrityResult));
+
+  // ステップ2: 不正なメタデータファイルの自動修正
+  if (integrityResult.details.invalidFiles.length > 0) {
+    console.log('\n🔧 Step 2: Attempting to fix invalid metadata files...\n');
+    let fixedCount = 0;
+
+    for (const { filePath } of integrityResult.details.invalidFiles) {
+      const fixed = fixSpecFileMetadata(filePath);
+      if (fixed) {
+        fixedCount++;
+      }
+    }
+
+    console.log(`\n✓ Fixed ${fixedCount} out of ${integrityResult.details.invalidFiles.length} invalid files\n`);
+
+    // 再度整合性チェック実行
+    console.log('📋 Re-running integrity check after fixes...\n');
+    const recheckResult = await checkDatabaseIntegrity(db, specsDir);
+    console.log(formatIntegrityCheckResult(recheckResult));
+  }
+
+  // ステップ3: データベース修復
+  console.log('\n🔨 Step 3: Repairing database...\n');
+
   const existingSpecs = await db.selectFrom('specs').selectAll().execute();
-
-  console.log(`📊 Current database state:`);
-  console.log(`   Specs in database: ${existingSpecs.length}`);
-
-  // ファイルシステムから仕様書ファイルを読み込み
   const files = await readdir(specsDir);
   const specFiles = files.filter((f) => f.endsWith('.md'));
-
-  console.log(`   Specs in filesystem: ${specFiles.length}\n`);
 
   let addedCount = 0;
   let updatedCount = 0;
@@ -128,6 +76,14 @@ async function main() {
 
       if (!metadata) {
         console.log(`⚠️  [SKIP] ${file}: Failed to parse metadata`);
+        skippedCount++;
+        continue;
+      }
+
+      // メタデータの妥当性検証
+      const validation = validateMetadata(metadata);
+      if (!validation.isValid) {
+        console.log(`⚠️  [SKIP] ${file}: Invalid metadata - ${validation.errors.join(', ')}`);
         skippedCount++;
         continue;
       }
@@ -191,13 +147,20 @@ async function main() {
   console.log(`   Errors: ${errorCount}`);
   console.log(`   Total processed: ${specFiles.length}`);
 
-  // 修復後の状態を確認
-  const finalSpecs = await db.selectFrom('specs').selectAll().execute();
+  // ステップ4: 最終整合性チェック
+  console.log('\n📋 Step 4: Final integrity check...\n');
+  const finalIntegrityResult = await checkDatabaseIntegrity(db, specsDir);
+  console.log(formatIntegrityCheckResult(finalIntegrityResult));
 
-  console.log(`\n✅ Database repaired successfully!`);
-  console.log(`   Final spec count: ${finalSpecs.length}`);
-
-  process.exit(0);
+  if (finalIntegrityResult.isValid) {
+    console.log('\n✅ Database repaired successfully!');
+    console.log(`   Final spec count: ${finalIntegrityResult.stats.totalDbRecords}`);
+    process.exit(0);
+  } else {
+    console.log('\n⚠️  Database repair completed with warnings/errors.');
+    console.log('   Please review the integrity check results above.');
+    process.exit(1);
+  }
 }
 
 main().catch((error) => {
