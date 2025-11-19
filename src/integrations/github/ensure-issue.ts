@@ -75,17 +75,46 @@ export async function ensureGitHubIssue(
     return { issueNumber: null, wasCreated: false };
   }
 
-  // 2. Issue 存在チェック（github_sync テーブルで確認）
-  const sync = await db
-    .selectFrom('github_sync')
-    .where('entity_id', '=', specId)
-    .where('entity_type', '=', 'spec')
-    .selectAll()
+  // 2. Issue 存在チェック（specs.github_issue_id を確認）
+  const spec = await db
+    .selectFrom('specs')
+    .where('id', '=', specId)
+    .select(['github_issue_id'])
     .executeTakeFirst();
 
-  if (sync?.github_number) {
-    // 既に Issue が存在する場合は何もしない
-    return { issueNumber: sync.github_number, wasCreated: false };
+  if (spec?.github_issue_id) {
+    // データベースに Issue 番号が記録されている場合、GitHub API で実際に存在するか確認
+    try {
+      const client = new GitHubClient({ token: githubToken });
+      const issues = new GitHubIssues(client);
+
+      await issues.get(githubConfig.owner, githubConfig.repo, spec.github_issue_id);
+
+      // Issue が存在する場合は何もしない
+      return { issueNumber: spec.github_issue_id, wasCreated: false };
+    } catch (error: unknown) {
+      // 410 Gone または 404 Not Found の場合は Issue が削除されているため、再作成が必要
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (
+        errorMessage.includes('410') ||
+        errorMessage.includes('404') ||
+        errorMessage.includes('Not Found') ||
+        errorMessage.includes('deleted')
+      ) {
+        console.warn(`⚠️  Issue #${spec.github_issue_id} not found on GitHub. Will recreate.`);
+
+        // データベースから古い Issue 番号をクリア
+        await db
+          .updateTable('specs')
+          .set({ github_issue_id: null })
+          .where('id', '=', specId)
+          .execute();
+      } else {
+        // その他のエラー（ネットワークエラー等）の場合は、Issue が存在すると仮定
+        console.warn(`Warning: Failed to verify Issue #${spec.github_issue_id}:`, error);
+        return { issueNumber: spec.github_issue_id, wasCreated: false };
+      }
+    }
   }
 
   // 3. Issue 自動作成
