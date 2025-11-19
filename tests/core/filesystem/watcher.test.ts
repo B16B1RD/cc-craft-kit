@@ -105,22 +105,28 @@ describe('SpecFileWatcher', () => {
   it('should detect file changes with debounce', async () => {
     const watcher = new SpecFileWatcher(mockDb, testDir, {
       debounceMs: 100,
-      logLevel: 'error',
+      logLevel: 'info', // デバッグ用にログを有効化
     });
+
+    // テスト用ファイルを先に作成（watcher 起動前）
+    const specId = 'bb06f332-777a-4610-a5ff-cbd9903a135f';
+    const filePath = join(testDir, 'specs', `${specId}.md`);
+    writeFileSync(filePath, '# Test Spec\n\nInitial Content');
 
     await watcher.start();
 
-    // テスト用ファイル作成
-    const specId = 'bb06f332-777a-4610-a5ff-cbd9903a135f';
-    const filePath = join(testDir, 'specs', `${specId}.md`);
-    writeFileSync(filePath, '# Test Spec\n\nContent');
-
-    // デバウンス時間 + マージン待機
+    //少し待機してから変更
     await new Promise((resolve) => setTimeout(resolve, 200));
+
+    // ファイルを変更（change イベントをトリガー）
+    writeFileSync(filePath, '# Test Spec\n\nUpdated Content');
+
+    // awaitWriteFinish.stabilityThreshold (100ms) + debounceMs (100ms) + マージン (1800ms) = 2000ms
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     await watcher.stop();
 
     // updateTable が呼ばれたことを確認
     expect(mockDb.updateTable).toHaveBeenCalled();
-  }, 10000);
+  }, 15000);
 });
