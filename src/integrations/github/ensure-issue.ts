@@ -88,9 +88,17 @@ export async function ensureGitHubIssue(
       const client = new GitHubClient({ token: githubToken });
       const issues = new GitHubIssues(client);
 
-      await issues.get(githubConfig.owner, githubConfig.repo, spec.github_issue_id);
+      const issue = await issues.get(githubConfig.owner, githubConfig.repo, spec.github_issue_id);
 
-      // Issue が存在する場合は何もしない
+      // Issue が存在し、かつ open 状態の場合は何もしない
+      if (issue.state === 'open') {
+        return { issueNumber: spec.github_issue_id, wasCreated: false };
+      }
+
+      // Issue が closed 状態の場合は再作成しない（closed のまま維持）
+      console.log(
+        `ℹ Issue #${spec.github_issue_id} is closed. Keeping the association without recreating.`
+      );
       return { issueNumber: spec.github_issue_id, wasCreated: false };
     } catch (error: unknown) {
       // 410 Gone または 404 Not Found の場合は Issue が削除されているため、再作成が必要
