@@ -3,9 +3,10 @@
  */
 
 import '../core/config/env.js';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDatabase } from '../core/database/connection.js';
+import { createBackup } from '../core/database/backup.js';
 import {
   formatHeading,
   formatKeyValue,
@@ -65,6 +66,39 @@ export async function showStatus(
 
   // 設定ファイル読み込み
   const config: ProjectConfig = JSON.parse(readFileSync(configPath, 'utf-8'));
+
+  // データベースバックアップ作成（週1回）
+  const dbPath = join(ccCraftKitDir, 'cc-craft-kit.db');
+  const backupDir = join(ccCraftKitDir, 'backups');
+  try {
+    // バックアップディレクトリの最終更新日時をチェック
+    if (existsSync(backupDir)) {
+      const backups = readdirSync(backupDir).filter((f: string) => f.startsWith('cc-craft-kit-'));
+
+      // 最新のバックアップが7日以上前の場合、または バックアップが0件の場合は作成
+      if (backups.length === 0) {
+        createBackup(dbPath, { backupDir, maxBackups: 10 });
+      } else {
+        const latestBackup = backups
+          .map((f: string) => ({
+            path: join(backupDir, f),
+            time: statSync(join(backupDir, f)).mtime.getTime(),
+          }))
+          .sort((a: { time: number }, b: { time: number }) => b.time - a.time)[0];
+
+        const daysSinceBackup = (Date.now() - latestBackup.time) / (1000 * 60 * 60 * 24);
+        if (daysSinceBackup >= 7) {
+          createBackup(dbPath, { backupDir, maxBackups: 10 });
+        }
+      }
+    } else {
+      // 初回バックアップ
+      createBackup(dbPath, { backupDir, maxBackups: 10 });
+    }
+  } catch (error) {
+    // バックアップ失敗は警告のみ
+    console.warn('Warning: Failed to create database backup:', error);
+  }
 
   console.log(formatHeading('cc-craft-kit Project Status', 1, options.color));
   console.log('');
@@ -144,26 +178,64 @@ export async function showStatus(
   console.log('');
 
   // GitHub Issue 未作成の仕様書を集計
+  // specs.github_issue_id が NULL の仕様書を検索
   const specsWithoutIssue = await db
     .selectFrom('specs')
-    .leftJoin('github_sync', (join) =>
-      join.onRef('specs.id', '=', 'github_sync.entity_id').on('github_sync.entity_type', '=', 'spec')
-    )
-    .where((eb) =>
-      eb.or([eb('github_sync.github_number', 'is', null), eb('github_sync.id', 'is', null)])
-    )
-    .select(['specs.id', 'specs.name', 'specs.phase'])
+    .where('github_issue_id', 'is', null)
+    .select(['id', 'name', 'phase'])
     .execute();
 
   if (specsWithoutIssue.length > 0) {
     console.log(
-      formatKeyValue(
-        'Issue 未作成の仕様書',
-        `${specsWithoutIssue.length} 件`,
-        options.color
-      )
+      formatKeyValue('Issue 未作成の仕様書', `${specsWithoutIssue.length} 件`, options.color)
     );
-    console.log(formatInfo('  次回コマンド実行時に自動作成されます', options.color));
+    console.log(formatInfo('  自動作成を開始します...', options.color));
+    console.log('');
+
+    // 自動リカバリー実行
+    const { ensureGitHubIssue } = await import('../integrations/github/ensure-issue.js');
+
+    let successCount = 0;
+    let failureCount = 0;
+
+    // レート制限を考慮して並列処理（最大5件同時）
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < specsWithoutIssue.length; i += BATCH_SIZE) {
+      const batch = specsWithoutIssue.slice(i, i + BATCH_SIZE);
+
+      const results = await Promise.allSettled(
+        batch.map(async (spec) => {
+          const result = await ensureGitHubIssue(db, spec.id);
+          return { spec, result };
+        })
+      );
+
+      for (const promise of results) {
+        if (promise.status === 'fulfilled' && promise.value.result.wasCreated) {
+          successCount++;
+        } else if (promise.status === 'rejected') {
+          failureCount++;
+        }
+      }
+
+      // レート制限回避のため、バッチ間で少し待機
+      if (i + BATCH_SIZE < specsWithoutIssue.length) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    }
+
+    console.log('');
+    if (successCount > 0) {
+      console.log(formatInfo(`✓ ${successCount} 件の Issue を自動作成しました`, options.color));
+    }
+    if (failureCount > 0) {
+      console.log(
+        formatInfo(
+          `⚠ ${failureCount} 件の Issue 作成に失敗しました（詳細はログを確認）`,
+          options.color
+        )
+      );
+    }
     console.log('');
   }
 

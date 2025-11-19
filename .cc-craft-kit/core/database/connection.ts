@@ -53,14 +53,38 @@ export function createDatabase(config: DatabaseConfig = {}): Kysely<DatabaseSche
  * シングルトンデータベースインスタンス
  */
 let dbInstance: Kysely<DatabaseSchema> | null = null;
+let dbPath: string | null = null;
 
 /**
  * グローバルデータベースインスタンス取得
+ *
+ * IMPORTANT: このメソッドは厳格なシングルトンパターンを実装しています。
+ * 一度インスタンスが作成されると、異なる config を渡してもエラーになります。
+ * これにより、複数のデータベースインスタンスによるデータ破損を防ぎます。
+ *
+ * @param config - データベース設定（初回呼び出し時のみ有効）
+ * @throws Error - 既存のインスタンスと異なるパスが指定された場合
  */
 export function getDatabase(config?: DatabaseConfig): Kysely<DatabaseSchema> {
-  if (!dbInstance) {
-    dbInstance = createDatabase(config);
+  const requestedPath = config?.databasePath || process.env.DATABASE_PATH || DEFAULT_DB_PATH;
+
+  // 既にインスタンスが存在する場合
+  if (dbInstance && dbPath) {
+    // 異なるパスが要求された場合はエラー
+    if (requestedPath !== dbPath) {
+      throw new Error(
+        `Database instance already exists with path "${dbPath}". ` +
+          `Cannot create new instance with path "${requestedPath}". ` +
+          `This is a critical error to prevent database corruption. ` +
+          `Please use closeDatabase() first if you need to switch databases.`
+      );
+    }
+    return dbInstance;
   }
+
+  // 初回作成
+  dbPath = requestedPath;
+  dbInstance = createDatabase(config);
   return dbInstance;
 }
 
@@ -71,5 +95,13 @@ export async function closeDatabase(): Promise<void> {
   if (dbInstance) {
     await dbInstance.destroy();
     dbInstance = null;
+    dbPath = null;
   }
+}
+
+/**
+ * 現在のデータベースパスを取得（デバッグ用）
+ */
+export function getCurrentDatabasePath(): string | null {
+  return dbPath;
 }

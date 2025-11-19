@@ -420,6 +420,36 @@ export class YourService {
 - HTML 出力時は必ずサニタイゼーションを実施すること
 - 認証情報は環境変数（`.env`）で管理し、コードに直接記述しないこと
 
+### データベース接続の安全性
+
+⚠️ **重要: データベース破損を防ぐための厳格なルール**
+
+1. **`getDatabase()` の使用**
+   - データベース接続は **必ず** `getDatabase()` を使用すること
+   - `config` パラメータは指定しないこと（デフォルトパスを使用）
+   - 異なるパスが必要な場合は、必ず `closeDatabase()` を先に呼び出すこと
+
+2. **禁止事項**
+   - `createDatabase()` を直接呼び出さないこと
+   - `getDatabase({ databasePath: ... })` のように明示的にパスを指定しないこと
+   - 複数のデータベースインスタンスを同時に作成しないこと
+
+3. **正しい使用例**
+
+   ```typescript
+   // ✅ 正しい
+   import { getDatabase } from '../core/database/connection.js';
+   const db = getDatabase();
+
+   // ❌ 間違い（データベース破損の原因）
+   const db = getDatabase({ databasePath: '/custom/path.db' });
+   ```
+
+4. **バックアップ**
+   - データベースは `/cft:status` コマンド実行時に週 1 回自動バックアップされる
+   - バックアップは `.cc-craft-kit/backups/` に最大 10 世代保存される
+   - 手動バックアップは `createBackup()` を使用すること
+
 ## テスト戦略
 
 ### 単体テスト

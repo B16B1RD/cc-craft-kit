@@ -137,7 +137,6 @@ export class SpecFileWatcher {
 
     // デバウンスタイマーをすべてクリア
     for (const timer of this.debounceTimers.values()) {
-      // eslint-disable-next-line no-undef
       clearTimeout(timer);
     }
     this.debounceTimers.clear();
@@ -179,12 +178,11 @@ export class SpecFileWatcher {
     // 既存のタイマーをクリア
     const existingTimer = this.debounceTimers.get(specId);
     if (existingTimer) {
-      // eslint-disable-next-line no-undef
       clearTimeout(existingTimer);
     }
 
     // 新しいタイマーを設定
-    // eslint-disable-next-line no-undef
+
     const timer = setTimeout(() => {
       this.emitSpecUpdatedEvent(specId, filePath, type).catch((error) => {
         this.log('error', `Failed to emit spec.updated event: ${error.message}`);

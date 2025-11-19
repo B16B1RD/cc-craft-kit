@@ -532,7 +532,6 @@ export class GitHubProjects {
    */
   private async sleep(ms: number): Promise<void> {
     return new Promise<void>((resolve) => {
-      // eslint-disable-next-line no-undef
       setTimeout(() => resolve(), ms);
     });
   }
