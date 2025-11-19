@@ -143,6 +143,30 @@ export async function showStatus(
   console.log(formatTable(['Phase', 'Count'], phaseCounts, options));
   console.log('');
 
+  // GitHub Issue 未作成の仕様書を集計
+  const specsWithoutIssue = await db
+    .selectFrom('specs')
+    .leftJoin('github_sync', (join) =>
+      join.onRef('specs.id', '=', 'github_sync.entity_id').on('github_sync.entity_type', '=', 'spec')
+    )
+    .where((eb) =>
+      eb.or([eb('github_sync.github_number', 'is', null), eb('github_sync.id', 'is', null)])
+    )
+    .select(['specs.id', 'specs.name', 'specs.phase'])
+    .execute();
+
+  if (specsWithoutIssue.length > 0) {
+    console.log(
+      formatKeyValue(
+        'Issue 未作成の仕様書',
+        `${specsWithoutIssue.length} 件`,
+        options.color
+      )
+    );
+    console.log(formatInfo('  次回コマンド実行時に自動作成されます', options.color));
+    console.log('');
+  }
+
   // 最近の仕様書（最新5件）
   if (specs.length > 0) {
     console.log(formatHeading('Recent Specifications', 2, options.color));

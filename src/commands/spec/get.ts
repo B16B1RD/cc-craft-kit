@@ -11,6 +11,7 @@ import {
   createSpecNotFoundError,
 } from '../utils/error-handler.js';
 import { validateSpecId } from '../utils/validation.js';
+import { ensureGitHubIssue } from '../../integrations/github/ensure-issue.js';
 
 /**
  * 仕様書取得
@@ -43,6 +44,9 @@ export async function getSpec(
   if (!spec) {
     throw createSpecNotFoundError(specId);
   }
+
+  // GitHub Issue 自動リカバリー
+  await ensureGitHubIssue(db, spec.id);
 
   // Markdownファイル読み込み
   const specPath = join(ccCraftKitDir, 'specs', `${spec.id}.md`);

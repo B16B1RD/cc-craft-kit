@@ -13,6 +13,7 @@ import {
   createSpecNotFoundError,
 } from '../utils/error-handler.js';
 import { validateSpecId, validatePhase, Phase } from '../utils/validation.js';
+import { ensureGitHubIssue } from '../../integrations/github/ensure-issue.js';
 
 /**
  * 仕様書フェーズ更新
@@ -57,6 +58,9 @@ export async function updateSpecPhase(
   console.log(formatKeyValue('Current Phase', spec.phase, options.color));
   console.log(formatKeyValue('New Phase', validatedPhase, options.color));
   console.log('');
+
+  // GitHub Issue 自動リカバリー（フェーズ更新前に実行）
+  await ensureGitHubIssue(db, spec.id);
 
   // データベース更新
   console.log(formatInfo('Updating database...', options.color));
