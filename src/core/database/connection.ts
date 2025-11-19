@@ -34,10 +34,17 @@ export function createDatabase(config: DatabaseConfig = {}): Kysely<DatabaseSche
     verbose: config.verbose ? console.log : undefined,
   });
 
-  // WALモード有効化(パフォーマンス向上)
+  // WALモード有効化(パフォーマンス向上、複数プロセスからの同時アクセスをサポート)
   sqlite.pragma('journal_mode = WAL');
   // 外部キー制約有効化
   sqlite.pragma('foreign_keys = ON');
+
+  // 複数プロセスからの同時書き込み対策
+  // busy_timeout: データベースがロックされている場合、最大5秒待機してリトライ
+  sqlite.pragma('busy_timeout = 5000');
+
+  // WAL自動チェックポイント: WALファイルが1000ページに達したら自動的にチェックポイント実行
+  sqlite.pragma('wal_autocheckpoint = 1000');
 
   // Kysely Dialect作成
   const dialect = new SqliteDialect({
