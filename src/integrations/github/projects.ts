@@ -1,4 +1,4 @@
-import { GitHubClient } from './client.js';
+import { IGitHubClient } from './client.js';
 import { ProjectStatus, isProjectStatus } from './phase-status-mapper.js';
 
 /**
@@ -110,7 +110,7 @@ export interface VerifyProjectStatusResult {
  * GitHub Projects V2 管理クラス
  */
 export class GitHubProjects {
-  constructor(private client: GitHubClient) {}
+  constructor(private client: IGitHubClient) {}
 
   /**
    * Project V2 作成

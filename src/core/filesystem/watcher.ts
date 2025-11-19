@@ -5,12 +5,12 @@
  * 仕様書ファイルが更新されたときにイベントを発火する
  */
 
-import chokidar, { type FSWatcher } from 'chokidar';
 import { join, basename } from 'node:path';
-import { existsSync } from 'node:fs';
 import { Kysely } from 'kysely';
 import { Database } from '../database/schema.js';
 import { getEventBusAsync } from '../workflow/event-bus.js';
+import { IFileSystem, IFileWatcherInstance } from '../interfaces/file-system.js';
+import { NodeFileSystem } from './file-system-impl.js';
 
 /**
  * ウォッチャーオプション
@@ -62,15 +62,17 @@ export interface FileChangeEvent {
  * ファイルシステムウォッチャー
  */
 export class SpecFileWatcher {
-  private watcher: FSWatcher | null = null;
+  private watcher: IFileWatcherInstance | null = null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private debounceTimers: Map<string, any> = new Map();
   private isRunning = false;
+  private fileSystem: IFileSystem;
 
   constructor(
     private db: Kysely<Database>,
     private ccCraftKitDir: string,
-    private options: WatcherOptions = {}
+    private options: WatcherOptions = {},
+    fileSystem?: IFileSystem
   ) {
     this.options = {
       debounceMs: 500,
@@ -78,6 +80,7 @@ export class SpecFileWatcher {
       ignored: [],
       ...options,
     };
+    this.fileSystem = fileSystem || new NodeFileSystem();
   }
 
   /**
@@ -91,14 +94,14 @@ export class SpecFileWatcher {
 
     const specsDir = join(this.ccCraftKitDir, 'specs');
 
-    if (!existsSync(specsDir)) {
+    if (!this.fileSystem.exists(specsDir)) {
       throw new Error(`Specs directory not found: ${specsDir}`);
     }
 
     this.log('info', `Starting file watcher for: ${specsDir}`);
 
     return new Promise((resolve, reject) => {
-      this.watcher = chokidar.watch(`${specsDir}/*.md`, {
+      this.watcher = this.fileSystem.getWatcher().watch(`${specsDir}/*.md`, {
         persistent: true,
         ignoreInitial: true, // 初回スキャンは無視
         awaitWriteFinish: {

@@ -3,7 +3,10 @@ import { Kysely, SqliteDialect, sql } from 'kysely';
 import type { Database as DatabaseSchema } from './schema.js';
 import path from 'path';
 import fs from 'fs';
-import { checkDatabaseIntegrity, formatIntegrityCheckResult } from '../validators/database-integrity-checker.js';
+import {
+  checkDatabaseIntegrity,
+  formatIntegrityCheckResult,
+} from '../validators/database-integrity-checker.js';
 
 /**
  * データベース接続設定
@@ -95,7 +98,9 @@ async function runIntegrityCheck(db: Kysely<DatabaseSchema>): Promise<void> {
     if (!result.isValid) {
       console.warn('\n⚠️  Database integrity check failed:');
       console.warn(formatIntegrityCheckResult(result));
-      console.warn('\nRun `npx tsx .cc-craft-kit/scripts/repair-database.ts` to repair the database.\n');
+      console.warn(
+        '\nRun `npx tsx .cc-craft-kit/scripts/repair-database.ts` to repair the database.\n'
+      );
     }
 
     // 警告のみの場合は簡潔に表示
@@ -104,11 +109,16 @@ async function runIntegrityCheck(db: Kysely<DatabaseSchema>): Promise<void> {
       for (const warning of result.warnings) {
         console.warn(`  - ${warning}`);
       }
-      console.warn('\nRun `npx tsx .cc-craft-kit/scripts/repair-database.ts` to fix these issues.\n');
+      console.warn(
+        '\nRun `npx tsx .cc-craft-kit/scripts/repair-database.ts` to fix these issues.\n'
+      );
     }
   } catch (error) {
     // 整合性チェック自体の失敗は警告のみ（データベース操作は継続）
-    console.warn('⚠️  Integrity check failed:', error instanceof Error ? error.message : String(error));
+    console.warn(
+      '⚠️  Integrity check failed:',
+      error instanceof Error ? error.message : String(error)
+    );
   }
 }
 
@@ -164,7 +174,10 @@ export async function closeDatabase(): Promise<void> {
       // WAL チェックポイント実行（TRUNCATE モードで WAL ファイルをリセット）
       await sql`PRAGMA wal_checkpoint(TRUNCATE)`.execute(dbInstance);
     } catch (error) {
-      console.warn('Warning: WAL checkpoint failed:', error instanceof Error ? error.message : String(error));
+      console.warn(
+        'Warning: WAL checkpoint failed:',
+        error instanceof Error ? error.message : String(error)
+      );
     }
 
     await dbInstance.destroy();

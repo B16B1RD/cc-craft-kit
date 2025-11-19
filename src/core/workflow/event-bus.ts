@@ -39,6 +39,21 @@ export interface WorkflowEvent<T = unknown> {
 export type EventHandler<T = unknown> = (event: WorkflowEvent<T>) => Promise<void> | void;
 
 /**
+ * イベントバスインターフェース（モック化用）
+ */
+export interface IEventBus {
+  emit<T = unknown>(event: WorkflowEvent<T>): Promise<void>;
+  on<T = unknown>(eventType: WorkflowEventType, handler: EventHandler<T>): void;
+  off<T = unknown>(eventType: WorkflowEventType, handler: EventHandler<T>): void;
+  createEvent<T = unknown>(
+    type: WorkflowEventType,
+    specId: string,
+    data: T,
+    taskId?: string
+  ): WorkflowEvent<T>;
+}
+
+/**
  * ナレッジベースイベントデータ型
  */
 
@@ -76,7 +91,7 @@ export type PhaseChangedEvent = WorkflowEvent<PhaseChangedData>;
 /**
  * イベントバス実装
  */
-export class EventBus {
+export class EventBus implements IEventBus {
   private emitter: EventEmitter;
   private handlers: Map<WorkflowEventType, Set<EventHandler>> = new Map();
 

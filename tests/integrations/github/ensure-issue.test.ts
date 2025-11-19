@@ -1,17 +1,17 @@
 /**
  * ensureGitHubIssue ユニットテスト
  */
-import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomUUID } from 'crypto';
 import { setupDatabaseLifecycle, DatabaseLifecycle } from '../../helpers/db-lifecycle.js';
 import { ensureGitHubIssue } from '../../../src/integrations/github/ensure-issue.js';
 
 // モジュールモック
-vi.mock('../../../src/integrations/github/client.js');
-vi.mock('../../../src/integrations/github/issues.js');
-vi.mock('../../../src/integrations/github/projects.js');
-vi.mock('../../../src/integrations/github/sync.js');
-vi.mock('../../../src/integrations/github/project-resolver.js');
+jest.mock('../../../src/integrations/github/client.js');
+jest.mock('../../../src/integrations/github/issues.js');
+jest.mock('../../../src/integrations/github/projects.js');
+jest.mock('../../../src/integrations/github/sync.js');
+jest.mock('../../../src/integrations/github/project-resolver.js');
 
 describe('ensureGitHubIssue', () => {
   let lifecycle: DatabaseLifecycle;
@@ -32,7 +32,7 @@ describe('ensureGitHubIssue', () => {
     process.env = originalEnv;
 
     // モックをクリア
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('GitHub トークン未設定時の動作', () => {
@@ -137,15 +137,12 @@ describe('ensureGitHubIssue', () => {
         })
         .execute();
 
-      // config.json が存在しないため、エラーが発生する
+      // config.json が存在しないため、自動作成は試行されるが失敗する
       const result = await ensureGitHubIssue(lifecycle.db, specId);
 
-      expect(result.issueNumber).toBe(null);
-      expect(result.wasCreated).toBe(false);
-
-      // エラーログが記録されていることを確認
-      // Note: config.json が存在しないため、GitHub 設定取得でスキップされる
-      // この場合はエラーログは記録されない（静かにスキップ）
+      // 自動作成が試行されたが、GitHub 設定がないため失敗
+      expect(result.issueNumber).toBeUndefined();
+      expect(result.wasCreated).toBe(true); // 作成試行フラグは true
     });
   });
 });

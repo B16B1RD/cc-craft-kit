@@ -1,17 +1,17 @@
 /**
  * /cft:spec-phase 自動リカバリー機能 統合テスト
  */
-import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomUUID } from 'crypto';
 import { setupDatabaseLifecycle, DatabaseLifecycle } from '../../helpers/db-lifecycle.js';
 import { updateSpecPhase } from '../../../src/commands/spec/phase.js';
 
 // モジュールモック
-vi.mock('../../../src/integrations/github/client.js');
-vi.mock('../../../src/integrations/github/issues.js');
-vi.mock('../../../src/integrations/github/projects.js');
-vi.mock('../../../src/integrations/github/sync.js');
-vi.mock('../../../src/integrations/github/project-resolver.js');
+jest.mock('../../../src/integrations/github/client.js');
+jest.mock('../../../src/integrations/github/issues.js');
+jest.mock('../../../src/integrations/github/projects.js');
+jest.mock('../../../src/integrations/github/sync.js');
+jest.mock('../../../src/integrations/github/project-resolver.js');
 
 describe('/cft:spec-phase 自動リカバリー機能', () => {
   let lifecycle: DatabaseLifecycle;
@@ -32,7 +32,7 @@ describe('/cft:spec-phase 自動リカバリー機能', () => {
     process.env = originalEnv;
 
     // モックをクリア
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('フェーズ更新時の自動リカバリー', () => {

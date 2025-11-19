@@ -7,26 +7,41 @@ import { graphql } from '@octokit/graphql';
 export interface GitHubClientConfig {
   token: string;
   baseUrl?: string;
+  octokit?: Octokit;
+  graphqlClient?: typeof graphql;
+}
+
+/**
+ * GitHub クライアントインターフェース（モック化用）
+ */
+export interface IGitHubClient {
+  readonly rest: Octokit;
+  query<T = unknown>(query: string, variables?: Record<string, unknown>): Promise<T>;
+  verifyAuth(): Promise<{ login: string; id: number; type: string }>;
 }
 
 /**
  * GitHub REST + GraphQL 統合クライアント
  */
-export class GitHubClient {
+export class GitHubClient implements IGitHubClient {
   private octokit: Octokit;
   private graphqlClient: typeof graphql;
 
   constructor(config: GitHubClientConfig) {
-    this.octokit = new Octokit({
-      auth: config.token,
-      baseUrl: config.baseUrl || 'https://api.github.com',
-    });
+    this.octokit =
+      config.octokit ||
+      new Octokit({
+        auth: config.token,
+        baseUrl: config.baseUrl || 'https://api.github.com',
+      });
 
-    this.graphqlClient = graphql.defaults({
-      headers: {
-        authorization: `token ${config.token}`,
-      },
-    });
+    this.graphqlClient =
+      config.graphqlClient ||
+      graphql.defaults({
+        headers: {
+          authorization: `token ${config.token}`,
+        },
+      });
   }
 
   /**

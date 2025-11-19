@@ -1,4 +1,4 @@
-import { GitHubClient } from './client.js';
+import { IGitHubClient } from './client.js';
 
 /**
  * Issue 作成パラメータ
@@ -60,7 +60,7 @@ export interface IssueResponse {
  * GitHub Issues 管理クラス
  */
 export class GitHubIssues {
-  constructor(private client: GitHubClient) {}
+  constructor(private client: IGitHubClient) {}
 
   /**
    * Issue 作成
