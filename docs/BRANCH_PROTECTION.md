@@ -151,6 +151,15 @@ gh api repos/:owner/:repo/branches/develop/protection
 
 ## トラブルシューティング
 
+### 問題: 管理者権限がない場合
+
+**原因**: ブランチ保護ルールの設定にはリポジトリの管理者権限が必要。
+
+**解決策**:
+
+1. リポジトリオーナーに権限昇格を依頼
+2. または、既存の管理者にブランチ保護設定を依頼
+
 ### 問題: CI ステータスチェックが表示されない
 
 **原因**: CI ワークフローが一度も実行されていない。
@@ -179,6 +188,19 @@ gh api repos/:owner/:repo/branches/develop/protection
 1. **Settings** > **Branches** で設定を再確認
 2. Branch name pattern が `main` または `develop` と完全一致しているか確認
 3. ワイルドカード（`*`）が含まれていないか確認
+
+### 問題: 緊急時にマージが必要
+
+**症状**: 重大なバグ修正で即座にマージが必要だが、PR レビューを待てない。
+
+**解決策**:
+
+1. Settings → Branches → 該当ブランチの Edit ボタンをクリック
+2. 一時的に **Require a pull request before merging** を無効化
+3. マージ完了後、即座に再有効化
+4. チームに報告（Slack 等）
+
+**注意**: 緊急時のみ使用し、必ず元に戻すこと。
 
 ## 参考リンク
 
