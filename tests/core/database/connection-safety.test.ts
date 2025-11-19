@@ -19,7 +19,10 @@ describe('Database Connection Safety', () => {
   const testDir = join(process.cwd(), '.test-db');
   const testDbPath = join(testDir, `test-${randomUUID()}.db`);
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    // 既存のデータベース接続をクローズ（tests/setup.ts で作成されたインスタンスをクリア）
+    await closeDatabase();
+
     // テスト用ディレクトリ作成
     if (!existsSync(testDir)) {
       mkdirSync(testDir, { recursive: true });
