@@ -11,9 +11,12 @@ import { GitHubIssues } from '../../integrations/github/issues.js';
 import { GitHubProjects } from '../../integrations/github/projects.js';
 import { GitHubSyncService } from '../../integrations/github/sync.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
-import { createProjectNotInitializedError,
+import {
+  createProjectNotInitializedError,
   createSpecNotFoundError,
-  createGitHubNotConfiguredError, handleCLIError } from '../utils/error-handler.js';
+  createGitHubNotConfiguredError,
+  handleCLIError,
+} from '../utils/error-handler.js';
 import { validateSpecId } from '../utils/validation.js';
 
 /**

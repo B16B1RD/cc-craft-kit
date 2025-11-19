@@ -1,7 +1,6 @@
 import { Kysely, Migrator, FileMigrationProvider } from 'kysely';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
 // __dirname の取得（テスト環境との互換性を考慮）
 function getDirname(): string {
@@ -16,8 +15,9 @@ function getDirname(): string {
     return __dirname;
   }
 
-  // ESM 環境では import.meta.url を使用
-  return path.dirname(fileURLToPath(import.meta.url));
+  // ESM 環境では process.cwd() ベースのパスを使用
+  // import.meta.url は Jest でサポートされていないため使用しない
+  return path.join(process.cwd(), '.cc-craft-kit', 'core', 'database');
 }
 
 /**

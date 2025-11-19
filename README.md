@@ -12,6 +12,7 @@ cc-craft-kit は、Claude Code 上のカスタムスラッシュコマンドで�
 - GitHub Projects v2、Issue、Milestone の完全統合による自動管理
 - Issue をナレッジベース化し、課題管理＋途中経過＋エラー対策＋Tips を統合記録
 - Requirements → Design → Tasks → Implementation の構造化ワークフローによる仕様駆動開発
+- **ブランチ保護機能**により、統合ブランチ（main、develop など）での直接編集を防止し、適切なブランチ戦略を強制
 - すべての機能を `.cc-craft-kit/` ディレクトリに集約し、既存プロジェクトと競合しない設計
 
 ## 🚀 クイックスタート

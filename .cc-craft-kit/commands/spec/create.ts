@@ -9,7 +9,11 @@ import { join } from 'node:path';
 import { getDatabase } from '../../core/database/connection.js';
 import { getEventBusAsync } from '../../core/workflow/event-bus.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
-import { createProjectNotInitializedError, createValidationError, handleCLIError } from '../utils/error-handler.js';
+import {
+  createProjectNotInitializedError,
+  createValidationError,
+  handleCLIError,
+} from '../utils/error-handler.js';
 import { validateRequired } from '../utils/validation.js';
 
 /**

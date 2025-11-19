@@ -682,6 +682,38 @@ mv src/slash-commands src/slash-commands.bak
 npm run migrate:structure
 ```
 
+### ブランチ保護エラー
+
+**症状:** Edit ツールまたは Write ツールで「統合ブランチでの直接編集は禁止されている」エラーが表示される。
+
+**原因:** main や develop などの保護対象ブランチで直接ファイル編集を試みている。
+
+**解決策:**
+
+```bash
+# 1. 現在のブランチを確認
+git branch
+
+# 2. 適切な作業ブランチを作成
+git checkout -b feature/<機能名>
+# または
+git checkout -b fix/<修正内容>
+
+# 3. 編集を再実行
+```
+
+**設定変更:**
+
+保護対象ブランチは `.env` ファイルで変更可能です。
+
+```bash
+# .env
+# カンマ区切りで複数指定
+PROTECTED_BRANCHES=main,develop,staging
+
+# 設定を削除すると、リモートのデフォルトブランチ（main または master）が自動検出される
+```
+
 ## 参考ドキュメント
 
 - [ARCHITECTURE.md](./docs/ARCHITECTURE.md) - 詳細なアーキテクチャ設計

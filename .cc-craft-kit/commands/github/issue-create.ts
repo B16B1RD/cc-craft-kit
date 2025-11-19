@@ -9,7 +9,12 @@ import { getDatabase } from '../../core/database/connection.js';
 import { GitHubClient } from '../../integrations/github/client.js';
 import { GitHubIssues } from '../../integrations/github/issues.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
-import { createProjectNotInitializedError, createSpecNotFoundError, createGitHubNotConfiguredError, handleCLIError } from '../utils/error-handler.js';
+import {
+  createProjectNotInitializedError,
+  createSpecNotFoundError,
+  createGitHubNotConfiguredError,
+  handleCLIError,
+} from '../utils/error-handler.js';
 import { validateSpecId } from '../utils/validation.js';
 
 /**
