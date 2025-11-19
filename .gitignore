@@ -30,10 +30,11 @@ build/
 Thumbs.db
 
 # cc-craft-kit specific
-.cc-craft-kit/
-!.cc-craft-kit/.gitkeep
 *.db
 *.db-journal
+.cc-craft-kit/*
+!.cc-craft-kit/.gitkeep
+!.cc-craft-kit/specs/
 
 # Logs
 logs/
