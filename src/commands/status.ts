@@ -196,7 +196,9 @@ export async function showStatus(
     const displaySpecs = specsWithoutIssue.slice(0, 3);
     for (const spec of displaySpecs) {
       console.log(formatInfo(`    • ${spec.name} (${spec.phase})`, options.color));
-      console.log(formatInfo(`      /cft:github-issue-create ${spec.id.substring(0, 8)}`, options.color));
+      console.log(
+        formatInfo(`      /cft:github-issue-create ${spec.id.substring(0, 8)}`, options.color)
+      );
     }
 
     if (specsWithoutIssue.length > 3) {

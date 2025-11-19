@@ -47,7 +47,9 @@ async function main() {
       }
     }
 
-    console.log(`\n✓ Fixed ${fixedCount} out of ${integrityResult.details.invalidFiles.length} invalid files\n`);
+    console.log(
+      `\n✓ Fixed ${fixedCount} out of ${integrityResult.details.invalidFiles.length} invalid files\n`
+    );
 
     // 再度整合性チェック実行
     console.log('📋 Re-running integrity check after fixes...\n');

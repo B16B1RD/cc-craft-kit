@@ -108,8 +108,7 @@ export function validateMetadata(metadata: SpecMetadata): ValidationResult {
   const warnings: string[] = [];
 
   // UUID形式のチェック
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(metadata.id)) {
     errors.push(`Invalid UUID format: ${metadata.id}`);
   }
@@ -185,15 +184,27 @@ export function fixSpecFileMetadata(filePath: string): boolean {
 
     // 2. 日時形式の修正（時刻情報がない場合は 00:00:00 を追加）
     // パターン1: **作成日**: YYYY/MM/DD (太字の後にコロン)
-    fixed = fixed.replace(/\*\*作成日:\*\* (\d{4}\/\d{2}\/\d{2})\s*$/gm, '**作成日時:** $1 00:00:00');
+    fixed = fixed.replace(
+      /\*\*作成日:\*\* (\d{4}\/\d{2}\/\d{2})\s*$/gm,
+      '**作成日時:** $1 00:00:00'
+    );
     // パターン2: **作成日**: YYYY/MM/DD (太字の中に「作成日」のみ)
-    fixed = fixed.replace(/\*\*作成日\*\*:\s*(\d{4}\/\d{2}\/\d{2})\s*$/gm, '**作成日時:** $1 00:00:00');
+    fixed = fixed.replace(
+      /\*\*作成日\*\*:\s*(\d{4}\/\d{2}\/\d{2})\s*$/gm,
+      '**作成日時:** $1 00:00:00'
+    );
 
     // 更新日 → 更新日時
     // パターン1: **更新日**: YYYY/MM/DD (太字の後にコロン)
-    fixed = fixed.replace(/\*\*更新日:\*\* (\d{4}\/\d{2}\/\d{2})\s*$/gm, '**更新日時:** $1 00:00:00');
+    fixed = fixed.replace(
+      /\*\*更新日:\*\* (\d{4}\/\d{2}\/\d{2})\s*$/gm,
+      '**更新日時:** $1 00:00:00'
+    );
     // パターン2: **更新日**: YYYY/MM/DD (太字の中に「更新日」のみ)
-    fixed = fixed.replace(/\*\*更新日\*\*:\s*(\d{4}\/\d{2}\/\d{2})\s*$/gm, '**更新日時:** $1 00:00:00');
+    fixed = fixed.replace(
+      /\*\*更新日\*\*:\s*(\d{4}\/\d{2}\/\d{2})\s*$/gm,
+      '**更新日時:** $1 00:00:00'
+    );
 
     // 3. フェーズのコロン修正
     // パターン1: **フェーズ**: (太字の後にコロン)
@@ -204,7 +215,7 @@ export function fixSpecFileMetadata(filePath: string): boolean {
     // 4. 時刻の先頭ゼロパディング修正（YYYY/MM/DD H:MM:SS → YYYY/MM/DD HH:MM:SS）
     fixed = fixed.replace(
       /(\*\*(?:作成|更新)日時:\*\*\s+\d{4}\/\d{2}\/\d{2}\s+)(\d):(\d{2}):(\d{2})/g,
-      (match, prefix, hour, minute, second) => {
+      (_match, prefix, hour, minute, second) => {
         return `${prefix}${hour.padStart(2, '0')}:${minute}:${second}`;
       }
     );

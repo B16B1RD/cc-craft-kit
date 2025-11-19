@@ -7,7 +7,7 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Kysely } from 'kysely';
-import type { Database } from '../database/types.js';
+import type { Database } from '../database/schema.js';
 import { parseSpecFile, validateMetadata, type SpecMetadata } from './spec-file-validator.js';
 
 /**
@@ -47,10 +47,7 @@ export interface SqliteIntegrityResult {
  */
 export async function checkSqliteIntegrity(db: Kysely<Database>): Promise<SqliteIntegrityResult> {
   try {
-    const _result = await db
-      .selectFrom('specs')
-      .select(db.fn.count('id').as('count'))
-      .executeTakeFirst();
+    await db.selectFrom('specs').select(db.fn.count('id').as('count')).executeTakeFirst();
 
     // クエリが正常に実行できれば、データベースは破損していない
     return {

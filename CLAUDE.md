@@ -431,7 +431,7 @@ export class YourService {
 
 2. **禁止事項**
    - `createDatabase()` を直接呼び出さないこと
-   - `getDatabase({ databasePath: ... })` のように明示的にパスを指定しないこと
+   - `getDatabase({ databasePath: ... })` のように明示的なパス指定をしないこと
    - 複数のデータベースインスタンスを同時に作成しないこと
 
 3. **正しい使用例**
