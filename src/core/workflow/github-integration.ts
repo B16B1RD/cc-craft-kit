@@ -307,7 +307,66 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
               status: newStatus,
             });
 
-            console.log(`✓ Updated project status to "${newStatus}"`);
+            // ステータス更新を検証＋リトライ
+            try {
+              const verification = await projects.verifyProjectStatusUpdate({
+                owner: githubConfig.owner,
+                projectNumber,
+                itemId: spec.github_project_item_id,
+                expectedStatus: newStatus,
+                maxRetries: 3,
+              });
+
+              if (verification.success) {
+                console.log(
+                  `✓ Updated project status to "${verification.actualStatus}"` +
+                    (verification.attempts > 1 ? ` (${verification.attempts} attempts)` : '')
+                );
+              } else {
+                console.warn(
+                  `⚠ Failed to update project status after ${verification.attempts} retries.\n` +
+                    `Expected: "${newStatus}", ` +
+                    `Actual: "${verification.actualStatus}"\n` +
+                    `Please check GitHub Projects manually.`
+                );
+
+                await logError(
+                  'error',
+                  'Project status update verification failed',
+                  new Error('Status verification failed'),
+                  {
+                    specId: event.specId,
+                    expectedStatus: newStatus,
+                    actualStatus: verification.actualStatus,
+                    attempts: verification.attempts,
+                  }
+                );
+              }
+            } catch (verificationError) {
+              // レート制限エラー、認証エラーなどの致命的なエラー
+              if (
+                verificationError instanceof Error &&
+                verificationError.message.includes('rate limit')
+              ) {
+                console.warn(
+                  `⚠ GitHub API rate limit exceeded.\n` +
+                    `Status update will be retried after reset.`
+                );
+              } else {
+                console.error('Failed to verify project status update:', verificationError);
+              }
+
+              await logError(
+                'error',
+                'Project status update verification error',
+                verificationError instanceof Error
+                  ? verificationError
+                  : new Error(String(verificationError)),
+                {
+                  specId: event.specId,
+                }
+              );
+            }
           } catch (projectError) {
             // Project 更新失敗は警告のみ（Issue 更新は成功）
             await logError('warn', 'Failed to update GitHub Project status', projectError, {

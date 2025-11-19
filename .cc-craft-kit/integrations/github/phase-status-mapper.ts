@@ -19,3 +19,10 @@ export function mapPhaseToStatus(phase: Phase): ProjectStatus {
 
   return mapping[phase];
 }
+
+/**
+ * 文字列が有効な ProjectStatus かを判定する型ガード
+ */
+export function isProjectStatus(value: string): value is ProjectStatus {
+  return value === 'Todo' || value === 'In Progress' || value === 'Done';
+}

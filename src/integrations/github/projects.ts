@@ -1,4 +1,5 @@
 import { GitHubClient } from './client.js';
+import { ProjectStatus, isProjectStatus } from './phase-status-mapper.js';
 
 /**
  * Project V2 フィールド型
@@ -83,6 +84,26 @@ export interface ProjectFieldResponse {
   id: string;
   name: string;
   options: ProjectFieldOption[];
+}
+
+/**
+ * ステータス検証パラメータ
+ */
+export interface VerifyProjectStatusParams {
+  owner: string;
+  projectNumber: number;
+  itemId: string;
+  expectedStatus: ProjectStatus;
+  maxRetries?: number;
+}
+
+/**
+ * ステータス検証結果
+ */
+export interface VerifyProjectStatusResult {
+  success: boolean;
+  actualStatus: ProjectStatus | null;
+  attempts: number;
 }
 
 /**
@@ -441,5 +462,126 @@ export class GitHubProjects {
       result.user?.projectV2.fields.nodes || result.organization?.projectV2.fields.nodes || [];
 
     return fields;
+  }
+
+  /**
+   * プロジェクトアイテムの現在のステータスを取得
+   */
+  async getProjectItemStatus(itemId: string): Promise<ProjectStatus | null> {
+    try {
+      const query = `
+        query getProjectItemStatus($itemId: ID!) {
+          node(id: $itemId) {
+            ... on ProjectV2Item {
+              id
+              fieldValues(first: 20) {
+                nodes {
+                  ... on ProjectV2ItemFieldSingleSelectValue {
+                    name
+                    field {
+                      ... on ProjectV2SingleSelectField {
+                        name
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `;
+
+      const result = await this.client.query<{
+        node: {
+          id: string;
+          fieldValues: {
+            nodes: Array<{
+              name: string;
+              field: { name: string };
+            }>;
+          };
+        };
+      }>(query, { itemId });
+
+      // "Status" フィールドを検索
+      const statusField = result.node.fieldValues.nodes.find((fv) => fv?.field?.name === 'Status');
+
+      if (!statusField) {
+        return null;
+      }
+
+      // ステータス名を ProjectStatus 型にマッピング
+      const statusName = statusField.name;
+      if (isProjectStatus(statusName)) {
+        return statusName;
+      }
+
+      // 想定外のステータス名をログに記録
+      console.warn(
+        `Unknown project status: "${statusName}". Expected: Todo, In Progress, or Done.`
+      );
+      return null;
+    } catch (error) {
+      console.warn('Failed to get project item status:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 指定されたミリ秒待機する
+   */
+  private async sleep(ms: number): Promise<void> {
+    return new Promise<void>((resolve) => {
+      // eslint-disable-next-line no-undef
+      setTimeout(() => resolve(), ms);
+    });
+  }
+
+  /**
+   * ステータス更新後に検証し、必要に応じてリトライする
+   */
+  async verifyProjectStatusUpdate(
+    params: VerifyProjectStatusParams
+  ): Promise<VerifyProjectStatusResult> {
+    const maxRetries = params.maxRetries ?? 3;
+    let attempts = 0;
+
+    for (let i = 0; i <= maxRetries; i++) {
+      attempts++;
+
+      // 指数バックオフで待機（初回は1秒、2回目は2秒、3回目は4秒）
+      const waitTime = i === 0 ? 1000 : 1000 * Math.pow(2, i - 1);
+      await this.sleep(waitTime);
+
+      try {
+        const actualStatus = await this.getProjectItemStatus(params.itemId);
+
+        if (actualStatus === params.expectedStatus) {
+          return { success: true, actualStatus, attempts };
+        }
+
+        // 最後のリトライでない場合は再度ステータス更新
+        if (i < maxRetries) {
+          await this.updateProjectStatus({
+            owner: params.owner,
+            projectNumber: params.projectNumber,
+            itemId: params.itemId,
+            status: params.expectedStatus,
+          });
+        }
+      } catch (error) {
+        // レート制限エラーの場合は即座に失敗
+        if (error instanceof Error && error.message.includes('rate limit')) {
+          throw error;
+        }
+
+        // その他のエラーはリトライを継続
+        console.warn(`Retry attempt ${attempts} failed:`, error);
+      }
+    }
+
+    // 最終的に失敗
+    const finalStatus = await this.getProjectItemStatus(params.itemId);
+    return { success: false, actualStatus: finalStatus, attempts };
   }
 }
