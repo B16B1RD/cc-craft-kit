@@ -5,9 +5,7 @@ import { existsSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { EventBus } from '../../../src/core/workflow/event-bus.js';
 import { registerGitHubIntegrationHandlers } from '../../../src/core/workflow/github-integration.js';
-import { Kysely } from 'kysely';
-import { Database } from '../../../src/core/database/schema.js';
-import { createTestDatabase } from '../../helpers/test-database.js';
+import { setupDatabaseLifecycle, DatabaseLifecycle } from '../../helpers/db-lifecycle.js';
 
 // GitHub API クライアントのモック
 jest.mock('../../../src/integrations/github/client.js');
@@ -21,7 +19,7 @@ import { resolveProjectId } from '../../../src/integrations/github/project-resol
 
 describe('GitHub Integration Event Handlers', () => {
   let eventBus: EventBus;
-  let db: Kysely<Database>;
+  let lifecycle: DatabaseLifecycle;
   let testDir: string;
   let originalEnv: NodeJS.ProcessEnv;
 
@@ -51,13 +49,13 @@ describe('GitHub Integration Event Handlers', () => {
     writeFileSync(join(testDir, 'config.json'), JSON.stringify(config, null, 2));
 
     // テスト用データベース作成
-    db = await createTestDatabase();
+    lifecycle = await setupDatabaseLifecycle();
 
     // EventBus作成
     eventBus = new EventBus();
 
     // ハンドラー登録
-    registerGitHubIntegrationHandlers(eventBus, db);
+    registerGitHubIntegrationHandlers(eventBus, lifecycle.db);
 
     // 環境変数設定
     process.env.GITHUB_TOKEN = 'test-token';
@@ -71,7 +69,8 @@ describe('GitHub Integration Event Handlers', () => {
     eventBus.clear();
 
     // データベースクリーンアップ
-    await db.destroy();
+    await lifecycle.cleanup();
+    await lifecycle.close();
 
     // テストディレクトリ削除
     if (existsSync(testDir)) {
@@ -100,7 +99,7 @@ describe('GitHub Integration Event Handlers', () => {
 
       // 仕様書をデータベースに追加
       const specId = 'spec-test-123';
-      await db
+      await lifecycle.db
         .insertInto('specs')
         .values({
           id: specId,
@@ -140,7 +139,7 @@ describe('GitHub Integration Event Handlers', () => {
       });
 
       // データベース更新を確認
-      const updatedSpec = await db
+      const updatedSpec = await lifecycle.db
         .selectFrom('specs')
         .where('id', '=', specId)
         .selectAll()
@@ -149,7 +148,7 @@ describe('GitHub Integration Event Handlers', () => {
       expect(updatedSpec?.github_issue_id).toBe(123);
 
       // 同期ログ記録を確認
-      const syncLog = await db
+      const syncLog = await lifecycle.db
         .selectFrom('github_sync')
         .where('entity_id', '=', specId)
         .selectAll()
@@ -187,7 +186,7 @@ describe('GitHub Integration Event Handlers', () => {
 
       // 仕様書をデータベースに追加
       const specId = 'spec-test-456';
-      await db
+      await lifecycle.db
         .insertInto('specs')
         .values({
           id: specId,
@@ -257,7 +256,7 @@ describe('GitHub Integration Event Handlers', () => {
 
       // 仕様書をデータベースに追加
       const specId = 'spec-test-789';
-      await db
+      await lifecycle.db
         .insertInto('specs')
         .values({
           id: specId,
@@ -291,7 +290,7 @@ describe('GitHub Integration Event Handlers', () => {
       expect(MockGitHubIssues.prototype.create).toHaveBeenCalled();
 
       // データベース更新を確認（Issue IDは記録されている）
-      const updatedSpec = await db
+      const updatedSpec = await lifecycle.db
         .selectFrom('specs')
         .where('id', '=', specId)
         .selectAll()
@@ -315,7 +314,7 @@ describe('GitHub Integration Event Handlers', () => {
 
       // 仕様書をデータベースに追加
       const specId = 'spec-test-no-token';
-      await db
+      await lifecycle.db
         .insertInto('specs')
         .values({
           id: specId,
@@ -350,7 +349,7 @@ describe('GitHub Integration Event Handlers', () => {
 
       // 仕様書をデータベースに追加（既にIssueが作成されている状態）
       const specId = 'spec-test-phase-change';
-      await db
+      await lifecycle.db
         .insertInto('specs')
         .values({
           id: specId,
@@ -388,7 +387,7 @@ describe('GitHub Integration Event Handlers', () => {
 
       // 仕様書をデータベースに追加（Issueなし）
       const specId = 'spec-test-no-issue';
-      await db
+      await lifecycle.db
         .insertInto('specs')
         .values({
           id: specId,

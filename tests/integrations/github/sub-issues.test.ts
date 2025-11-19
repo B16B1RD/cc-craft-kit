@@ -2,10 +2,9 @@
  * SubIssueManager テスト
  */
 import 'reflect-metadata';
-import { Kysely } from 'kysely';
 import { Database } from '../../../src/core/database/schema.js';
 import { SubIssueManager, SubIssueConfig } from '../../../src/integrations/github/sub-issues.js';
-import { createTestDatabase, cleanupTestDatabase, clearAllTables } from '../../helpers/test-database.js';
+import { setupDatabaseLifecycle, DatabaseLifecycle } from '../../helpers/db-lifecycle.js';
 import { randomUUID } from 'crypto';
 
 // fetch と globalThis.setTimeout のモック
@@ -21,20 +20,12 @@ jest.mock('@octokit/graphql', () => ({
 }));
 
 describe('SubIssueManager', () => {
-  let db: Kysely<Database>;
+  let lifecycle: DatabaseLifecycle;
   let manager: SubIssueManager;
 
-  beforeAll(async () => {
-    db = await createTestDatabase();
-  });
-
-  afterAll(async () => {
-    await cleanupTestDatabase(db);
-  });
-
   beforeEach(async () => {
-    await clearAllTables(db);
-    manager = new SubIssueManager(db);
+    lifecycle = await setupDatabaseLifecycle();
+    manager = new SubIssueManager(lifecycle.db);
 
     // グローバル fetch と setTimeout をモック
     global.fetch = mockFetch as unknown as typeof fetch;
@@ -49,8 +40,10 @@ describe('SubIssueManager', () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     jest.clearAllMocks();
+    await lifecycle.cleanup();
+    await lifecycle.close();
   });
 
   describe('createSubIssuesFromTaskList', () => {
@@ -151,10 +144,11 @@ describe('SubIssueManager', () => {
       expect(mockGraphqlClient).toHaveBeenCalledTimes(2);
 
       // github_sync テーブルに記録されたか確認
-      const syncRecords = await db
+      const syncRecords = await lifecycle.db
         .selectFrom('github_sync')
         .selectAll()
         .where('entity_type', '=', 'sub_issue')
+        .orderBy('github_number', 'asc')
         .execute();
 
       expect(syncRecords).toHaveLength(2);
@@ -270,7 +264,7 @@ describe('SubIssueManager', () => {
       const taskId = randomUUID();
 
       // github_sync レコードを作成
-      await db
+      await lifecycle.db
         .insertInto('github_sync')
         .values({
           id: randomUUID(),
@@ -315,7 +309,7 @@ describe('SubIssueManager', () => {
       );
 
       // last_synced_at が更新されたか確認
-      const syncRecord = await db
+      const syncRecord = await lifecycle.db
         .selectFrom('github_sync')
         .selectAll()
         .where('entity_id', '=', taskId)
@@ -337,7 +331,7 @@ describe('SubIssueManager', () => {
       const taskId = randomUUID();
 
       // 無効な形式の github_id を持つレコードを作成
-      await db
+      await lifecycle.db
         .insertInto('github_sync')
         .values({
           id: randomUUID(),
@@ -529,7 +523,7 @@ describe('SubIssueManager', () => {
       await manager.createSubIssuesFromTaskList(config);
 
       // データベース記録を確認
-      const syncRecord = await db
+      const syncRecord = await lifecycle.db
         .selectFrom('github_sync')
         .selectAll()
         .where('entity_type', '=', 'sub_issue')

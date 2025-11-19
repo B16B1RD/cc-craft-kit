@@ -1,27 +1,26 @@
 /**
  * GitHub ナレッジベーステスト
  */
-import { createTestDatabase, cleanupTestDatabase } from '../../helpers/test-database.js';
-import { Kysely } from 'kysely';
-import { Database } from '../../../src/core/database/schema.js';
+import { setupDatabaseLifecycle, DatabaseLifecycle } from '../../helpers/db-lifecycle.js';
 import { randomUUID } from 'crypto';
 
 describe('GitHubKnowledgeBase', () => {
-  let db: Kysely<Database>;
+  let lifecycle: DatabaseLifecycle;
 
-  beforeAll(async () => {
-    db = await createTestDatabase();
+  beforeEach(async () => {
+    lifecycle = await setupDatabaseLifecycle();
   });
 
-  afterAll(async () => {
-    await cleanupTestDatabase(db);
+  afterEach(async () => {
+    await lifecycle.cleanup();
+    await lifecycle.close();
   });
 
   test('進捗記録がログに保存される', async () => {
     const specId = randomUUID();
 
     // 仕様書作成
-    await db
+    await lifecycle.db
       .insertInto('specs')
       .values({
         id: specId,
@@ -37,10 +36,11 @@ describe('GitHubKnowledgeBase', () => {
       .execute();
 
     // 進捗ログ記録
-    await db
+    await lifecycle.db
       .insertInto('logs')
       .values({
         spec_id: specId,
+        action: 'knowledge_progress',
         level: 'info',
         message: 'Progress recorded: 機能Aの実装完了',
         metadata: JSON.stringify({
@@ -48,12 +48,12 @@ describe('GitHubKnowledgeBase', () => {
           commentId: 12345,
           issueNumber: 100,
         }),
-        created_at: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
       })
       .execute();
 
     // ログ取得
-    const logs = await db
+    const logs = await lifecycle.db
       .selectFrom('logs')
       .where('spec_id', '=', specId)
       .where('level', '=', 'info')
@@ -71,7 +71,7 @@ describe('GitHubKnowledgeBase', () => {
     const specId = randomUUID();
 
     // 仕様書作成
-    await db
+    await lifecycle.db
       .insertInto('specs')
       .values({
         id: specId,
@@ -87,10 +87,11 @@ describe('GitHubKnowledgeBase', () => {
       .execute();
 
     // エラー解決ログ記録
-    await db
+    await lifecycle.db
       .insertInto('logs')
       .values({
         spec_id: specId,
+        action: 'knowledge_error',
         level: 'warn',
         message: 'Error solution recorded: TypeScriptコンパイルエラー...',
         metadata: JSON.stringify({
@@ -98,12 +99,12 @@ describe('GitHubKnowledgeBase', () => {
           commentId: 23456,
           issueNumber: 200,
         }),
-        created_at: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
       })
       .execute();
 
     // ログ取得
-    const logs = await db
+    const logs = await lifecycle.db
       .selectFrom('logs')
       .where('spec_id', '=', specId)
       .where('level', '=', 'warn')
@@ -121,7 +122,7 @@ describe('GitHubKnowledgeBase', () => {
     const specId = randomUUID();
 
     // 仕様書作成
-    await db
+    await lifecycle.db
       .insertInto('specs')
       .values({
         id: specId,
@@ -137,10 +138,11 @@ describe('GitHubKnowledgeBase', () => {
       .execute();
 
     // Tipsログ記録
-    await db
+    await lifecycle.db
       .insertInto('logs')
       .values({
         spec_id: specId,
+        action: 'knowledge_tip',
         level: 'info',
         message: 'Tip recorded: パフォーマンス最適化のコツ',
         metadata: JSON.stringify({
@@ -149,12 +151,12 @@ describe('GitHubKnowledgeBase', () => {
           issueNumber: 300,
           category: 'performance',
         }),
-        created_at: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
       })
       .execute();
 
     // ログ取得
-    const logs = await db
+    const logs = await lifecycle.db
       .selectFrom('logs')
       .where('spec_id', '=', specId)
       .selectAll()
@@ -172,7 +174,7 @@ describe('GitHubKnowledgeBase', () => {
     const specId = randomUUID();
 
     // 仕様書作成
-    await db
+    await lifecycle.db
       .insertInto('specs')
       .values({
         id: specId,
@@ -190,16 +192,19 @@ describe('GitHubKnowledgeBase', () => {
     // 3種類のログを記録
     const entries = [
       {
+        action: 'knowledge_progress',
         level: 'info' as const,
         message: 'Progress recorded',
         type: 'progress',
       },
       {
+        action: 'knowledge_error',
         level: 'warn' as const,
         message: 'Error solution recorded',
         type: 'error_solution',
       },
       {
+        action: 'knowledge_tip',
         level: 'info' as const,
         message: 'Tip recorded',
         type: 'tip',
@@ -207,20 +212,21 @@ describe('GitHubKnowledgeBase', () => {
     ];
 
     for (const entry of entries) {
-      await db
+      await lifecycle.db
         .insertInto('logs')
         .values({
           spec_id: specId,
+          action: entry.action,
           level: entry.level,
           message: entry.message,
           metadata: JSON.stringify({ type: entry.type }),
-          created_at: new Date().toISOString(),
+          timestamp: new Date().toISOString(),
         })
         .execute();
     }
 
     // 全ログ取得
-    const logs = await db.selectFrom('logs').where('spec_id', '=', specId).selectAll().execute();
+    const logs = await lifecycle.db.selectFrom('logs').where('spec_id', '=', specId).selectAll().execute();
 
     expect(logs).toHaveLength(3);
 

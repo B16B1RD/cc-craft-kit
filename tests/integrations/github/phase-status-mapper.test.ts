@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from '@jest/globals';
 import { mapPhaseToStatus, type Phase } from '../../../src/integrations/github/phase-status-mapper.js';
 
 describe('phase-status-mapper', () => {

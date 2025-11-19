@@ -2,10 +2,23 @@ import { Kysely, Migrator, FileMigrationProvider } from 'kysely';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// __dirname の取得（テスト環境との互換性を考慮）
+function getDirname(): string {
+  // テスト環境では process.cwd() ベースの絶対パスを使用
+  // Jest は NODE_ENV を 'test' に設定する
+  if (process.env.NODE_ENV === 'test') {
+    return path.join(process.cwd(), 'src', 'core', 'database');
+  }
+
+  // CommonJS 環境では __dirname を使用
+  if (typeof __dirname !== 'undefined') {
+    return __dirname;
+  }
+
+  // ESM 環境では import.meta.url を使用
+  return path.dirname(fileURLToPath(import.meta.url));
+}
 
 /**
  * マイグレーションプロバイダー作成
@@ -14,7 +27,7 @@ export function createMigrationProvider(): FileMigrationProvider {
   // マイグレーションフォルダのパスを現在のファイルからの相対パスで取得
   // dist/core/database/migrator.js の場合 → dist/core/database/migrations
   // src/core/database/migrator.ts の場合 → src/core/database/migrations
-  const migrationsPath = path.join(__dirname, 'migrations');
+  const migrationsPath = path.join(getDirname(), 'migrations');
 
   return new FileMigrationProvider({
     fs,

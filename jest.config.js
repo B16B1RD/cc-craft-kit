@@ -4,17 +4,15 @@ export default {
   testTimeout: 10000, // 10秒（デフォルトは5秒）
   roots: ['<rootDir>/src', '<rootDir>/tests'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
+  globals: {
+    __dirname: '/test',
+  },
   testPathIgnorePatterns: [
     '/node_modules/',
-    '/tests/integrations/github/(?!.*sub-issue-workflow).*\\.test\\.ts$',
-    '/tests/integrations/event-logging\\.test\\.ts$',
-    '/tests/mcp/tools/init-project\\.test\\.ts$',
     '/tests/e2e/project-initialization\\.test\\.ts$',
-    '/tests/core/database/connection\\.test\\.ts$',
     '/tests/core/filesystem/watcher\\.test\\.ts$',
     '/tests/core/workflow/github-integration\\.test\\.ts$',
     '/tests/integrations/sub-issue-workflow\\.test\\.ts$',
-    '/tests/mcp/tools/create-spec\\.test\\.ts$',
     '/tests/scripts/check-sync\\.test\\.ts$',
     '/tests/scripts/migrate-structure\\.test\\.ts$',
     '/tests/scripts/sync-dogfood\\.test\\.ts$',
@@ -26,7 +24,7 @@ export default {
       {
         useESM: true,
         tsconfig: {
-          module: 'ESNext',
+          module: 'ES2022',
           target: 'ES2022',
           moduleResolution: 'NodeNext',
           esModuleInterop: true,
@@ -35,16 +33,21 @@ export default {
           strict: true,
           experimentalDecorators: true,
           emitDecoratorMetadata: true,
+          isolatedModules: true,
           types: ['node', 'jest'],
+        },
+        diagnostics: {
+          ignoreCodes: [151002],
         },
       },
     ],
   },
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
+    '^@octokit/(.*)$': '<rootDir>/tests/__mocks__/@octokit/$1.js',
   },
   extensionsToTreatAsEsm: ['.ts'],
-  transformIgnorePatterns: ['node_modules/(?!(@octokit|@octokit/.*)/)'],
+  transformIgnorePatterns: ['node_modules/(?!@octokit/)'],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',

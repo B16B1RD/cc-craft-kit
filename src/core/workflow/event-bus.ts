@@ -64,6 +64,15 @@ export interface TipRecordedData {
   timestamp: string;
 }
 
+/** フェーズ変更イベント */
+export interface PhaseChangedData {
+  specId: string;
+  oldPhase: string;
+  newPhase: string;
+}
+
+export type PhaseChangedEvent = WorkflowEvent<PhaseChangedData>;
+
 /**
  * イベントバス実装
  */
@@ -163,10 +172,12 @@ async function registerHandlersAsync(bus: EventBus): Promise<void> {
     const { getDatabase } = await import('../database/connection.js');
     const { registerGitHubIntegrationHandlers } = await import('./github-integration.js');
     const { registerGitIntegrationHandlers } = await import('./git-integration.js');
+    const { registerPhaseAutomationHandlers } = await import('./phase-automation-registration.js');
 
     const db = getDatabase();
     registerGitHubIntegrationHandlers(bus, db);
     registerGitIntegrationHandlers(bus, db);
+    registerPhaseAutomationHandlers(bus, db);
     handlersRegistered = true;
   } catch (error) {
     // データベース未初期化、モジュール未存在などのエラーはスキップ

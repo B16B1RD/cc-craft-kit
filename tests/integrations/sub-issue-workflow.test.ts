@@ -3,9 +3,7 @@
  * 仕様書フェーズ移行から Sub Issue 作成までの完全なワークフローを検証
  */
 import 'reflect-metadata';
-import { Kysely } from 'kysely';
-import { Database } from '../../src/core/database/schema.js';
-import { createTestDatabase, cleanupTestDatabase, clearAllTables } from '../helpers/test-database.js';
+import { setupDatabaseLifecycle, DatabaseLifecycle } from '../helpers/db-lifecycle.js';
 import { EventBus } from '../../src/core/workflow/event-bus.js';
 import { SubIssueManager } from '../../src/integrations/github/sub-issues.js';
 import { registerGitHubIntegrationHandlers } from '../../src/core/workflow/github-integration.js';
@@ -13,6 +11,16 @@ import { randomUUID } from 'crypto';
 import { writeFile, mkdir, rm } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+
+// GitHub API クライアントのモック
+jest.mock('../../src/integrations/github/client.js');
+jest.mock('../../src/integrations/github/issues.js');
+jest.mock('../../src/integrations/github/projects.js');
+jest.mock('../../src/integrations/github/project-resolver.js');
+
+import { GitHubIssues } from '../../src/integrations/github/issues.js';
+import { GitHubProjects } from '../../src/integrations/github/projects.js';
+import { resolveProjectId } from '../../src/integrations/github/project-resolver.js';
 
 // fetch と globalThis.setTimeout のモック
 const mockFetch = jest.fn();
@@ -27,35 +35,29 @@ jest.mock('@octokit/graphql', () => ({
 }));
 
 describe('Sub Issue Workflow E2E Integration Tests', () => {
-  let db: Kysely<Database>;
+  let lifecycle: DatabaseLifecycle;
   let eventBus: EventBus;
   let testSpecsDir: string;
   let testConfigDir: string;
   let originalEnv: NodeJS.ProcessEnv;
-
-  beforeAll(async () => {
-    db = await createTestDatabase();
-    originalEnv = { ...process.env };
-  });
-
-  afterAll(async () => {
-    await cleanupTestDatabase(db);
-    process.env = originalEnv;
-  });
+  let originalCwd: () => string;
 
   beforeEach(async () => {
-    await clearAllTables(db);
+    lifecycle = await setupDatabaseLifecycle();
+    originalEnv = { ...process.env };
+
+    // テスト用ディレクトリ作成（process.cwd() モック前に作成）
+    const realCwd = process.cwd();
+    testConfigDir = join(realCwd, '.cc-craft-kit-test', `test-${Date.now()}`);
+    const ccCraftKitDir = join(testConfigDir, '.cc-craft-kit');
+    testSpecsDir = join(ccCraftKitDir, 'specs');
+    await mkdir(testSpecsDir, { recursive: true });
 
     // 新しい EventBus を作成（グローバルインスタンスを使用しない）
     eventBus = new EventBus();
 
     // GitHub 統合ハンドラーを登録
-    registerGitHubIntegrationHandlers(eventBus, db);
-
-    // テスト用ディレクトリ作成
-    testConfigDir = join(process.cwd(), '.cc-craft-kit-test', `test-${Date.now()}`);
-    testSpecsDir = join(testConfigDir, 'specs');
-    await mkdir(testSpecsDir, { recursive: true });
+    registerGitHubIntegrationHandlers(eventBus, lifecycle.db);
 
     // GitHub トークン設定
     process.env.GITHUB_TOKEN = 'ghp_test_token';
@@ -67,7 +69,11 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
         repo: 'test-repo',
       },
     };
-    await writeFile(join(testConfigDir, 'config.json'), JSON.stringify(config, null, 2));
+    await writeFile(join(ccCraftKitDir, 'config.json'), JSON.stringify(config, null, 2));
+
+    // process.cwd() をモック（ハンドラー登録後にモック）
+    originalCwd = process.cwd.bind(process);
+    process.cwd = jest.fn().mockReturnValue(testConfigDir);
 
     // グローバル fetch と setTimeout をモック
     global.fetch = mockFetch as unknown as typeof fetch;
@@ -80,17 +86,41 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
       callback();
       return 1 as unknown as NodeJS.Timeout;
     });
+
+    // GitHub API モックのデフォルト動作を設定
+    const MockGitHubIssues = GitHubIssues as jest.MockedClass<typeof GitHubIssues>;
+    const MockGitHubProjects = GitHubProjects as jest.MockedClass<typeof GitHubProjects>;
+    const mockResolveProjectId = resolveProjectId as jest.MockedFunction<typeof resolveProjectId>;
+
+    // デフォルトでは何もしない（各テストで必要に応じてモックを設定）
+    MockGitHubIssues.prototype.create = jest.fn().mockResolvedValue({ number: 1, html_url: 'https://github.com/test/test/issues/1', node_id: 'test_node' });
+    MockGitHubIssues.prototype.update = jest.fn().mockResolvedValue({});
+    MockGitHubProjects.prototype.get = jest.fn().mockResolvedValue({ id: 'test_project', number: 1 });
+    MockGitHubProjects.prototype.getIssueNodeId = jest.fn().mockResolvedValue('test_issue_node');
+    MockGitHubProjects.prototype.addItem = jest.fn().mockResolvedValue('test_item_id');
+    mockResolveProjectId.mockResolvedValue(null);
   });
 
   afterEach(async () => {
     jest.clearAllMocks();
+    jest.restoreAllMocks(); // process.cwd モックをリストア
+
+    // process.cwd を復元
+    if (originalCwd) {
+      process.cwd = originalCwd;
+    }
+
+    // データベースクリーンアップ
+    await lifecycle.cleanup();
+    await lifecycle.close();
 
     // テスト用ディレクトリクリーンアップ
     if (existsSync(testConfigDir)) {
       await rm(testConfigDir, { recursive: true, force: true });
     }
 
-    delete process.env.GITHUB_TOKEN;
+    // 環境変数を復元
+    process.env = originalEnv;
   });
 
   describe('Happy Path: Spec with tasks moves through phases', () => {
@@ -98,7 +128,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
       const specId = randomUUID();
 
       // 1. 仕様書作成
-      await db
+      await lifecycle.db
         .insertInto('specs')
         .values({
           id: specId,
@@ -293,7 +323,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
       const originalCwd = process.cwd();
       jest.spyOn(process, 'cwd').mockReturnValue(testConfigDir.replace('/.cc-craft-kit-test/' + testConfigDir.split('/').pop()!, ''));
 
-      await db
+      await lifecycle.db
         .updateTable('specs')
         .set({ phase: 'tasks', updated_at: new Date().toISOString() })
         .where('id', '=', specId)
@@ -310,7 +340,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
       (process.cwd as jest.Mock).mockReturnValue(originalCwd);
 
       // 5. 検証: github_sync テーブルに Sub Issue レコードが作成されているか
-      const syncRecords = await db
+      const syncRecords = await lifecycle.db
         .selectFrom('github_sync')
         .selectAll()
         .where('entity_type', '=', 'sub_issue')
@@ -337,7 +367,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
       const taskId = randomUUID();
 
       // 1. 仕様書作成
-      await db
+      await lifecycle.db
         .insertInto('specs')
         .values({
           id: specId,
@@ -353,7 +383,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
         .execute();
 
       // 2. タスク作成
-      await db
+      await lifecycle.db
         .insertInto('tasks')
         .values({
           id: taskId,
@@ -371,7 +401,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
         .execute();
 
       // 3. github_sync に Sub Issue レコードを作成
-      await db
+      await lifecycle.db
         .insertInto('github_sync')
         .values({
           id: randomUUID(),
@@ -401,7 +431,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
       });
 
       // 5. task.completed イベントを発火
-      await db
+      await lifecycle.db
         .updateTable('tasks')
         .set({ status: 'done', updated_at: new Date().toISOString() })
         .where('id', '=', taskId)
@@ -425,7 +455,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
       );
 
       // 7. 検証: last_synced_at が更新されたか
-      const syncRecord = await db
+      const syncRecord = await lifecycle.db
         .selectFrom('github_sync')
         .selectAll()
         .where('entity_id', '=', taskId)
@@ -439,7 +469,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
       const specId = randomUUID();
 
       // 1. 仕様書作成（requirements）
-      await db
+      await lifecycle.db
         .insertInto('specs')
         .values({
           id: specId,
@@ -474,7 +504,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
         text: async () => '',
       });
 
-      await db
+      await lifecycle.db
         .updateTable('specs')
         .set({ phase: 'design', updated_at: new Date().toISOString() })
         .where('id', '=', specId)
@@ -577,7 +607,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
       const originalCwd = process.cwd();
       jest.spyOn(process, 'cwd').mockReturnValue(testConfigDir.replace('/.cc-craft-kit-test/' + testConfigDir.split('/').pop()!, ''));
 
-      await db
+      await lifecycle.db
         .updateTable('specs')
         .set({ phase: 'tasks', updated_at: new Date().toISOString() })
         .where('id', '=', specId)
@@ -593,7 +623,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
       (process.cwd as jest.Mock).mockReturnValue(originalCwd);
 
       // 4. 検証: Sub Issue が作成されたか
-      const syncRecords = await db
+      const syncRecords = await lifecycle.db
         .selectFrom('github_sync')
         .selectAll()
         .where('entity_type', '=', 'sub_issue')
@@ -610,7 +640,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
       const specId = randomUUID();
 
       // 1. 仕様書作成
-      await db
+      await lifecycle.db
         .insertInto('specs')
         .values({
           id: specId,
@@ -657,7 +687,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
       const originalCwd = process.cwd();
       jest.spyOn(process, 'cwd').mockReturnValue(testConfigDir.replace('/.cc-craft-kit-test/' + testConfigDir.split('/').pop()!, ''));
 
-      await db
+      await lifecycle.db
         .updateTable('specs')
         .set({ phase: 'tasks', updated_at: new Date().toISOString() })
         .where('id', '=', specId)
@@ -673,7 +703,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
       (process.cwd as jest.Mock).mockReturnValue(originalCwd);
 
       // 4. 検証: Sub Issue が作成されていないか
-      const syncRecords = await db
+      const syncRecords = await lifecycle.db
         .selectFrom('github_sync')
         .selectAll()
         .where('entity_type', '=', 'sub_issue')
@@ -692,7 +722,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
       const specId = randomUUID();
 
       // 1. 仕様書作成
-      await db
+      await lifecycle.db
         .insertInto('specs')
         .values({
           id: specId,
@@ -750,7 +780,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
       const originalCwd = process.cwd();
       jest.spyOn(process, 'cwd').mockReturnValue(testConfigDir.replace('/.cc-craft-kit-test/' + testConfigDir.split('/').pop()!, ''));
 
-      await db
+      await lifecycle.db
         .updateTable('specs')
         .set({ phase: 'tasks', updated_at: new Date().toISOString() })
         .where('id', '=', specId)
@@ -769,7 +799,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
       (process.cwd as jest.Mock).mockReturnValue(originalCwd);
 
       // 4. 検証: Sub Issue は作成されていない
-      const syncRecords = await db
+      const syncRecords = await lifecycle.db
         .selectFrom('github_sync')
         .selectAll()
         .where('entity_type', '=', 'sub_issue')
@@ -783,7 +813,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
       const taskId = randomUUID();
 
       // 1. 仕様書作成
-      await db
+      await lifecycle.db
         .insertInto('specs')
         .values({
           id: specId,
@@ -799,7 +829,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
         .execute();
 
       // 2. タスク作成（github_sync レコードなし）
-      await db
+      await lifecycle.db
         .insertInto('tasks')
         .values({
           id: taskId,
@@ -817,7 +847,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
         .execute();
 
       // 3. task.completed イベントを発火（エラーにならない）
-      await db
+      await lifecycle.db
         .updateTable('tasks')
         .set({ status: 'done', updated_at: new Date().toISOString() })
         .where('id', '=', taskId)
@@ -837,7 +867,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
   describe('Database State Verification', () => {
     it('github_sync テーブルに正しい entity_type="sub_issue" レコードが記録される', async () => {
       // 1. SubIssueManager を直接使用して Sub Issue を作成
-      const subIssueManager = new SubIssueManager(db);
+      const subIssueManager = new SubIssueManager(lifecycle.db);
 
       const taskList = [
         { id: randomUUID(), title: 'Task A', description: 'Description A' },
@@ -908,7 +938,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
       });
 
       // 2. 検証: github_sync レコード
-      const syncRecords = await db
+      const syncRecords = await lifecycle.db
         .selectFrom('github_sync')
         .selectAll()
         .where('entity_type', '=', 'sub_issue')
