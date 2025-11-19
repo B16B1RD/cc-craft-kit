@@ -15,6 +15,7 @@ import {
 import {
   createProjectNotInitializedError,
   createGitHubNotConfiguredError,
+  handleCLIError,
 } from '../utils/error-handler.js';
 import { validateGitHubRepo } from '../utils/validation.js';
 
@@ -128,8 +129,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  initGitHub(owner, repo).catch((error) => {
-    console.error('Error:', error.message);
-    process.exit(1);
-  });
+  initGitHub(owner, repo).catch((error) => handleCLIError(error));
 }

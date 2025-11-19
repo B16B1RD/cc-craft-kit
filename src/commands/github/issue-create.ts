@@ -13,6 +13,7 @@ import {
   createProjectNotInitializedError,
   createSpecNotFoundError,
   createGitHubNotConfiguredError,
+  handleCLIError,
 } from '../utils/error-handler.js';
 import { validateSpecId } from '../utils/validation.js';
 
@@ -149,6 +150,7 @@ export async function createGitHubIssue(
         entity_type: 'spec',
         entity_id: spec.id,
         github_id: issue.number.toString(),
+        github_number: issue.number,
         last_synced_at: new Date().toISOString(),
         sync_status: 'success',
       })
@@ -186,8 +188,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  createGitHubIssue(specId).catch((error) => {
-    console.error('Error:', error.message);
-    process.exit(1);
-  });
+  createGitHubIssue(specId).catch((error) => handleCLIError(error));
 }

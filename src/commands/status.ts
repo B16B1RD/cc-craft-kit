@@ -14,7 +14,11 @@ import {
   formatInfo,
   OutputOptions,
 } from './utils/output.js';
-import { createProjectNotInitializedError } from './utils/error-handler.js';
+import {
+  createProjectNotInitializedError,
+  exitGracefully,
+  handleCLIError,
+} from './utils/error-handler.js';
 import { resolveProjectId } from '../integrations/github/project-resolver.js';
 
 /**
@@ -277,8 +281,7 @@ export async function showStatus(
 
 // CLI エントリポイント
 if (import.meta.url === `file://${process.argv[1]}`) {
-  showStatus().catch((error) => {
-    console.error('Error:', error.message);
-    process.exit(1);
-  });
+  showStatus()
+    .then(() => exitGracefully(0))
+    .catch((error) => handleCLIError(error));
 }

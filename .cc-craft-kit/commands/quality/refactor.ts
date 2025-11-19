@@ -5,6 +5,8 @@
  * 実際のリファクタリング処理は Claude Code がスラッシュコマンドの指示に従って実行します。
  */
 
+import { handleCLIError } from '../utils/error-handler.js';
+
 export async function refactor(filePattern?: string): Promise<void> {
   console.log('🔧 Refactoring Started');
   console.log('');
@@ -32,8 +34,5 @@ export async function refactor(filePattern?: string): Promise<void> {
 // CLI エントリポイント
 if (import.meta.url === `file://${process.argv[1]}`) {
   const filePattern = process.argv[2];
-  refactor(filePattern).catch((error) => {
-    console.error('Error:', error.message);
-    process.exit(1);
-  });
+  refactor(filePattern).catch((error) => handleCLIError(error));
 }

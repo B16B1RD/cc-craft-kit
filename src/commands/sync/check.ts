@@ -17,7 +17,11 @@ import {
   formatError,
   OutputOptions,
 } from '../utils/output.js';
-import { createProjectNotInitializedError } from '../utils/error-handler.js';
+import {
+  createProjectNotInitializedError,
+  exitGracefully,
+  handleCLIError,
+} from '../utils/error-handler.js';
 
 /**
  * 整合性チェック実行
@@ -200,9 +204,6 @@ export async function checkSync(
  */
 if (import.meta.url === `file://${process.argv[1]}`) {
   checkSync()
-    .then(() => process.exit(0))
-    .catch((error) => {
-      console.error(error);
-      process.exit(1);
-    });
+    .then(() => exitGracefully(0))
+    .catch((error) => handleCLIError(error));
 }

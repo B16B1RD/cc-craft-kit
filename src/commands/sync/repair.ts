@@ -16,7 +16,11 @@ import {
   formatInfo,
   OutputOptions,
 } from '../utils/output.js';
-import { createProjectNotInitializedError } from '../utils/error-handler.js';
+import {
+  createProjectNotInitializedError,
+  exitGracefully,
+  handleCLIError,
+} from '../utils/error-handler.js';
 
 /**
  * 同期修復実行
@@ -173,9 +177,6 @@ export async function repairSync(
  */
 if (import.meta.url === `file://${process.argv[1]}`) {
   repairSync()
-    .then(() => process.exit(0))
-    .catch((error) => {
-      console.error(error);
-      process.exit(1);
-    });
+    .then(() => exitGracefully(0))
+    .catch((error) => handleCLIError(error));
 }

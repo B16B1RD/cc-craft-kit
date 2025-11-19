@@ -9,11 +9,7 @@ import { getDatabase } from '../../core/database/connection.js';
 import { GitHubClient } from '../../integrations/github/client.js';
 import { GitHubIssues } from '../../integrations/github/issues.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
-import {
-  createProjectNotInitializedError,
-  createSpecNotFoundError,
-  createGitHubNotConfiguredError,
-} from '../utils/error-handler.js';
+import { createProjectNotInitializedError, createSpecNotFoundError, createGitHubNotConfiguredError, handleCLIError } from '../utils/error-handler.js';
 import { validateSpecId } from '../utils/validation.js';
 
 /**
@@ -149,6 +145,7 @@ export async function createGitHubIssue(
         entity_type: 'spec',
         entity_id: spec.id,
         github_id: issue.number.toString(),
+        github_number: issue.number,
         last_synced_at: new Date().toISOString(),
         sync_status: 'success',
       })
@@ -186,8 +183,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  createGitHubIssue(specId).catch((error) => {
-    console.error('Error:', error.message);
-    process.exit(1);
-  });
+  createGitHubIssue(specId).catch((error) => handleCLIError(error));
 }

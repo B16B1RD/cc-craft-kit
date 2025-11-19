@@ -3,6 +3,7 @@
  */
 
 import { recordErrorSolution } from './record.js';
+import { handleCLIError } from '../utils/error-handler.js';
 
 // CLI エントリポイント
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -15,10 +16,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  recordErrorSolution(specId, error, solution).catch((err) => {
-    console.error('Error:', err.message);
-    process.exit(1);
-  });
+  recordErrorSolution(specId, error, solution).catch(handleCLIError);
 }
 
 export { recordErrorSolution };

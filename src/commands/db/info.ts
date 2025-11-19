@@ -7,7 +7,7 @@ import { existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDatabase } from '../../core/database/connection.js';
 import { formatHeading, formatKeyValue, formatTable, OutputOptions } from '../utils/output.js';
-import { createProjectNotInitializedError } from '../utils/error-handler.js';
+import { createProjectNotInitializedError, handleCLIError } from '../utils/error-handler.js';
 
 /**
  * データベース診断情報を表示
@@ -125,8 +125,5 @@ export async function showDatabaseInfo(
 
 // CLI エントリポイント
 if (import.meta.url === `file://${process.argv[1]}`) {
-  showDatabaseInfo().catch((error) => {
-    console.error('Error:', error.message);
-    process.exit(1);
-  });
+  showDatabaseInfo().catch((error) => handleCLIError(error));
 }

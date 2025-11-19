@@ -5,6 +5,8 @@
  * 実際のレビュー処理は Claude Code がスラッシュコマンドの指示に従って実行します。
  */
 
+import { handleCLIError } from '../utils/error-handler.js';
+
 export async function codeReview(filePattern?: string): Promise<void> {
   console.log('🔍 Code Review Started');
   console.log('');
@@ -33,8 +35,5 @@ export async function codeReview(filePattern?: string): Promise<void> {
 // CLI エントリポイント
 if (import.meta.url === `file://${process.argv[1]}`) {
   const filePattern = process.argv[2];
-  codeReview(filePattern).catch((error) => {
-    console.error('Error:', error.message);
-    process.exit(1);
-  });
+  codeReview(filePattern).catch((error) => handleCLIError(error));
 }

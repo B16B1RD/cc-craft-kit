@@ -11,11 +11,9 @@ import { GitHubIssues } from '../../integrations/github/issues.js';
 import { GitHubProjects } from '../../integrations/github/projects.js';
 import { GitHubSyncService } from '../../integrations/github/sync.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
-import {
-  createProjectNotInitializedError,
+import { createProjectNotInitializedError,
   createSpecNotFoundError,
-  createGitHubNotConfiguredError,
-} from '../utils/error-handler.js';
+  createGitHubNotConfiguredError, handleCLIError } from '../utils/error-handler.js';
 import { validateSpecId } from '../utils/validation.js';
 
 /**
@@ -234,15 +232,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
 
   if (direction === 'to-github') {
-    syncToGitHub(specId).catch((error) => {
-      console.error('Error:', error.message);
-      process.exit(1);
-    });
+    syncToGitHub(specId).catch((error) => handleCLIError(error));
   } else if (direction === 'from-github') {
-    syncFromGitHub(specId).catch((error) => {
-      console.error('Error:', error.message);
-      process.exit(1);
-    });
+    syncFromGitHub(specId).catch((error) => handleCLIError(error));
   } else {
     console.error('Error: direction must be "to-github" or "from-github"');
     process.exit(1);

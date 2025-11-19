@@ -5,6 +5,8 @@
  * 実際の検証処理は Claude Code がスラッシュコマンドの指示に従って実行します。
  */
 
+import { handleCLIError } from '../utils/error-handler.js';
+
 export async function schemaValidate(): Promise<void> {
   console.log('🗄️  Database Schema Validation Started');
   console.log('');
@@ -25,8 +27,5 @@ export async function schemaValidate(): Promise<void> {
 
 // CLI エントリポイント
 if (import.meta.url === `file://${process.argv[1]}`) {
-  schemaValidate().catch((error) => {
-    console.error('Error:', error.message);
-    process.exit(1);
-  });
+  schemaValidate().catch((error) => handleCLIError(error));
 }

@@ -5,6 +5,8 @@
  * 実際のチェック処理は Claude Code がスラッシュコマンドの指示に従って実行します。
  */
 
+import { handleCLIError } from '../utils/error-handler.js';
+
 export async function lintCheck(): Promise<void> {
   console.log('✨ Lint Check Started');
   console.log('');
@@ -26,8 +28,5 @@ export async function lintCheck(): Promise<void> {
 
 // CLI エントリポイント
 if (import.meta.url === `file://${process.argv[1]}`) {
-  lintCheck().catch((error) => {
-    console.error('Error:', error.message);
-    process.exit(1);
-  });
+  lintCheck().catch((error) => handleCLIError(error));
 }

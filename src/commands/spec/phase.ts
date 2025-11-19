@@ -11,6 +11,7 @@ import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../uti
 import {
   createProjectNotInitializedError,
   createSpecNotFoundError,
+  handleCLIError,
 } from '../utils/error-handler.js';
 import { validateSpecId, validatePhase, Phase } from '../utils/validation.js';
 import { ensureGitHubIssue } from '../../integrations/github/ensure-issue.js';
@@ -160,8 +161,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  updateSpecPhase(specId, phase).catch((error) => {
-    console.error('Error:', error.message);
-    process.exit(1);
-  });
+  updateSpecPhase(specId, phase).catch((error) => handleCLIError(error));
 }

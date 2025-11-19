@@ -151,6 +151,7 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
             entity_type: 'spec',
             entity_id: spec.id,
             github_id: issue.number.toString(),
+            github_number: issue.number,
             last_synced_at: new Date().toISOString(),
             sync_status: 'success',
           })

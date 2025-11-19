@@ -3,6 +3,7 @@
  */
 
 import { recordProgress } from './record.js';
+import { handleCLIError } from '../utils/error-handler.js';
 
 // CLI エントリポイント
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -14,10 +15,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  recordProgress(specId, message).catch((error) => {
-    console.error('Error:', error.message);
-    process.exit(1);
-  });
+  recordProgress(specId, message).catch((error) => handleCLIError(error));
 }
 
 export { recordProgress };

@@ -9,7 +9,11 @@ import { join } from 'node:path';
 import { getDatabase } from '../../core/database/connection.js';
 import { getEventBusAsync } from '../../core/workflow/event-bus.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
-import { createProjectNotInitializedError, createValidationError } from '../utils/error-handler.js';
+import {
+  createProjectNotInitializedError,
+  createValidationError,
+  handleCLIError,
+} from '../utils/error-handler.js';
 import { validateRequired } from '../utils/validation.js';
 
 /**
@@ -182,8 +186,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  createSpec(name, description).catch((error) => {
-    console.error('Error:', error.message);
-    process.exit(1);
-  });
+  createSpec(name, description).catch((error) => handleCLIError(error));
 }

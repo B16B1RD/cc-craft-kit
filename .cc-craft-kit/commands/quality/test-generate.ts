@@ -5,6 +5,8 @@
  * 実際のテスト生成処理は Claude Code がスラッシュコマンドの指示に従って実行します。
  */
 
+import { handleCLIError } from '../utils/error-handler.js';
+
 export async function testGenerate(filePattern: string): Promise<void> {
   if (!filePattern) {
     console.error('Error: File pattern is required');
@@ -32,8 +34,5 @@ export async function testGenerate(filePattern: string): Promise<void> {
 // CLI エントリポイント
 if (import.meta.url === `file://${process.argv[1]}`) {
   const filePattern = process.argv[2];
-  testGenerate(filePattern).catch((error) => {
-    console.error('Error:', error.message);
-    process.exit(1);
-  });
+  testGenerate(filePattern).catch((error) => handleCLIError(error));
 }

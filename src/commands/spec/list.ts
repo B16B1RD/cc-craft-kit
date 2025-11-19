@@ -6,7 +6,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDatabase } from '../../core/database/connection.js';
 import { formatHeading, formatTable, formatKeyValue, OutputOptions } from '../utils/output.js';
-import { createProjectNotInitializedError } from '../utils/error-handler.js';
+import { createProjectNotInitializedError, handleCLIError } from '../utils/error-handler.js';
 import { validatePhase, VALID_PHASES } from '../utils/validation.js';
 
 /**
@@ -103,8 +103,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const phase = process.argv[2];
   const limit = process.argv[3] ? parseInt(process.argv[3], 10) : undefined;
 
-  listSpecs(phase, limit).catch((error) => {
-    console.error('Error:', error.message);
-    process.exit(1);
-  });
+  listSpecs(phase, limit).catch((error) => handleCLIError(error));
 }

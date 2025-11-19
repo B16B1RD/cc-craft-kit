@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { getDatabase } from '../core/database/connection.js';
 import { migrateToLatest } from '../core/database/migrator.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from './utils/output.js';
-import { createProjectAlreadyInitializedError } from './utils/error-handler.js';
+import { createProjectAlreadyInitializedError, handleCLIError } from './utils/error-handler.js';
 
 /**
  * プロジェクト設定
@@ -86,8 +86,5 @@ export async function initProject(
 if (import.meta.url === `file://${process.argv[1]}`) {
   const projectName = process.argv[2];
 
-  initProject(projectName).catch((error) => {
-    console.error('Error:', error.message);
-    process.exit(1);
-  });
+  initProject(projectName).catch((error) => handleCLIError(error));
 }

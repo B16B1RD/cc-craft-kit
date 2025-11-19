@@ -9,6 +9,7 @@ import { formatHeading, formatKeyValue, formatMarkdown } from '../utils/output.j
 import {
   createProjectNotInitializedError,
   createSpecNotFoundError,
+  handleCLIError,
 } from '../utils/error-handler.js';
 import { validateSpecId } from '../utils/validation.js';
 import { ensureGitHubIssue } from '../../integrations/github/ensure-issue.js';
@@ -102,8 +103,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  getSpec(specId).catch((error) => {
-    console.error('Error:', error.message);
-    process.exit(1);
-  });
+  getSpec(specId).catch((error) => handleCLIError(error));
 }

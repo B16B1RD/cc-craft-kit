@@ -7,10 +7,7 @@ import { join } from 'node:path';
 import { getDatabase } from '../../core/database/connection.js';
 import { getEventBusAsync } from '../../core/workflow/event-bus.js';
 import { formatSuccess, formatHeading, formatKeyValue } from '../utils/output.js';
-import {
-  createProjectNotInitializedError,
-  createSpecNotFoundError,
-} from '../utils/error-handler.js';
+import { createProjectNotInitializedError, createSpecNotFoundError, handleCLIError } from '../utils/error-handler.js';
 import { validateSpecId } from '../utils/validation.js';
 
 /**
@@ -87,8 +84,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  updateSpec(specId).catch((error) => {
-    console.error('Error:', error.message);
-    process.exit(1);
-  });
+  updateSpec(specId).catch((error) => handleCLIError(error));
 }

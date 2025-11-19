@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { getDatabase } from '../core/database/connection.js';
 import { SpecFileWatcher } from '../core/filesystem/watcher.js';
 import { formatHeading, formatInfo, formatSuccess, formatError } from './utils/output.js';
-import { createProjectNotInitializedError } from './utils/error-handler.js';
+import { createProjectNotInitializedError, handleCLIError } from './utils/error-handler.js';
 
 /**
  * 仕様書ファイル監視を開始
@@ -107,8 +107,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       | 'warn'
       | 'error') || 'info';
 
-  watchSpecFiles({ color: true, logLevel }).catch((error) => {
-    console.error('Error:', error.message);
-    process.exit(1);
-  });
+  watchSpecFiles({ color: true, logLevel }).catch((error) => handleCLIError(error));
 }
