@@ -4,6 +4,10 @@
  * 100 回連続で仕様書作成・削除を実行し、
  * データベース不整合が発生しないことを確認します。
  */
+
+// E2E テストであることを示すフラグ（グローバルセットアップをスキップ）
+process.env.E2E_TEST = 'true';
+
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import * as fs from 'fs/promises';
 import * as path from 'path';

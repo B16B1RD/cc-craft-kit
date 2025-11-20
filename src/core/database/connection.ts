@@ -84,6 +84,11 @@ async function runIntegrityCheck(db: Kysely<DatabaseSchema>): Promise<void> {
 
   integrityCheckDone = true;
 
+  // E2E テストではスキップ（独自のデータベースセットアップを行うため）
+  if (process.env.E2E_TEST === 'true') {
+    return;
+  }
+
   try {
     const specsDir = path.join(process.cwd(), '.cc-craft-kit', 'specs');
 
