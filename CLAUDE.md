@@ -625,6 +625,93 @@ eventBus.on('spec:created', async (spec) => {
 1. `.cc-craft-kit/cc-craft-kit.db`が破損している可能性 → 削除して`npm run db:migrate`で再初期化
 2. マイグレーションの順序エラー → マイグレーションファイルの連番を確認
 
+### データベース不整合エラー
+
+**症状:** Claude Code 起動時に以下の警告が表示される。
+
+```text
+⚠️  Database integrity warnings:
+  - Found X invalid spec file(s)
+  - Found X database record(s) with invalid spec file
+```
+
+**原因:**
+
+データベースレコードと仕様書ファイルのメタデータが不整合になっています。主な原因は以下の 3 つです。
+
+1. **日時形式の不一致**:
+   - 仕様書ファイルの日時が `YYYY/MM/DD HH:MM:SS` 形式ではない
+   - 例: `2025/11/20 7:42:46` (時刻の 0 埋めなし) → 不正
+   - 正: `2025/11/20 07:42:46` (時刻が 2 桁で 0 埋めされている)
+
+2. **ファイル書き込みの未完了**:
+   - Claude Code 異常終了時に、OS バッファに残ったデータがディスクに書き込まれていない
+   - `fsync()` 未実装により、バッファフラッシュが保証されていない
+
+3. **トランザクション不整合**:
+   - 仕様書作成中にエラーが発生し、DB レコードは作成されたがファイルが未作成
+   - ロールバック処理が未実装のため、不整合が残る
+
+**解決策:**
+
+```bash
+# 自動修復スクリプトを実行
+npx tsx .cc-craft-kit/scripts/repair-database.ts
+```
+
+このスクリプトは以下を自動実行します。
+
+1. **整合性チェック実行**:
+   - データベースレコードと仕様書ファイルを比較
+   - 不整合の種類と件数を表示
+
+2. **メタデータ自動修正**:
+   - 日時形式の不一致を自動修正 (時刻の 0 埋めなど)
+   - フィールド名の修正 (例: `仕様書ID` → `仕様書 ID`)
+
+3. **データベース同期**:
+   - ファイルから正しいメタデータを読み取り、DB レコードを更新
+   - 不足しているレコードを作成、孤立したレコードを削除
+
+4. **最終検証**:
+   - 修復後の整合性を再チェック
+   - エラー0 件を確認
+
+**修復例:**
+
+```bash
+$ npx tsx .cc-craft-kit/scripts/repair-database.ts
+
+# Before:
+⚠️  Found 2 invalid spec file(s)
+⚠️  Found 2 database record(s) with invalid spec file
+
+# 自動修正実行...
+
+# After:
+✅ VALID (61 specs, 0 errors)
+```
+
+**予防策:**
+
+cc-craft-kit v0.1.1 以降では、以下の修正により不整合が発生しにくくなっています。
+
+1. **日時形式の統一**:
+   - `toLocaleString()` (環境依存) → `YYYY/MM/DD HH:MM:SS` 固定形式
+   - `src/core/utils/date-format.ts` で統一管理
+
+2. **fsync() 実装**:
+   - ファイル書き込み後に `fsyncFileAndDirectory()` を実行
+   - OS バッファを強制フラッシュし、異常終了時のデータ損失を防止
+
+3. **トランザクション + ロールバック**:
+   - try-catch でエラーハンドリング
+   - エラー時は DB レコードとファイルを自動削除
+
+4. **E2E テストによる検証**:
+   - 100 回連続実行で不整合 0 件を達成
+   - `tests/e2e/database-integrity.test.ts` で継続的に検証
+
 ### GitHub API エラー
 
 - 401 Unauthorized が出た場合、トークンが無効。`.env`の GITHUB_TOKEN を再設定すること

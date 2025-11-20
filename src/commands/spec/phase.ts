@@ -15,6 +15,8 @@ import {
 } from '../utils/error-handler.js';
 import { validateSpecId, validatePhase, Phase } from '../utils/validation.js';
 import { ensureGitHubIssue } from '../../integrations/github/ensure-issue.js';
+import { getCurrentDateTimeForSpec } from '../../core/utils/date-format.js';
+import { fsyncFileAndDirectory } from '../../core/utils/fsync.js';
 
 /**
  * 仕様書フェーズ更新
@@ -66,42 +68,68 @@ export async function updateSpecPhase(
   // データベース更新
   console.log(formatInfo('Updating database...', options.color));
   const now = new Date().toISOString();
+  const formattedDateTime = getCurrentDateTimeForSpec();
 
-  await db
-    .updateTable('specs')
-    .set({
-      phase: validatedPhase,
-      updated_at: now,
-    })
-    .where('id', '=', spec.id)
-    .execute();
+  const oldPhase = spec.phase;
 
-  // Markdownファイル更新（フェーズ情報を更新）
-  const specPath = join(ccCraftKitDir, 'specs', `${spec.id}.md`);
-  if (existsSync(specPath)) {
-    console.log(formatInfo('Updating spec file...', options.color));
-    let content = readFileSync(specPath, 'utf-8');
+  try {
+    // 1. データベース更新
+    await db
+      .updateTable('specs')
+      .set({
+        phase: validatedPhase,
+        updated_at: now,
+      })
+      .where('id', '=', spec.id)
+      .execute();
 
-    // フェーズ行を更新
-    content = content.replace(/\*\*フェーズ:\*\* .+/, `**フェーズ:** ${validatedPhase}`);
+    // 2. Markdownファイル更新 + fsync()
+    const specPath = join(ccCraftKitDir, 'specs', `${spec.id}.md`);
+    if (existsSync(specPath)) {
+      console.log(formatInfo('Updating spec file...', options.color));
+      let content = readFileSync(specPath, 'utf-8');
 
-    // 更新日時を更新
-    content = content.replace(
-      /\*\*更新日時:\*\* .+/,
-      `**更新日時:** ${new Date(now).toLocaleString()}`
+      // フェーズ行を更新
+      content = content.replace(/\*\*フェーズ:\*\* .+/, `**フェーズ:** ${validatedPhase}`);
+
+      // 更新日時を更新（日時形式を統一）
+      content = content.replace(/\*\*更新日時:\*\* .+/, `**更新日時:** ${formattedDateTime}`);
+
+      writeFileSync(specPath, content, 'utf-8');
+
+      // バッファフラッシュ（ファイル + ディレクトリ）
+      fsyncFileAndDirectory(specPath);
+    }
+
+    // 3. イベント発火（非同期ハンドラー登録を待機）
+    const eventBus = await getEventBusAsync();
+    await eventBus.emit(
+      eventBus.createEvent('spec.phase_changed', spec.id, {
+        oldPhase,
+        newPhase: validatedPhase,
+      })
     );
+  } catch (error) {
+    // エラー時のロールバック処理
+    console.error('');
+    console.error(formatInfo('Rolling back due to error...', options.color));
 
-    writeFileSync(specPath, content, 'utf-8');
+    // DBレコードを元のフェーズに戻す
+    try {
+      await db
+        .updateTable('specs')
+        .set({
+          phase: oldPhase,
+        })
+        .where('id', '=', spec.id)
+        .execute();
+    } catch (dbError) {
+      console.error('Failed to rollback database record:', dbError);
+    }
+
+    // エラーを再スロー
+    throw error;
   }
-
-  // イベント発火（GitHub統合のため）
-  const eventBus = await getEventBusAsync();
-  await eventBus.emit(
-    eventBus.createEvent('spec.phase_changed', spec.id, {
-      oldPhase: spec.phase,
-      newPhase: validatedPhase,
-    })
-  );
 
   console.log('');
   console.log(formatSuccess('Phase updated successfully!', options.color));
