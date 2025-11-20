@@ -77,7 +77,7 @@ export function createSpecBranch(specId: string, customBranchName?: string): Bra
       created: false,
       branchName: null,
       originalBranch: null,
-      reason: 'Git リポジトリが初期化されていません',
+      reason: 'Git リポジトリが初期化されていません。git init を実行してください。',
     };
   }
 
@@ -97,12 +97,21 @@ export function createSpecBranch(specId: string, customBranchName?: string): Bra
     .map((b) => b.trim());
 
   if (protectedBranches.includes(originalBranch)) {
-    return {
-      created: false,
-      branchName: null,
-      originalBranch,
-      reason: `保護ブランチ ${originalBranch} ではブランチを作成しません`,
-    };
+    // 保護ブランチの場合、feature/ プレフィックス付きブランチを自動作成
+    if (customBranchName) {
+      // カスタムブランチ名が指定された場合
+      const sanitized = customBranchName
+        .toLowerCase()
+        .replace(/[^a-z0-9-_]/g, '-') // Git互換文字のみ
+        .replace(/-+/g, '-') // 連続ハイフンを統合
+        .replace(/^-|-$/g, ''); // 先頭・末尾のハイフンを削除
+
+      branchName = `feature/spec-${shortSpecId}-${sanitized}`;
+    } else {
+      // カスタムブランチ名が未指定の場合
+      branchName = `feature/spec-${shortSpecId}`;
+    }
+    // ブランチ作成処理へ進む（return しない）
   }
 
   // 4. ブランチ作成
@@ -110,7 +119,7 @@ export function createSpecBranch(specId: string, customBranchName?: string): Bra
     execSync(`git checkout -b ${branchName}`, { stdio: 'pipe' });
   } catch (error) {
     throw new Error(
-      `ブランチ作成コマンドの実行に失敗しました: ${error instanceof Error ? error.message : String(error)}`
+      `ブランチ作成に失敗しました。既に同名のブランチが存在する可能性があります: ${error instanceof Error ? error.message : String(error)}`
     );
   }
 
