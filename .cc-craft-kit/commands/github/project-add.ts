@@ -165,6 +165,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  addSpecToProject(specId, projectId).catch((error) => handleCLIError(error))
+  addSpecToProject(specId, projectId)
+    .catch((error) => handleCLIError(error))
     .finally(() => closeDatabase());
 }

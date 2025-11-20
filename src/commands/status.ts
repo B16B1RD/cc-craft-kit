@@ -6,6 +6,7 @@ import '../core/config/env.js';
 import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDatabase, closeDatabase } from '../core/database/connection.js';
+import { getSpecsWithGitHubInfo } from '../core/database/helpers.js';
 import { createBackup } from '../core/database/backup.js';
 import {
   formatHeading,
@@ -43,15 +44,9 @@ interface ProjectConfig {
 }
 
 /**
- * 仕様書レコード
+ * 仕様書レコード（ヘルパー関数の SpecWithGitHub を使用）
  */
-interface Spec {
-  id: string;
-  name: string;
-  phase: string;
-  github_issue_id: number | null;
-  created_at: Date;
-}
+import type { SpecWithGitHub } from '../core/database/helpers.js';
 
 /**
  * プロジェクト状態表示
@@ -147,12 +142,11 @@ export async function showStatus(
   // データベース取得
   const db = getDatabase();
 
-  // フェーズ別仕様書集計
-  const specs = await db
-    .selectFrom('specs')
-    .select(['id', 'name', 'phase', 'github_issue_id', 'created_at'])
-    .orderBy('created_at', 'desc')
-    .execute();
+  // フェーズ別仕様書集計（github_sync との JOIN を使用）
+  const specs = await getSpecsWithGitHubInfo(db, {
+    orderBy: 'created_at',
+    orderDirection: 'desc',
+  });
 
   const specsByPhase = specs.reduce(
     (acc, spec) => {
@@ -162,7 +156,7 @@ export async function showStatus(
       acc[spec.phase].push(spec);
       return acc;
     },
-    {} as Record<string, Spec[]>
+    {} as Record<string, SpecWithGitHub[]>
   );
 
   // 仕様書一覧
@@ -182,13 +176,10 @@ export async function showStatus(
   console.log('');
 
   // GitHub Issue 未作成の仕様書を集計
-  // specs.github_issue_id が NULL の仕様書を検索（completed フェーズを除外）
-  const specsWithoutIssue = await db
-    .selectFrom('specs')
-    .where('github_issue_id', 'is', null)
-    .where('phase', '!=', 'completed')
-    .select(['id', 'name', 'phase'])
-    .execute();
+  // github_sync.github_number が NULL の仕様書を検索（completed フェーズを除外）
+  const specsWithoutIssue = specs.filter(
+    (spec) => spec.github_issue_number === null && spec.phase !== 'completed'
+  );
 
   if (specsWithoutIssue.length > 0) {
     console.log(
@@ -220,7 +211,7 @@ export async function showStatus(
       spec.id.substring(0, 8) + '...',
       spec.name,
       spec.phase,
-      spec.github_issue_id ? `#${spec.github_issue_id}` : '-',
+      spec.github_issue_number ? `#${spec.github_issue_number}` : '-',
     ]);
     console.log(formatTable(['ID', 'Name', 'Phase', 'GitHub'], rows, options));
     console.log('');

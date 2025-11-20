@@ -186,6 +186,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  createSpec(name, description).catch((error) => handleCLIError(error))
+  createSpec(name, description)
+    .catch((error) => handleCLIError(error))
     .finally(() => closeDatabase());
 }

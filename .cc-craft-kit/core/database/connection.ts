@@ -84,6 +84,11 @@ async function runIntegrityCheck(db: Kysely<DatabaseSchema>): Promise<void> {
 
   integrityCheckDone = true;
 
+  // E2E テストではスキップ（独自のデータベースセットアップを行うため）
+  if (process.env.E2E_TEST === 'true') {
+    return;
+  }
+
   try {
     const specsDir = path.join(process.cwd(), '.cc-craft-kit', 'specs');
 
@@ -114,11 +119,14 @@ async function runIntegrityCheck(db: Kysely<DatabaseSchema>): Promise<void> {
       );
     }
   } catch (error) {
+    // テーブルが存在しない場合はスキップ（マイグレーション前の状態）
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('no such table')) {
+      return;
+    }
+
     // 整合性チェック自体の失敗は警告のみ（データベース操作は継続）
-    console.warn(
-      '⚠️  Integrity check failed:',
-      error instanceof Error ? error.message : String(error)
-    );
+    console.warn('⚠️  Integrity check failed:', errorMessage);
   }
 }
 

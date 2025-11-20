@@ -86,6 +86,7 @@ export async function initProject(
 if (import.meta.url === `file://${process.argv[1]}`) {
   const projectName = process.argv[2];
 
-  initProject(projectName).catch((error) => handleCLIError(error))
+  initProject(projectName)
+    .catch((error) => handleCLIError(error))
     .finally(() => closeDatabase());
 }

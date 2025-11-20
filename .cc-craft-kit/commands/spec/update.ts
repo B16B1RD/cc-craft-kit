@@ -88,6 +88,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  updateSpec(specId).catch((error) => handleCLIError(error))
+  updateSpec(specId)
+    .catch((error) => handleCLIError(error))
     .finally(() => closeDatabase());
 }

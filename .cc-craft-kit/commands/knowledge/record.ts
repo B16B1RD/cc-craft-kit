@@ -326,8 +326,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       console.error('Error: message is required');
       process.exit(1);
     }
-    recordProgress(specId, message).catch((error) => handleCLIError(error))
-    .finally(() => closeDatabase());
+    recordProgress(specId, message)
+      .catch((error) => handleCLIError(error))
+      .finally(() => closeDatabase());
   } else if (command === 'error') {
     const errorMsg = process.argv[4];
     const solution = process.argv.slice(5).join(' ');
@@ -335,8 +336,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       console.error('Error: error and solution are required');
       process.exit(1);
     }
-    recordErrorSolution(specId, errorMsg, solution).catch((error) => handleCLIError(error))
-    .finally(() => closeDatabase());
+    recordErrorSolution(specId, errorMsg, solution)
+      .catch((error) => handleCLIError(error))
+      .finally(() => closeDatabase());
   } else if (command === 'tip') {
     const category = process.argv[4];
     const tip = process.argv.slice(5).join(' ');
@@ -344,8 +346,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       console.error('Error: category and tip are required');
       process.exit(1);
     }
-    recordTip(specId, category, tip).catch((error) => handleCLIError(error))
-    .finally(() => closeDatabase());
+    recordTip(specId, category, tip)
+      .catch((error) => handleCLIError(error))
+      .finally(() => closeDatabase());
   } else {
     console.error('Error: command must be "progress", "error", or "tip"');
     process.exit(1);

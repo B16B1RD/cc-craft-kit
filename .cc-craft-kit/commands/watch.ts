@@ -107,6 +107,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       | 'warn'
       | 'error') || 'info';
 
-  watchSpecFiles({ color: true, logLevel }).catch((error) => handleCLIError(error))
+  watchSpecFiles({ color: true, logLevel })
+    .catch((error) => handleCLIError(error))
     .finally(() => closeDatabase());
 }

@@ -161,6 +161,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  updateSpecPhase(specId, phase).catch((error) => handleCLIError(error))
+  updateSpecPhase(specId, phase)
+    .catch((error) => handleCLIError(error))
     .finally(() => closeDatabase());
 }

@@ -188,6 +188,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  createGitHubIssue(specId).catch((error) => handleCLIError(error))
+  createGitHubIssue(specId)
+    .catch((error) => handleCLIError(error))
     .finally(() => closeDatabase());
 }

@@ -235,11 +235,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
 
   if (direction === 'to-github') {
-    syncToGitHub(specId).catch((error) => handleCLIError(error))
-    .finally(() => closeDatabase());
+    syncToGitHub(specId)
+      .catch((error) => handleCLIError(error))
+      .finally(() => closeDatabase());
   } else if (direction === 'from-github') {
-    syncFromGitHub(specId).catch((error) => handleCLIError(error))
-    .finally(() => closeDatabase());
+    syncFromGitHub(specId)
+      .catch((error) => handleCLIError(error))
+      .finally(() => closeDatabase());
   } else {
     console.error('Error: direction must be "to-github" or "from-github"');
     process.exit(1);
