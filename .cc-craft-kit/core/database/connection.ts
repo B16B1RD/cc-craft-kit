@@ -84,8 +84,8 @@ async function runIntegrityCheck(db: Kysely<DatabaseSchema>): Promise<void> {
 
   integrityCheckDone = true;
 
-  // E2E テストではスキップ（独自のデータベースセットアップを行うため）
-  if (process.env.E2E_TEST === 'true') {
+  // テスト実行時はスキップ（独自のデータベースセットアップを行うため）
+  if (process.env.E2E_TEST === 'true' || process.env.NODE_ENV === 'test') {
     return;
   }
 

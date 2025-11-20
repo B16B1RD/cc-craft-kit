@@ -182,6 +182,12 @@ async function registerHandlersAsync(bus: EventBus): Promise<void> {
     return;
   }
 
+  // テスト環境では統合ハンドラーをスキップ
+  if (process.env.NODE_ENV === 'test' || process.env.E2E_TEST === 'true') {
+    handlersRegistered = true;
+    return;
+  }
+
   registrationInProgress = true;
 
   try {

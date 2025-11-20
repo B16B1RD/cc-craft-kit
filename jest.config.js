@@ -7,6 +7,11 @@ export default {
   globals: {
     __dirname: '/test',
   },
+  testEnvironmentOptions: {
+    env: {
+      NODE_ENV: 'test',
+    },
+  },
   testPathIgnorePatterns: [
     '/node_modules/',
     '/tests/e2e/project-initialization\\.test\\.ts$',

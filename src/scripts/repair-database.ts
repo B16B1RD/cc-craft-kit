@@ -9,7 +9,7 @@
 
 import { readdir, readFile } from 'fs/promises';
 import { join } from 'path';
-import { getDatabase } from '../core/database/connection.js';
+import { getDatabase, closeDatabase } from '../core/database/connection.js';
 import {
   checkDatabaseIntegrity,
   formatIntegrityCheckResult,
@@ -189,7 +189,12 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error('Fatal error:', error);
-  process.exit(1);
-});
+main()
+  .catch((error) => {
+    console.error('Fatal error:', error);
+    process.exit(1);
+  })
+  .finally(async () => {
+    // データベース接続を確実にクローズ
+    await closeDatabase();
+  });
