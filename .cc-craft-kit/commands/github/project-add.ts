@@ -18,6 +18,7 @@ import {
   handleCLIError,
 } from '../utils/error-handler.js';
 import { validateSpecId } from '../utils/validation.js';
+import { getSpecWithGitHubInfo } from '../../core/database/helpers.js';
 
 /**
  * GitHub設定を取得
@@ -80,17 +81,13 @@ export async function addSpecToProject(
   const db = getDatabase();
 
   // 仕様書検索（部分一致対応）
-  const spec = await db
-    .selectFrom('specs')
-    .selectAll()
-    .where('id', 'like', `${specId}%`)
-    .executeTakeFirst();
+  const spec = await getSpecWithGitHubInfo(db, specId);
 
   if (!spec) {
     throw createSpecNotFoundError(specId);
   }
 
-  if (!spec.github_issue_id) {
+  if (!spec.github_issue_number) {
     throw new Error(
       'Spec has no linked GitHub Issue. Create an issue first with "/cft:github-issue-create".'
     );
@@ -100,7 +97,7 @@ export async function addSpecToProject(
   console.log('');
   console.log(formatKeyValue('Spec ID', spec.id, options.color));
   console.log(formatKeyValue('Spec Name', spec.name, options.color));
-  console.log(formatKeyValue('GitHub Issue', `#${spec.github_issue_id}`, options.color));
+  console.log(formatKeyValue('GitHub Issue', `#${spec.github_issue_number}`, options.color));
   console.log(formatKeyValue('Project Number', projectNumber, options.color));
   console.log('');
 

@@ -33,6 +33,7 @@ export interface UpdateIssueParams {
  */
 export interface IssueResponse {
   id: number;
+  node_id: string;
   number: number;
   title: string;
   body: string | null;

@@ -57,10 +57,22 @@ export class GitHubWebhookHandler {
 
     const { action, issue } = payload;
 
-    // 紐づく仕様書を検索
+    // 紐づく仕様書を検索 (github_sync テーブル経由)
+    const syncRecord = await this.db
+      .selectFrom('github_sync')
+      .where('entity_type', '=', 'spec')
+      .where('github_number', '=', issue.number)
+      .selectAll()
+      .executeTakeFirst();
+
+    if (!syncRecord) {
+      console.log(`No spec linked to issue #${issue.number}`);
+      return;
+    }
+
     const spec = await this.db
       .selectFrom('specs')
-      .where('github_issue_id', '=', issue.number)
+      .where('id', '=', syncRecord.entity_id)
       .selectAll()
       .executeTakeFirst();
 
@@ -110,10 +122,19 @@ export class GitHubWebhookHandler {
 
     const { issue, comment } = payload;
 
-    // 紐づく仕様書を検索
+    // 紐づく仕様書を検索 (github_sync テーブル経由)
+    const syncRecord = await this.db
+      .selectFrom('github_sync')
+      .where('entity_type', '=', 'spec')
+      .where('github_number', '=', issue.number)
+      .selectAll()
+      .executeTakeFirst();
+
+    if (!syncRecord) return;
+
     const spec = await this.db
       .selectFrom('specs')
-      .where('github_issue_id', '=', issue.number)
+      .where('id', '=', syncRecord.entity_id)
       .selectAll()
       .executeTakeFirst();
 

@@ -15,6 +15,7 @@ import { mapPhaseToStatus, type Phase } from '../../integrations/github/phase-st
 import { SubIssueManager } from '../../integrations/github/sub-issues.js';
 import { parseTaskListFromSpec } from '../utils/task-parser.js';
 import { getErrorHandler } from '../errors/error-handler.js';
+import { getSpecWithGitHubInfo } from '../database/helpers.js';
 
 /**
  * エラーをログに記録
@@ -95,18 +96,14 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
         }
 
         // 仕様書取得
-        const spec = await db
-          .selectFrom('specs')
-          .where('id', '=', event.specId)
-          .selectAll()
-          .executeTakeFirst();
+        const spec = await getSpecWithGitHubInfo(db, event.specId);
 
         if (!spec) {
           return;
         }
 
         // 既にIssueが作成されている場合はスキップ
-        if (spec.github_issue_id) {
+        if (spec.github_issue_number) {
           return;
         }
 
@@ -132,18 +129,8 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
           labels: [`phase:${spec.phase}`],
         });
 
-        // データベース更新
-        await db
-          .updateTable('specs')
-          .set({
-            github_issue_id: issue.number,
-            updated_at: new Date().toISOString(),
-          })
-          .where('id', '=', spec.id)
-          .execute();
-
-        // 同期ログ記録
-        // 仕様書とIssueの同期記録
+        // 同期ログ記録（github_sync テーブルのみ更新）
+        // specs テーブルへの github_issue_id 書き込みは削除
         // entity_type は 'spec' を使用（'issue' ではない）
         await db
           .insertInto('github_sync')
@@ -152,9 +139,19 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
             entity_id: spec.id,
             github_id: issue.number.toString(),
             github_number: issue.number,
+            github_node_id: issue.node_id,
             last_synced_at: new Date().toISOString(),
             sync_status: 'success',
           })
+          .execute();
+
+        // specs テーブルの updated_at のみ更新
+        await db
+          .updateTable('specs')
+          .set({
+            updated_at: new Date().toISOString(),
+          })
+          .where('id', '=', spec.id)
           .execute();
 
         console.log(`\n✓ GitHub Issue created automatically: #${issue.number}`);
@@ -183,11 +180,17 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
               contentId: issueNodeId,
             });
 
-            // Item ID をデータベースに保存
+            // Item ID を github_sync テーブルに保存
             await db
-              .updateTable('specs')
-              .set({ github_project_item_id: item.id })
-              .where('id', '=', spec.id)
+              .insertInto('github_sync')
+              .values({
+                entity_type: 'project',
+                entity_id: spec.id,
+                github_id: item.id,
+                github_node_id: project.id,
+                last_synced_at: new Date().toISOString(),
+                sync_status: 'success',
+              })
               .execute();
 
             console.log(`✓ Added to GitHub Project #${projectNumber}\n`);
@@ -233,13 +236,9 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
           return;
         }
 
-        const spec = await db
-          .selectFrom('specs')
-          .where('id', '=', event.specId)
-          .selectAll()
-          .executeTakeFirst();
+        const spec = await getSpecWithGitHubInfo(db, event.specId);
 
-        if (!spec || !spec.github_issue_id) {
+        if (!spec || !spec.github_issue_number) {
           return;
         }
 
@@ -251,7 +250,7 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
         await issues.update({
           owner: githubConfig.owner,
           repo: githubConfig.repo,
-          issueNumber: spec.github_issue_id,
+          issueNumber: spec.github_issue_number,
           title: `[${event.data.newPhase}] ${spec.name}`,
           labels: [`phase:${event.data.newPhase}`],
         });
@@ -271,7 +270,7 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
           await issues.addComment(
             githubConfig.owner,
             githubConfig.repo,
-            spec.github_issue_id,
+            spec.github_issue_number,
             phaseChangeComment
           );
         } catch (commentError) {
@@ -292,7 +291,15 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
         // ========== ここから新規追加: Project ステータス更新 ==========
 
         // Project ステータス更新
-        if (spec.github_project_item_id) {
+        // github_sync テーブルから project_item_id を取得
+        const projectSync = await db
+          .selectFrom('github_sync')
+          .where('entity_id', '=', spec.id)
+          .where('entity_type', '=', 'project')
+          .selectAll()
+          .executeTakeFirst();
+
+        if (projectSync) {
           try {
             const projectNumber = await resolveProjectId(ccCraftKitDir, githubToken);
             if (!projectNumber) {
@@ -304,7 +311,7 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
             await projects.updateProjectStatus({
               owner: githubConfig.owner,
               projectNumber,
-              itemId: spec.github_project_item_id,
+              itemId: projectSync.github_id,
               status: newStatus,
             });
 
@@ -313,7 +320,7 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
               const verification = await projects.verifyProjectStatusUpdate({
                 owner: githubConfig.owner,
                 projectNumber,
-                itemId: spec.github_project_item_id,
+                itemId: projectSync.github_id,
                 expectedStatus: newStatus,
                 maxRetries: 3,
               });
@@ -415,7 +422,7 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
             await subIssueManager.createSubIssuesFromTaskList({
               owner: githubConfig.owner,
               repo: githubConfig.repo,
-              parentIssueNumber: spec.github_issue_id,
+              parentIssueNumber: spec.github_issue_number,
               taskList,
               githubToken,
             });
@@ -446,13 +453,13 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
             await issues.addComment(
               githubConfig.owner,
               githubConfig.repo,
-              spec.github_issue_id,
+              spec.github_issue_number,
               closeComment
             );
 
-            await issues.close(githubConfig.owner, githubConfig.repo, spec.github_issue_id);
+            await issues.close(githubConfig.owner, githubConfig.repo, spec.github_issue_number);
 
-            console.log(`✓ GitHub Issue #${spec.github_issue_id} closed automatically`);
+            console.log(`✓ GitHub Issue #${spec.github_issue_number} closed automatically`);
           } catch (closeError) {
             await logError('warn', 'Failed to close GitHub Issue', closeError, {
               event: 'spec.phase_changed',
@@ -488,13 +495,9 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
         return;
       }
 
-      const spec = await db
-        .selectFrom('specs')
-        .where('id', '=', event.specId)
-        .selectAll()
-        .executeTakeFirst();
+      const spec = await getSpecWithGitHubInfo(db, event.specId);
 
-      if (!spec || !spec.github_issue_id) {
+      if (!spec || !spec.github_issue_number) {
         return;
       }
 
@@ -513,7 +516,7 @@ ${data.message}
         await issues.addComment(
           githubConfig.owner,
           githubConfig.repo,
-          spec.github_issue_id,
+          spec.github_issue_number,
           comment
         );
       } catch (commentError) {
@@ -547,13 +550,9 @@ ${data.message}
         return;
       }
 
-      const spec = await db
-        .selectFrom('specs')
-        .where('id', '=', event.specId)
-        .selectAll()
-        .executeTakeFirst();
+      const spec = await getSpecWithGitHubInfo(db, event.specId);
 
-      if (!spec || !spec.github_issue_id) {
+      if (!spec || !spec.github_issue_number) {
         return;
       }
 
@@ -576,7 +575,7 @@ ${data.solution}
         await issues.addComment(
           githubConfig.owner,
           githubConfig.repo,
-          spec.github_issue_id,
+          spec.github_issue_number,
           comment
         );
       } catch (commentError) {
@@ -615,13 +614,9 @@ ${data.solution}
         return;
       }
 
-      const spec = await db
-        .selectFrom('specs')
-        .where('id', '=', event.specId)
-        .selectAll()
-        .executeTakeFirst();
+      const spec = await getSpecWithGitHubInfo(db, event.specId);
 
-      if (!spec || !spec.github_issue_id) {
+      if (!spec || !spec.github_issue_number) {
         return;
       }
 
@@ -647,7 +642,7 @@ ${data.content}
         await issues.addComment(
           githubConfig.owner,
           githubConfig.repo,
-          spec.github_issue_id,
+          spec.github_issue_number,
           comment
         );
       } catch (commentError) {
@@ -681,13 +676,9 @@ ${data.content}
         return;
       }
 
-      const spec = await db
-        .selectFrom('specs')
-        .where('id', '=', event.specId)
-        .selectAll()
-        .executeTakeFirst();
+      const spec = await getSpecWithGitHubInfo(db, event.specId);
 
-      if (!spec || !spec.github_issue_id) {
+      if (!spec || !spec.github_issue_number) {
         return;
       }
 
@@ -718,7 +709,7 @@ ${data.content}
         await issues.update({
           owner: githubConfig.owner,
           repo: githubConfig.repo,
-          issueNumber: spec.github_issue_id,
+          issueNumber: spec.github_issue_number,
           body: specContent,
         });
       } catch (updateError) {
@@ -742,7 +733,7 @@ ${data.content}
         await issues.addComment(
           githubConfig.owner,
           githubConfig.repo,
-          spec.github_issue_id,
+          spec.github_issue_number,
           updateComment
         );
       } catch (commentError) {

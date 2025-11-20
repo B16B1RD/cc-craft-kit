@@ -1,6 +1,7 @@
 import { Kysely } from 'kysely';
 import { Database } from '../../core/database/schema.js';
 import { GitHubIssues } from './issues.js';
+import { getSpecWithGitHubInfo } from '../../core/database/helpers.js';
 
 /**
  * ナレッジエントリ種別
@@ -70,13 +71,13 @@ export class GitHubKnowledgeBase {
    * 進捗をIssueコメントに記録
    */
   async recordProgress(params: RecordProgressParams): Promise<number> {
-    const spec = await this.db
-      .selectFrom('specs')
-      .where('id', '=', params.specId)
-      .selectAll()
-      .executeTakeFirstOrThrow();
+    const spec = await getSpecWithGitHubInfo(this.db, params.specId);
 
-    if (!spec.github_issue_id) {
+    if (!spec) {
+      throw new Error(`Spec not found: ${params.specId}`);
+    }
+
+    if (!spec.github_issue_number) {
       throw new Error('Spec has no linked GitHub Issue');
     }
 
@@ -90,7 +91,7 @@ export class GitHubKnowledgeBase {
     const comment = await this.issues.addComment(
       params.owner,
       params.repo,
-      spec.github_issue_id,
+      spec.github_issue_number,
       body
     );
 
@@ -108,7 +109,7 @@ export class GitHubKnowledgeBase {
         metadata: JSON.stringify({
           type: 'progress',
           commentId: comment.id,
-          issueNumber: spec.github_issue_id,
+          issueNumber: spec.github_issue_number,
         }),
         timestamp: new Date().toISOString(),
       })
@@ -121,13 +122,13 @@ export class GitHubKnowledgeBase {
    * エラー解決をIssueコメントに記録
    */
   async recordErrorSolution(params: RecordErrorSolutionParams): Promise<number> {
-    const spec = await this.db
-      .selectFrom('specs')
-      .where('id', '=', params.specId)
-      .selectAll()
-      .executeTakeFirstOrThrow();
+    const spec = await getSpecWithGitHubInfo(this.db, params.specId);
 
-    if (!spec.github_issue_id) {
+    if (!spec) {
+      throw new Error(`Spec not found: ${params.specId}`);
+    }
+
+    if (!spec.github_issue_number) {
       throw new Error('Spec has no linked GitHub Issue');
     }
 
@@ -141,7 +142,7 @@ export class GitHubKnowledgeBase {
     const comment = await this.issues.addComment(
       params.owner,
       params.repo,
-      spec.github_issue_id,
+      spec.github_issue_number,
       body
     );
 
@@ -159,7 +160,7 @@ export class GitHubKnowledgeBase {
         metadata: JSON.stringify({
           type: 'error_solution',
           commentId: comment.id,
-          issueNumber: spec.github_issue_id,
+          issueNumber: spec.github_issue_number,
         }),
         timestamp: new Date().toISOString(),
       })
@@ -172,13 +173,13 @@ export class GitHubKnowledgeBase {
    * TipsをIssueコメントに記録
    */
   async recordTip(params: RecordTipParams): Promise<number> {
-    const spec = await this.db
-      .selectFrom('specs')
-      .where('id', '=', params.specId)
-      .selectAll()
-      .executeTakeFirstOrThrow();
+    const spec = await getSpecWithGitHubInfo(this.db, params.specId);
 
-    if (!spec.github_issue_id) {
+    if (!spec) {
+      throw new Error(`Spec not found: ${params.specId}`);
+    }
+
+    if (!spec.github_issue_number) {
       throw new Error('Spec has no linked GitHub Issue');
     }
 
@@ -192,7 +193,7 @@ export class GitHubKnowledgeBase {
     const comment = await this.issues.addComment(
       params.owner,
       params.repo,
-      spec.github_issue_id,
+      spec.github_issue_number,
       body
     );
 
@@ -210,7 +211,7 @@ export class GitHubKnowledgeBase {
         metadata: JSON.stringify({
           type: 'tip',
           commentId: comment.id,
-          issueNumber: spec.github_issue_id,
+          issueNumber: spec.github_issue_number,
           category: params.category,
         }),
         timestamp: new Date().toISOString(),
