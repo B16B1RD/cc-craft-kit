@@ -87,7 +87,12 @@ export interface GitHubSyncTable {
   github_id: string; // GitHub Issue ID or Project ID
   github_number: number | null; // GitHub Issue番号
   github_node_id: string | null; // GraphQL で使用する Node ID (Sub Issue 対応)
+  issue_number: number | null; // GitHub Issue番号（後方互換性のため）
+  issue_url: string | null; // GitHub Issue URL
+  pr_number: number | null; // GitHub PR番号
+  pr_url: string | null; // GitHub PR URL
   last_synced_at: ColumnType<Date, string | undefined, string>;
+  updated_at: ColumnType<Date, string | undefined, string>; // 更新日時
   sync_status: 'success' | 'failed' | 'pending';
   error_message: string | null;
 }

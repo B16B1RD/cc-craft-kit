@@ -187,11 +187,13 @@ async function registerHandlersAsync(bus: EventBus): Promise<void> {
     const { getDatabase } = await import('../database/connection.js');
     const { registerGitHubIntegrationHandlers } = await import('./github-integration.js');
     const { registerGitIntegrationHandlers } = await import('./git-integration.js');
+    const { registerBranchManagementHandlers } = await import('./branch-management.js');
     const { registerPhaseAutomationHandlers } = await import('./phase-automation-registration.js');
 
     const db = getDatabase();
     registerGitHubIntegrationHandlers(bus, db);
     registerGitIntegrationHandlers(bus, db);
+    registerBranchManagementHandlers(bus, db);
     registerPhaseAutomationHandlers(bus, db);
     handlersRegistered = true;
   } catch (error) {
