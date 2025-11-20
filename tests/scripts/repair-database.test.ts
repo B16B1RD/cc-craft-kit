@@ -47,6 +47,7 @@ describe('repair-database script', () => {
         .addColumn('name', 'text', (col) => col.notNull())
         .addColumn('description', 'text')
         .addColumn('phase', 'text', (col) => col.notNull())
+        .addColumn('branch_name', 'text', (col) => col.notNull())
         .addColumn('created_at', 'text', (col) => col.notNull())
         .addColumn('updated_at', 'text', (col) => col.notNull())
         .execute();
@@ -70,6 +71,7 @@ describe('repair-database script', () => {
           name: 'Valid Spec',
           description: null,
           phase: 'requirements',
+          branch_name: 'develop',
           created_at: '2025-11-20T10:00:00.000Z',
           updated_at: '2025-11-20T10:00:00.000Z',
         })
@@ -84,6 +86,7 @@ describe('repair-database script', () => {
           name: 'Orphaned Spec',
           description: null,
           phase: 'requirements',
+          branch_name: 'develop',
           created_at: '2025-11-20T10:00:00.000Z',
           updated_at: '2025-11-20T10:00:00.000Z',
         })
@@ -120,6 +123,7 @@ describe('repair-database script', () => {
         .addColumn('name', 'text', (col) => col.notNull())
         .addColumn('description', 'text')
         .addColumn('phase', 'text', (col) => col.notNull())
+        .addColumn('branch_name', 'text', (col) => col.notNull())
         .addColumn('created_at', 'text', (col) => col.notNull())
         .addColumn('updated_at', 'text', (col) => col.notNull())
         .execute();
@@ -134,6 +138,7 @@ describe('repair-database script', () => {
             name: `Orphaned Spec ${id}`,
             description: null,
             phase: 'requirements',
+            branch_name: 'develop',
             created_at: '2025-11-20T10:00:00.000Z',
             updated_at: '2025-11-20T10:00:00.000Z',
           })
@@ -172,6 +177,7 @@ describe('repair-database script', () => {
         .addColumn('name', 'text', (col) => col.notNull())
         .addColumn('description', 'text')
         .addColumn('phase', 'text', (col) => col.notNull())
+        .addColumn('branch_name', 'text', (col) => col.notNull())
         .addColumn('created_at', 'text', (col) => col.notNull())
         .addColumn('updated_at', 'text', (col) => col.notNull())
         .execute();
@@ -185,6 +191,7 @@ describe('repair-database script', () => {
           name: 'Orphaned Spec',
           description: null,
           phase: 'requirements',
+          branch_name: 'develop',
           created_at: '2025-11-20T10:00:00.000Z',
           updated_at: '2025-11-20T10:00:00.000Z',
         })
@@ -233,6 +240,7 @@ describe('repair-database script', () => {
         .addColumn('name', 'text', (col) => col.notNull())
         .addColumn('description', 'text')
         .addColumn('phase', 'text', (col) => col.notNull())
+        .addColumn('branch_name', 'text', (col) => col.notNull())
         .addColumn('created_at', 'text', (col) => col.notNull())
         .addColumn('updated_at', 'text', (col) => col.notNull())
         .execute();
@@ -256,6 +264,7 @@ describe('repair-database script', () => {
           name: 'Valid Spec',
           description: null,
           phase: 'requirements',
+          branch_name: 'develop',
           created_at: '2025-11-20T10:00:00.000Z',
           updated_at: '2025-11-20T10:00:00.000Z',
         })

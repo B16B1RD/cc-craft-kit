@@ -249,6 +249,7 @@ await eventBus.emit(
 
 - `specs` - 仕様書（フェーズ管理: requirements → design → tasks → implementation → completed）
   - GitHub 連携情報は `github_sync` テーブルで管理（`specs` テーブルには GitHub 関連カラムなし）
+  - `branch_name`: 仕様書が作成されたブランチ名（ブランチ間の分離管理）
 - `tasks` - タスク（ステータス: todo → in_progress → blocked → review → done）
 - `logs` - アクションログ（レベル: debug/info/warn/error）
 - `github_sync` - GitHub 同期状態管理（**Issue/PR 情報の単一情報源**）
@@ -262,6 +263,8 @@ await eventBus.emit(
 **重要なインデックス:**
 
 - `specs.phase` - フェーズでのフィルタリング用
+- `specs.branch_name` - ブランチでのフィルタリング用
+- `specs.(phase, branch_name)` - フェーズとブランチの複合フィルタリング用
 - `tasks.status` - ステータス検索用
 - `github_sync.entity_id` - 同期レコード検索用
 - `github_sync.entity_type` - エンティティタイプでのフィルタリング用
@@ -275,12 +278,174 @@ await eventBus.emit(
 import { getSpecWithGitHubInfo } from '../commands/spec/helpers.js';
 const spec = await getSpecWithGitHubInfo(db, specId);
 
-// 複数仕様書 + GitHub 情報
+// 複数仕様書 + GitHub 情報（フェーズフィルタリング）
 import { getSpecsWithGitHubInfo } from '../commands/spec/helpers.js';
 const specs = await getSpecsWithGitHubInfo(db, { phase: 'implementation' });
+
+// ブランチフィルタリング（現在のブランチ、main、develop のみ表示）
+import { getCurrentBranch } from '../core/git/branch-cache.js';
+const currentBranch = getCurrentBranch();
+const branchSpecs = await getSpecsWithGitHubInfo(db, { branchName: currentBranch });
+
+// フェーズとブランチの複合フィルタリング
+const filteredSpecs = await getSpecsWithGitHubInfo(db, {
+  phase: 'implementation',
+  branchName: currentBranch,
+});
 ```
 
 直接 JOIN を書く代わりに、これらのヘルパー関数を使用することで、一貫性のあるデータアクセスを実現します。
+
+**ブランチフィルタリングの仕様:**
+
+- `branchName` オプションを指定すると、以下のブランチで作成された仕様書のみが表示されます：
+  - 指定されたブランチ（現在のブランチ）
+  - `main` ブランチ（全ブランチから参照可能）
+  - `develop` ブランチ（全ブランチから参照可能）
+- これにより、ブランチを切り替えても適切な仕様書のみが表示され、データベース不整合を防ぐ。
+
+### ブランチ管理
+
+cc-craft-kit は、Git ブランチと仕様書を紐づけて管理し、ブランチ切り替え時のデータベース不整合を防止します。
+
+#### 仕様書作成時の自動ブランチ作成
+
+仕様書を作成すると、自動的に専用ブランチが作成されます（保護ブランチを除く）。
+
+```bash
+# 仕様書作成（feature ブランチで実行）
+/cft:spec-create "新機能の実装"
+
+# 自動的に以下が実行される：
+# 1. 仕様書 ID 生成: 12345678-1234-1234-1234-123456789abc
+# 2. ブランチ作成: spec/12345678
+# 3. データベースレコード作成: branch_name = "spec/12345678"
+```
+
+**ブランチ命名規則:**
+
+- 形式: `spec/<仕様書IDの先頭8文字>`
+- 例: 仕様書 ID が `12345678-1234-1234-1234-123456789abc` の場合、ブランチ名は `spec/12345678`
+
+**保護ブランチでの動作:**
+
+- `main` または `develop` ブランチでは、ブランチ作成をスキップ
+- 環境変数 `PROTECTED_BRANCHES` でカスタマイズ可能（デフォルト: `main,develop`）
+
+```bash
+# 保護ブランチのカスタマイズ（.env）
+PROTECTED_BRANCHES=main,develop,staging
+```
+
+#### ブランチフィルタリング
+
+`/cft:spec-list` コマンドは、現在のブランチに応じて表示される仕様書を自動的にフィルタリングします。
+
+**フィルタリングルール:**
+
+| 現在のブランチ | 表示される仕様書 |
+|---|---|
+| `main` | `main` と `develop` で作成された仕様書のみ |
+| `develop` | `main` と `develop` で作成された仕様書のみ |
+| `feature/test` | `main`, `develop`, `feature/test` で作成された仕様書 |
+
+**動作例:**
+
+```bash
+# main ブランチで実行
+$ git checkout main
+$ /cft:spec-list
+# → main と develop の仕様書のみ表示
+
+# feature ブランチで実行
+$ git checkout feature/new-feature
+$ /cft:spec-list
+# → main, develop, feature/new-feature の仕様書を表示
+```
+
+#### ブランチキャッシュ機構
+
+Git コマンドの実行コストを削減するため、プロセスレベルでブランチ名をキャッシュします。
+
+```typescript
+import { getCurrentBranch, clearBranchCache } from './core/git/branch-cache.js';
+
+// キャッシュを使用（推奨）
+const branch = getCurrentBranch(); // 初回のみ git コマンド実行
+
+// キャッシュをクリア（ブランチ切り替え後）
+clearBranchCache();
+const newBranch = getCurrentBranch(); // 再度 git コマンド実行
+```
+
+#### エラーハンドリングとロールバック
+
+仕様書作成中にエラーが発生した場合、以下を自動的にロールバックする。
+
+1. **データベースレコード削除** - 作成途中の仕様書レコードを削除
+2. **ファイル削除** - 作成途中の仕様書ファイルを削除
+3. **ブランチ削除** - 作成したブランチを削除し、元のブランチに戻る
+
+```typescript
+// src/commands/spec/create.ts の実装例
+try {
+  // 1. ブランチ作成
+  execSync(`git checkout -b ${branchName}`);
+
+  // 2. データベースレコード作成
+  await db.insertInto('specs').values({ ... }).execute();
+
+  // 3. ファイル作成
+  writeFileSync(specPath, content);
+} catch (error) {
+  // ロールバック処理
+  if (branchCreated) {
+    execSync(`git checkout ${originalBranch}`);
+    execSync(`git branch -D ${branchName}`);
+  }
+  await db.deleteFrom('specs').where('id', '=', id).execute();
+  unlinkSync(specPath);
+  throw error;
+}
+```
+
+#### データベース整合性チェック
+
+ブランチ整合性を含むデータベース整合性チェックは、起動時および `/cft:status` コマンド実行時に自動実行されます。
+
+**チェック項目:**
+
+- `branch_name` が `null` または空文字列でないこと
+- データベースレコードと仕様書ファイルのメタデータが一致すること
+- 孤立したレコードやファイルが存在しないこと
+
+```bash
+# 整合性チェック実行
+$ /cft:status
+
+# 不整合が検出された場合
+⚠️  Database integrity warnings:
+  - Found 2 database record(s) with missing or invalid branch_name
+
+# 自動修復スクリプト実行
+$ npx tsx .cc-craft-kit/scripts/repair-database.ts
+```
+
+#### ブランチ切り替え時の注意事項
+
+ブランチを切り替えても、データベースレコードは残り続けます。これは意図的な設計です。
+
+**想定されるシナリオ:**
+
+1. **feature ブランチで仕様書を作成** - データベースに記録される
+2. **main ブランチに切り替え** - 仕様書ファイルは Git で管理されていないため消える
+3. **仕様書の一覧を表示** - ブランチフィルタリングにより、feature の仕様書は表示されない
+
+**データベース不整合が発生しない理由:**
+
+- ブランチフィルタリングにより、現在のブランチで参照できない仕様書は非表示になる
+- 元のブランチに戻れば、仕様書は再び表示される
+- データベースレコードは削除されないため、ブランチ間でデータが失われることはない
 
 ### カスタムスラッシュコマンド
 

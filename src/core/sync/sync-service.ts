@@ -163,6 +163,7 @@ export class SyncService {
         name: metadata.name,
         description: null, // ファイルには description がないためnull
         phase: metadata.phase,
+        branch_name: 'develop', // TODO: ファイルからブランチ名を取得する仕組みを追加
         created_at: metadata.created_at,
         updated_at: metadata.updated_at,
       };

@@ -15,6 +15,7 @@ export interface SpecWithGitHub {
   name: string;
   description: string | null;
   phase: SpecPhase;
+  branch_name: string;
   created_at: Date;
   updated_at: Date;
   github_issue_number: number | null;
@@ -45,6 +46,7 @@ export async function getSpecWithGitHubInfo(
       'specs.name',
       'specs.description',
       'specs.phase',
+      'specs.branch_name',
       'specs.created_at',
       'specs.updated_at',
       'github_sync.github_number as github_issue_number',
@@ -61,6 +63,7 @@ export async function getSpecWithGitHubInfo(
     name: result.name,
     description: result.description,
     phase: result.phase as SpecPhase,
+    branch_name: result.branch_name,
     created_at: new Date(result.created_at),
     updated_at: new Date(result.updated_at),
     github_issue_number: result.github_issue_number,
@@ -80,6 +83,7 @@ export async function getSpecsWithGitHubInfo(
   db: Kysely<Database>,
   options?: {
     phase?: SpecPhase;
+    branchName?: string; // 現在のブランチ名（指定された場合、ブランチフィルタリングを実行）
     limit?: number;
     orderBy?: 'created_at' | 'updated_at';
     orderDirection?: 'asc' | 'desc';
@@ -97,6 +101,7 @@ export async function getSpecsWithGitHubInfo(
       'specs.name',
       'specs.description',
       'specs.phase',
+      'specs.branch_name',
       'specs.created_at',
       'specs.updated_at',
       'github_sync.github_number as github_issue_number',
@@ -106,6 +111,18 @@ export async function getSpecsWithGitHubInfo(
 
   if (options?.phase) {
     query = query.where('specs.phase', '=', options.phase);
+  }
+
+  // ブランチフィルタリング: 現在のブランチ、main、develop のいずれかで作成された仕様書のみ表示
+  if (options?.branchName) {
+    const branchName = options.branchName; // 型を string に確定
+    query = query.where((eb) =>
+      eb.or([
+        eb('specs.branch_name', '=', branchName), // 現在のブランチ
+        eb('specs.branch_name', '=', 'main'), // main ブランチ（全ブランチで参照可能）
+        eb('specs.branch_name', '=', 'develop'), // develop ブランチ（全ブランチで参照可能）
+      ])
+    );
   }
 
   const orderBy = options?.orderBy || 'created_at';
@@ -123,6 +140,7 @@ export async function getSpecsWithGitHubInfo(
     name: result.name,
     description: result.description,
     phase: result.phase as SpecPhase,
+    branch_name: result.branch_name,
     created_at: new Date(result.created_at),
     updated_at: new Date(result.updated_at),
     github_issue_number: result.github_issue_number,

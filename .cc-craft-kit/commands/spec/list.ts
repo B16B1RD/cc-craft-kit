@@ -9,6 +9,7 @@ import { getSpecsWithGitHubInfo } from '../../core/database/helpers.js';
 import { formatHeading, formatTable, formatKeyValue, OutputOptions } from '../utils/output.js';
 import { createProjectNotInitializedError, handleCLIError } from '../utils/error-handler.js';
 import { validatePhase, VALID_PHASES } from '../utils/validation.js';
+import { getCurrentBranch } from '../../core/git/branch-cache.js';
 
 /**
  * 仕様書一覧表示
@@ -35,9 +36,13 @@ export async function listSpecs(
   // フェーズバリデーション
   const validatedPhase = phase ? validatePhase(phase) : undefined;
 
-  // ヘルパー関数を使用して github_sync と JOIN
+  // 現在のブランチ名を取得（ブランチフィルタリング用）
+  const currentBranch = getCurrentBranch();
+
+  // ヘルパー関数を使用して github_sync と JOIN（ブランチフィルタリング有効）
   const specs = await getSpecsWithGitHubInfo(db, {
     phase: validatedPhase,
+    branchName: currentBranch, // ブランチフィルタリングを有効化
     limit: displayLimit,
     orderBy: 'created_at',
     orderDirection: 'desc',

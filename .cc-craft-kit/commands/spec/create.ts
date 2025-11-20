@@ -6,6 +6,7 @@ import '../../core/config/env.js';
 import { randomUUID } from 'node:crypto';
 import { existsSync, writeFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
+import { execSync } from 'node:child_process';
 import { getDatabase, closeDatabase } from '../../core/database/connection.js';
 import { getEventBusAsync } from '../../core/workflow/event-bus.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
@@ -17,6 +18,7 @@ import {
 import { validateRequired } from '../utils/validation.js';
 import { getCurrentDateTimeForSpec } from '../../core/utils/date-format.js';
 import { fsyncFileAndDirectory } from '../../core/utils/fsync.js';
+import { getCurrentBranch } from '../../core/git/branch-cache.js';
 
 /**
  * Requirements テンプレート
@@ -129,7 +131,46 @@ export async function createSpec(
 
   const specPath = join(specsDir, `${id}.md`);
 
+  // ブランチ名生成（spec/<spec-id の先頭8文字>）
+  const shortSpecId = id.substring(0, 8);
+  const branchName = `spec/${shortSpecId}`;
+  let branchCreated = false;
+  let originalBranch: string | null = null;
+
   try {
+    // 0. ブランチ作成（仕様書作成時に自動作成）
+    try {
+      // Git リポジトリの存在確認
+      execSync('git rev-parse --is-inside-work-tree', { stdio: 'ignore' });
+
+      // 現在のブランチ名を取得
+      originalBranch = getCurrentBranch();
+
+      // 保護ブランチチェック
+      const protectedBranches = (process.env.PROTECTED_BRANCHES || 'main,develop').split(',');
+      if (protectedBranches.includes(originalBranch)) {
+        console.log(
+          formatInfo(
+            `保護ブランチ ${originalBranch} では仕様書作成時にブランチを作成しません。`,
+            options.color
+          )
+        );
+      } else {
+        // ブランチ作成
+        execSync(`git checkout -b ${branchName}`, { stdio: 'inherit' });
+        branchCreated = true;
+        console.log(formatInfo(`Created new branch: ${branchName}`, options.color));
+      }
+    } catch {
+      // Git リポジトリ未初期化、またはその他のエラー
+      console.log(
+        formatInfo(
+          'ブランチ作成に失敗しました。仕様書はブランチなしで作成されます。',
+          options.color
+        )
+      );
+    }
+
     // 1. データベースレコード作成
     await db
       .insertInto('specs')
@@ -138,6 +179,7 @@ export async function createSpec(
         name,
         description: description || null,
         phase: 'requirements',
+        branch_name: branchCreated ? branchName : getCurrentBranch(),
         created_at: now,
         updated_at: now,
       })
@@ -184,6 +226,17 @@ export async function createSpec(
     // エラー時のロールバック処理
     console.error('');
     console.error(formatInfo('Rolling back due to error...', options.color));
+
+    // ブランチ削除（作成された場合のみ）
+    if (branchCreated && originalBranch) {
+      try {
+        execSync(`git checkout ${originalBranch}`, { stdio: 'ignore' });
+        execSync(`git branch -D ${branchName}`, { stdio: 'ignore' });
+        console.error(`Deleted branch: ${branchName}`);
+      } catch (branchError) {
+        console.error('Failed to rollback branch:', branchError);
+      }
+    }
 
     // DBレコード削除
     try {

@@ -59,6 +59,7 @@ describe('E2E: データベース整合性テスト（簡易版）', () => {
       .addColumn('name', 'text', (col) => col.notNull())
       .addColumn('description', 'text')
       .addColumn('phase', 'text', (col) => col.notNull())
+      .addColumn('branch_name', 'text', (col) => col.notNull())
       .addColumn('created_at', 'text', (col) => col.notNull())
       .addColumn('updated_at', 'text', (col) => col.notNull())
       .execute();
@@ -97,6 +98,7 @@ describe('E2E: データベース整合性テスト（簡易版）', () => {
           name,
           description: `E2E テスト用の仕様書 ${i + 1}`,
           phase: 'requirements',
+          branch_name: 'develop',
           created_at: now,
           updated_at: now,
         })
