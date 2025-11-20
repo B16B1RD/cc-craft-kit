@@ -6,6 +6,7 @@ import '../../core/config/env.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDatabase, closeDatabase } from '../../core/database/connection.js';
+import { getSpecWithGitHubInfo } from '../../core/database/helpers.js';
 import { GitHubClient } from '../../integrations/github/client.js';
 import { GitHubIssues } from '../../integrations/github/issues.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
@@ -70,27 +71,23 @@ export async function createGitHubIssue(
   // データベース取得
   const db = getDatabase();
 
-  // 仕様書検索（部分一致対応）
-  const spec = await db
-    .selectFrom('specs')
-    .selectAll()
-    .where('id', 'like', `${specId}%`)
-    .executeTakeFirst();
+  // 仕様書検索（github_sync との JOIN を使用）
+  const spec = await getSpecWithGitHubInfo(db, specId);
 
   if (!spec) {
     throw createSpecNotFoundError(specId);
   }
 
   // 既にIssueが作成されている場合
-  if (spec.github_issue_id) {
+  if (spec.github_issue_number) {
     console.log(formatHeading('GitHub Issue Already Exists', 1, options.color));
     console.log('');
     console.log(formatKeyValue('Spec ID', spec.id, options.color));
     console.log(formatKeyValue('Spec Name', spec.name, options.color));
-    console.log(formatKeyValue('Issue Number', `#${spec.github_issue_id}`, options.color));
+    console.log(formatKeyValue('Issue Number', `#${spec.github_issue_number}`, options.color));
     console.log('');
     console.log(
-      `View issue: https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/${spec.github_issue_id}`
+      `View issue: https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/${spec.github_issue_number}`
     );
     console.log('');
     return;
@@ -130,12 +127,11 @@ export async function createGitHubIssue(
       labels: [`phase:${spec.phase}`],
     });
 
-    // データベース更新
+    // データベース更新（specs テーブルの updated_at のみ）
     console.log(formatInfo('Updating database...', options.color));
     await db
       .updateTable('specs')
       .set({
-        github_issue_id: issue.number,
         updated_at: new Date().toISOString(),
       })
       .where('id', '=', spec.id)
