@@ -323,21 +323,43 @@ ${spec.description || '説明なし'}
     details: Record<string, unknown>;
   }): Promise<void> {
     const { randomUUID } = await import('crypto');
-    // 仕様書とIssueの同期記録
-    // entity_type は 'spec' を使用（'issue' ではない）
-    await this.db
-      .insertInto('github_sync')
-      .values({
-        id: randomUUID(),
-        entity_type: 'spec',
-        entity_id: params.spec_id,
-        github_id: params.github_issue_id.toString(),
-        github_number: params.github_issue_id,
-        github_node_id: params.github_node_id || null,
-        last_synced_at: new Date().toISOString(),
-        sync_status: params.status === 'success' ? 'success' : 'failed',
-        error_message: params.status === 'error' ? JSON.stringify(params.details) : null,
-      })
-      .execute();
+
+    // 既存のレコードを検索
+    const existing = await this.db
+      .selectFrom('github_sync')
+      .where('entity_type', '=', 'spec')
+      .where('entity_id', '=', params.spec_id)
+      .where('github_number', '=', params.github_issue_id)
+      .selectAll()
+      .executeTakeFirst();
+
+    const syncData = {
+      entity_type: 'spec' as const,
+      entity_id: params.spec_id,
+      github_id: params.github_issue_id.toString(),
+      github_number: params.github_issue_id,
+      github_node_id: params.github_node_id || null,
+      last_synced_at: new Date().toISOString(),
+      sync_status: (params.status === 'success' ? 'success' : 'failed') as 'success' | 'failed',
+      error_message: params.status === 'error' ? JSON.stringify(params.details) : null,
+    };
+
+    if (existing) {
+      // 既存レコードを更新
+      await this.db
+        .updateTable('github_sync')
+        .set(syncData)
+        .where('id', '=', existing.id)
+        .execute();
+    } else {
+      // 新規レコードを挿入
+      await this.db
+        .insertInto('github_sync')
+        .values({
+          id: randomUUID(),
+          ...syncData,
+        })
+        .execute();
+    }
   }
 }

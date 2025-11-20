@@ -30,15 +30,10 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     .execute();
 
   // 2. データをコピー
-  await db
-    .insertInto('specs_new')
-    .columns(['id', 'name', 'description', 'phase', 'created_at', 'updated_at'])
-    .expression((eb) =>
-      eb
-        .selectFrom('specs')
-        .select(['id', 'name', 'description', 'phase', 'created_at', 'updated_at'])
-    )
-    .execute();
+  await sql`
+    INSERT INTO specs_new (id, name, description, phase, created_at, updated_at)
+    SELECT id, name, description, phase, created_at, updated_at FROM specs
+  `.execute(db);
 
   // 3. 古いテーブルを削除
   await db.schema.dropTable('specs').execute();
@@ -74,42 +69,26 @@ export async function down(db: Kysely<unknown>): Promise<void> {
     .execute();
 
   // 2. データをコピー（github_issue_id は github_sync から復元）
-  await db
-    .insertInto('specs_new')
-    .columns([
-      'id',
-      'name',
-      'description',
-      'phase',
-      'created_at',
-      'updated_at',
-      'github_issue_id',
-      'github_project_id',
-      'github_project_item_id',
-      'github_milestone_id',
-    ])
-    .expression((eb) =>
-      eb
-        .selectFrom('specs')
-        .leftJoin('github_sync', (join) =>
-          join
-            .onRef('github_sync.entity_id', '=', 'specs.id')
-            .on('github_sync.entity_type', '=', 'spec')
-        )
-        .select([
-          'specs.id',
-          'specs.name',
-          'specs.description',
-          'specs.phase',
-          'specs.created_at',
-          'specs.updated_at',
-          'github_sync.github_number as github_issue_id',
-          sql<string | null>`NULL`.as('github_project_id'),
-          sql<string | null>`NULL`.as('github_project_item_id'),
-          sql<number | null>`NULL`.as('github_milestone_id'),
-        ])
+  await sql`
+    INSERT INTO specs_new (
+      id, name, description, phase, created_at, updated_at,
+      github_issue_id, github_project_id, github_project_item_id, github_milestone_id
     )
-    .execute();
+    SELECT
+      s.id,
+      s.name,
+      s.description,
+      s.phase,
+      s.created_at,
+      s.updated_at,
+      gs.github_number as github_issue_id,
+      NULL as github_project_id,
+      NULL as github_project_item_id,
+      NULL as github_milestone_id
+    FROM specs s
+    LEFT JOIN github_sync gs
+      ON gs.entity_id = s.id AND gs.entity_type = 'spec'
+  `.execute(db);
 
   // 3. 古いテーブルを削除
   await db.schema.dropTable('specs').execute();
