@@ -149,8 +149,32 @@ async function main() {
   console.log(`   Errors: ${errorCount}`);
   console.log(`   Total processed: ${specFiles.length}`);
 
+  // ステップ3.5: 孤立レコードの削除
+  console.log('\n🗑️  Step 3.5: Deleting orphaned records...\n');
+
+  const recheckResult = await checkDatabaseIntegrity(db, specsDir);
+  let deletedCount = 0;
+
+  if (recheckResult.details.missingFiles.length > 0) {
+    for (const { id, name } of recheckResult.details.missingFiles) {
+      try {
+        await db.deleteFrom('specs').where('id', '=', id).execute();
+        console.log(`✓  [DELETE] Orphaned record: ${name} (${id.substring(0, 8)}...)`);
+        deletedCount++;
+      } catch (error) {
+        console.error(
+          `❌ [ERROR] Failed to delete orphaned record ${id}:`,
+          error instanceof Error ? error.message : String(error)
+        );
+      }
+    }
+    console.log(`\n✓ Deleted ${deletedCount} orphaned record(s)\n`);
+  } else {
+    console.log('✓ No orphaned records found\n');
+  }
+
   // ステップ4: 最終整合性チェック
-  console.log('\n📋 Step 4: Final integrity check...\n');
+  console.log('📋 Step 4: Final integrity check...\n');
   const finalIntegrityResult = await checkDatabaseIntegrity(db, specsDir);
   console.log(formatIntegrityCheckResult(finalIntegrityResult));
 

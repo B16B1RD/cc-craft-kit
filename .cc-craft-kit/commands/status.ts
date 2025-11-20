@@ -5,7 +5,7 @@
 import '../core/config/env.js';
 import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase } from '../core/database/connection.js';
+import { getDatabase, closeDatabase } from '../core/database/connection.js';
 import { createBackup } from '../core/database/backup.js';
 import {
   formatHeading,
@@ -283,5 +283,6 @@ export async function showStatus(
 if (import.meta.url === `file://${process.argv[1]}`) {
   showStatus()
     .then(() => exitGracefully(0))
-    .catch((error) => handleCLIError(error));
+    .catch((error) => handleCLIError(error))
+    .finally(() => closeDatabase());
 }

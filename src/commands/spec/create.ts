@@ -6,7 +6,7 @@ import '../../core/config/env.js';
 import { randomUUID } from 'node:crypto';
 import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase } from '../../core/database/connection.js';
+import { getDatabase, closeDatabase } from '../../core/database/connection.js';
 import { getEventBusAsync } from '../../core/workflow/event-bus.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
 import {
@@ -186,5 +186,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  createSpec(name, description).catch((error) => handleCLIError(error));
+  createSpec(name, description)
+    .catch((error) => handleCLIError(error))
+    .finally(() => closeDatabase());
 }
