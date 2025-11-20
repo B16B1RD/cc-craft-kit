@@ -18,7 +18,8 @@ import {
 import { validateRequired } from '../utils/validation.js';
 import { getCurrentDateTimeForSpec } from '../../core/utils/date-format.js';
 import { fsyncFileAndDirectory } from '../../core/utils/fsync.js';
-import { getCurrentBranch } from '../../core/git/branch-cache.js';
+import { getCurrentBranch, clearBranchCache } from '../../core/git/branch-cache.js';
+import { createSpecBranch } from '../../core/git/branch-creation.js';
 
 /**
  * Requirements テンプレート
@@ -131,43 +132,28 @@ export async function createSpec(
 
   const specPath = join(specsDir, `${id}.md`);
 
-  // ブランチ名生成（spec/<spec-id の先頭8文字>）
-  const shortSpecId = id.substring(0, 8);
-  const branchName = `spec/${shortSpecId}`;
+  // ブランチ作成結果
   let branchCreated = false;
+  let branchName: string | null = null;
   let originalBranch: string | null = null;
 
   try {
     // 0. ブランチ作成（仕様書作成時に自動作成）
-    try {
-      // Git リポジトリの存在確認
-      execSync('git rev-parse --is-inside-work-tree', { stdio: 'ignore' });
+    const branchResult = createSpecBranch(id);
 
-      // 現在のブランチ名を取得
-      originalBranch = getCurrentBranch();
+    if (branchResult.created && branchResult.branchName) {
+      branchCreated = true;
+      branchName = branchResult.branchName;
+      originalBranch = branchResult.originalBranch;
 
-      // 保護ブランチチェック
-      const protectedBranches = (process.env.PROTECTED_BRANCHES || 'main,develop').split(',');
-      if (protectedBranches.includes(originalBranch)) {
-        console.log(
-          formatInfo(
-            `保護ブランチ ${originalBranch} では仕様書作成時にブランチを作成しません。`,
-            options.color
-          )
-        );
-      } else {
-        // ブランチ作成
-        execSync(`git checkout -b ${branchName}`, { stdio: 'inherit' });
-        branchCreated = true;
-        console.log(formatInfo(`Created new branch: ${branchName}`, options.color));
-      }
-    } catch {
-      // Git リポジトリ未初期化、またはその他のエラー
+      // ブランチキャッシュをクリア（次回の getCurrentBranch() で最新を取得）
+      clearBranchCache();
+
+      console.log(formatInfo(`Created new branch: ${branchResult.branchName}`, options.color));
+    } else {
+      originalBranch = branchResult.originalBranch;
       console.log(
-        formatInfo(
-          'ブランチ作成に失敗しました。仕様書はブランチなしで作成されます。',
-          options.color
-        )
+        formatInfo(branchResult.reason || 'ブランチ作成をスキップしました。', options.color)
       );
     }
 
@@ -179,7 +165,7 @@ export async function createSpec(
         name,
         description: description || null,
         phase: 'requirements',
-        branch_name: branchCreated ? branchName : getCurrentBranch(),
+        branch_name: branchCreated && branchName ? branchName : getCurrentBranch(),
         created_at: now,
         updated_at: now,
       })
@@ -228,7 +214,7 @@ export async function createSpec(
     console.error(formatInfo('Rolling back due to error...', options.color));
 
     // ブランチ削除（作成された場合のみ）
-    if (branchCreated && originalBranch) {
+    if (branchCreated && originalBranch && branchName) {
       try {
         execSync(`git checkout ${originalBranch}`, { stdio: 'ignore' });
         execSync(`git branch -D ${branchName}`, { stdio: 'ignore' });
