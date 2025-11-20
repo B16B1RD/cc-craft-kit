@@ -29,6 +29,7 @@ export interface SpecsTable {
   name: string;
   description: string | null;
   phase: SpecPhase;
+  branch_name: string; // 仕様書が作成されたブランチ名
   created_at: ColumnType<Date, string | undefined, never>;
   updated_at: ColumnType<Date, string | undefined, string>;
 }

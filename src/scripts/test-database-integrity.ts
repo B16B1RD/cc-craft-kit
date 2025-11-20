@@ -80,6 +80,7 @@ async function main() {
           name,
           description: `E2E テスト用の仕様書 ${i + 1}`,
           phase: 'requirements',
+          branch_name: 'develop', // テスト用のデフォルトブランチ
           created_at: now,
           updated_at: now,
         })

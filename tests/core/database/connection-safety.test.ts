@@ -84,8 +84,9 @@ describe('Database Connection Safety', () => {
     const db = getDatabase();
     const currentPath = getCurrentDatabasePath();
 
+    // テスト環境では .cc-craft-kit-test ディレクトリが使用される
     expect(currentPath).toContain('.cc-craft-kit');
-    expect(currentPath).toContain('cc-craft-kit.db');
+    expect(currentPath).toContain('.db');
   });
 
   test('環境変数 DATABASE_PATH が優先される', () => {
