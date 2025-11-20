@@ -378,36 +378,93 @@ clearBranchCache();
 const newBranch = getCurrentBranch(); // 再度 git コマンド実行
 ```
 
+#### ブランチ作成ロジック
+
+仕様書作成時のブランチ作成ロジックは、`src/core/git/branch-creation.ts` に実装されています。
+
+**主な機能:**
+
+1. **セキュリティ強化**: UUID フォーマット検証とサニタイゼーションによりコマンドインジェクションを防止
+2. **保護ブランチ検出**: 環境変数 `PROTECTED_BRANCHES` (デフォルト: `main,develop`) に基づいてブランチ作成をスキップ
+3. **ブランチ作成検証**: ブランチ作成後、実際に切り替わったか検証し、失敗時は自動ロールバック
+4. **明確なエラーメッセージ**: Git 未初期化、保護ブランチ、作成失敗など、状況に応じた詳細なメッセージを返却
+
+```typescript
+import { createSpecBranch } from './core/git/branch-creation.js';
+
+// 仕様書作成時に呼び出す
+const result = createSpecBranch(specId);
+
+if (result.created) {
+  console.log(`Created branch: ${result.branchName}`);
+  // ブランチキャッシュをクリア
+  clearBranchCache();
+} else {
+  console.log(`Skipped: ${result.reason}`);
+}
+```
+
+**ブランチ作成結果の型定義:**
+
+```typescript
+interface BranchCreationResult {
+  created: boolean;                // ブランチが作成されたか
+  branchName: string | null;       // 作成されたブランチ名
+  originalBranch: string | null;   // 元のブランチ名
+  reason?: string;                 // スキップされた理由
+}
+```
+
 #### エラーハンドリングとロールバック
 
-仕様書作成中にエラーが発生した場合、以下を自動的にロールバックする。
+仕様書作成中にエラーが発生した場合、以下を自動的にロールバックします。
 
 1. **データベースレコード削除** - 作成途中の仕様書レコードを削除
 2. **ファイル削除** - 作成途中の仕様書ファイルを削除
 3. **ブランチ削除** - 作成したブランチを削除し、元のブランチに戻る
 
+**実装例 (`src/commands/spec/create.ts`):**
+
 ```typescript
-// src/commands/spec/create.ts の実装例
+let branchCreated = false;
+let branchName: string | null = null;
+let originalBranch: string | null = null;
+
 try {
   // 1. ブランチ作成
-  execSync(`git checkout -b ${branchName}`);
+  const branchResult = createSpecBranch(id);
+  if (branchResult.created && branchResult.branchName) {
+    branchCreated = true;
+    branchName = branchResult.branchName;
+    originalBranch = branchResult.originalBranch;
+    clearBranchCache();
+  }
 
   // 2. データベースレコード作成
   await db.insertInto('specs').values({ ... }).execute();
 
   // 3. ファイル作成
   writeFileSync(specPath, content);
+  fsyncFileAndDirectory(specPath);
 } catch (error) {
   // ロールバック処理
-  if (branchCreated) {
-    execSync(`git checkout ${originalBranch}`);
-    execSync(`git branch -D ${branchName}`);
+  if (branchCreated && originalBranch && branchName) {
+    execSync(`git checkout ${originalBranch}`, { stdio: 'ignore' });
+    execSync(`git branch -D ${branchName}`, { stdio: 'ignore' });
   }
   await db.deleteFrom('specs').where('id', '=', id).execute();
-  unlinkSync(specPath);
+  if (existsSync(specPath)) {
+    unlinkSync(specPath);
+  }
   throw error;
 }
 ```
+
+**セキュリティ対策:**
+
+- UUID フォーマット検証により、不正な仕様書 ID によるコマンドインジェクションを防止
+- ブランチ名のサニタイゼーション（16 進数のみ許可）により、特殊文字の混入を防止
+- `stdio: 'pipe'` によるコマンド実行で、エラーメッセージの漏洩を防止
 
 #### データベース整合性チェック
 
