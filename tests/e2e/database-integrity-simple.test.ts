@@ -36,6 +36,9 @@ describe('E2E: データベース整合性テスト（簡易版）', () => {
   const originalCwd = process.cwd();
 
   beforeAll(async () => {
+    // データベース接続をクローズ（既存のインスタンスがあれば）
+    await closeDatabase();
+
     // 一時ディレクトリを作成
     testDir = await fs.mkdtemp(path.join(tmpdir(), 'cc-craft-kit-e2e-'));
     const ccCraftKitDir = path.join(testDir, '.cc-craft-kit');
@@ -46,9 +49,6 @@ describe('E2E: データベース整合性テスト（簡易版）', () => {
 
     // 作業ディレクトリを変更
     process.chdir(testDir);
-
-    // データベース接続をクローズ（既存のインスタンスがあれば）
-    await closeDatabase();
 
     // テーブル作成
     const db = getDatabase({ databasePath: dbPath });

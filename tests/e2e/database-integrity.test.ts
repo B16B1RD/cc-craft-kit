@@ -99,6 +99,8 @@ describe('E2E: データベース整合性テスト', () => {
   const originalCwd = process.cwd(); // describe スコープで定義
 
   beforeEach(async () => {
+    // データベース接続をクローズ（既存のインスタンスがあれば）
+    await closeDatabase();
 
     // 一時ディレクトリを作成
     testDir = await fs.mkdtemp(path.join(tmpdir(), 'cc-craft-kit-e2e-'));
@@ -110,9 +112,6 @@ describe('E2E: データベース整合性テスト', () => {
 
     // 作業ディレクトリを変更
     process.chdir(testDir);
-
-    // データベース接続をクローズ（既存のインスタンスがあれば）
-    await closeDatabase();
   });
 
   afterEach(async () => {
