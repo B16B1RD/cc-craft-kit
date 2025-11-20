@@ -25,20 +25,25 @@ export interface BranchCreationResult {
  * 仕様書用のブランチを作成
  *
  * @param specId 仕様書 ID
+ * @param customBranchName カスタムブランチ名（省略可能）
  * @returns ブランチ作成結果
  * @throws Error ブランチ作成に失敗した場合
  *
  * @example
  * ```typescript
- * const result = createSpecBranch('12345678-1234-1234-1234-123456789abc');
+ * // カスタムブランチ名を使用
+ * const result = createSpecBranch('12345678-1234-1234-1234-123456789abc', 'improve-branch-naming');
  * if (result.created) {
  *   console.log(`Created branch: ${result.branchName}`);
  * } else {
  *   console.log(`Skipped: ${result.reason}`);
  * }
+ *
+ * // デフォルトブランチ名を使用
+ * const result2 = createSpecBranch('12345678-1234-1234-1234-123456789abc');
  * ```
  */
-export function createSpecBranch(specId: string): BranchCreationResult {
+export function createSpecBranch(specId: string, customBranchName?: string): BranchCreationResult {
   // specId のバリデーション（UUID フォーマット検証）
   const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!UUID_REGEX.test(specId)) {
@@ -47,9 +52,22 @@ export function createSpecBranch(specId: string): BranchCreationResult {
 
   const shortSpecId = specId.substring(0, 8);
 
-  // ブランチ名のサニタイゼーション（防御的プログラミング）
-  const sanitizedShortId = shortSpecId.replace(/[^0-9a-f]/gi, '');
-  const branchName = `spec/${sanitizedShortId}`;
+  // ブランチ名生成
+  let branchName: string;
+  if (customBranchName) {
+    // カスタムブランチ名のサニタイズ
+    const sanitized = customBranchName
+      .toLowerCase()
+      .replace(/[^a-z0-9-_]/g, '-') // Git互換文字のみ
+      .replace(/-+/g, '-') // 連続ハイフンを統合
+      .replace(/^-|-$/g, ''); // 先頭・末尾のハイフンを削除
+
+    branchName = `spec/${shortSpecId}-${sanitized}`;
+  } else {
+    // フォールバック（従来形式）
+    const sanitizedShortId = shortSpecId.replace(/[^0-9a-f]/gi, '');
+    branchName = `spec/${sanitizedShortId}`;
+  }
 
   // 1. Git リポジトリの存在確認
   try {

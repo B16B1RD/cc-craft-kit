@@ -95,7 +95,7 @@ ${description || '(背景を記述してください)'}
 export async function createSpec(
   name: string,
   description?: string,
-  options: { color: boolean } = { color: true }
+  options: { color: boolean; branchName?: string } = { color: true }
 ): Promise<void> {
   const cwd = process.cwd();
   const ccCraftKitDir = join(cwd, '.cc-craft-kit');
@@ -139,7 +139,9 @@ export async function createSpec(
 
   try {
     // 0. ブランチ作成（仕様書作成時に自動作成）
-    const branchResult = createSpecBranch(id);
+    const branchResult = options.branchName
+      ? createSpecBranch(id, options.branchName)
+      : createSpecBranch(id);
 
     if (branchResult.created && branchResult.branchName) {
       branchCreated = true;
@@ -250,13 +252,17 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const name = process.argv[2];
   const description = process.argv[3];
 
+  // --branch-name オプションのパース
+  const branchNameIndex = process.argv.indexOf('--branch-name');
+  const branchName = branchNameIndex !== -1 ? process.argv[branchNameIndex + 1] : undefined;
+
   if (!name) {
     console.error('Error: spec-name is required');
-    console.error('Usage: npx tsx create.ts <spec-name> [description]');
+    console.error('Usage: npx tsx create.ts <spec-name> [description] [--branch-name <name>]');
     process.exit(1);
   }
 
-  createSpec(name, description)
+  createSpec(name, description, { color: true, branchName })
     .catch((error) => handleCLIError(error))
     .finally(() => closeDatabase());
 }
