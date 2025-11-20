@@ -16,7 +16,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
   let currentBranch = 'develop';
   try {
     currentBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
-  } catch (error) {
+  } catch {
     console.warn('Git ブランチ名の取得に失敗しました。デフォルト値 "develop" を使用します。');
   }
 

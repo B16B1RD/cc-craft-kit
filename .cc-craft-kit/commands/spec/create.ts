@@ -161,10 +161,13 @@ export async function createSpec(
         branchCreated = true;
         console.log(formatInfo(`Created new branch: ${branchName}`, options.color));
       }
-    } catch (error) {
+    } catch {
       // Git リポジトリ未初期化、またはその他のエラー
       console.log(
-        formatInfo('ブランチ作成に失敗しました。仕様書はブランチなしで作成されます。', options.color)
+        formatInfo(
+          'ブランチ作成に失敗しました。仕様書はブランチなしで作成されます。',
+          options.color
+        )
       );
     }
 

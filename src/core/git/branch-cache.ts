@@ -43,7 +43,7 @@ export function getCurrentBranch(options: { cache: boolean } = { cache: true }):
     // キャッシュに保存
     cachedBranchName = branchName;
     return branchName;
-  } catch (error) {
+  } catch {
     // Git リポジトリ未初期化、またはエラーの場合はデフォルト値を返す
     const defaultBranch = 'main';
     cachedBranchName = defaultBranch;

@@ -179,10 +179,7 @@ export async function checkDatabaseIntegrity(
   }
 
   // 3. データベースレコードの取得
-  const dbRecords = await db
-    .selectFrom('specs')
-    .select(['id', 'name', 'branch_name'])
-    .execute();
+  const dbRecords = await db.selectFrom('specs').select(['id', 'name', 'branch_name']).execute();
   const dbRecordMap = new Map(dbRecords.map((r) => [r.id, r.name]));
 
   // 3-1. ブランチ整合性チェック
