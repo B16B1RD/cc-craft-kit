@@ -193,3 +193,50 @@ export async function closeDatabase(): Promise<void> {
 export function getCurrentDatabasePath(): string | null {
   return dbPath;
 }
+
+/**
+ * プロセス終了時のシグナルハンドラー
+ *
+ * SIGINT (Ctrl+C) および SIGTERM シグナル受信時に、
+ * データベース接続を安全にクローズします。
+ */
+let signalHandlersRegistered = false;
+
+function registerSignalHandlers(): void {
+  if (signalHandlersRegistered) {
+    return; // 既に登録済み
+  }
+
+  signalHandlersRegistered = true;
+
+  // SIGINT (Ctrl+C) ハンドラー
+  process.on('SIGINT', async () => {
+    console.log('\n\nReceived SIGINT, closing database...');
+    await closeDatabase();
+    process.exit(0);
+  });
+
+  // SIGTERM ハンドラー
+  process.on('SIGTERM', async () => {
+    console.log('\n\nReceived SIGTERM, closing database...');
+    await closeDatabase();
+    process.exit(0);
+  });
+
+  // uncaughtException ハンドラー（未キャッチの例外）
+  process.on('uncaughtException', async (error) => {
+    console.error('\n\nUncaught exception:', error);
+    await closeDatabase();
+    process.exit(1);
+  });
+
+  // unhandledRejection ハンドラー（未処理の Promise 拒否）
+  process.on('unhandledRejection', async (reason) => {
+    console.error('\n\nUnhandled rejection:', reason);
+    await closeDatabase();
+    process.exit(1);
+  });
+}
+
+// モジュールロード時にシグナルハンドラーを自動登録
+registerSignalHandlers();

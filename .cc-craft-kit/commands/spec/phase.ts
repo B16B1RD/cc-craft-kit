@@ -5,10 +5,14 @@
 import '../../core/config/env.js';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase } from '../../core/database/connection.js';
+import { getDatabase, closeDatabase } from '../../core/database/connection.js';
 import { getEventBusAsync } from '../../core/workflow/event-bus.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
-import { createProjectNotInitializedError, createSpecNotFoundError, handleCLIError } from '../utils/error-handler.js';
+import {
+  createProjectNotInitializedError,
+  createSpecNotFoundError,
+  handleCLIError,
+} from '../utils/error-handler.js';
 import { validateSpecId, validatePhase, Phase } from '../utils/validation.js';
 import { ensureGitHubIssue } from '../../integrations/github/ensure-issue.js';
 
@@ -157,5 +161,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  updateSpecPhase(specId, phase).catch((error) => handleCLIError(error));
+  updateSpecPhase(specId, phase).catch((error) => handleCLIError(error))
+    .finally(() => closeDatabase());
 }

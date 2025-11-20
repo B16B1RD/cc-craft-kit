@@ -55,11 +55,18 @@ export async function checkSqliteIntegrity(db: Kysely<Database>): Promise<Sqlite
       errors: [],
     };
   } catch (error) {
+    // テーブルが存在しない場合は正常（マイグレーション前の状態）
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('no such table')) {
+      return {
+        isValid: true,
+        errors: [],
+      };
+    }
+
     return {
       isValid: false,
-      errors: [
-        `Database corruption detected: ${error instanceof Error ? error.message : String(error)}`,
-      ],
+      errors: [`Database corruption detected: ${errorMessage}`],
     };
   }
 }

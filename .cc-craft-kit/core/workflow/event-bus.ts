@@ -7,6 +7,7 @@ import type { Metadata } from '../types/common.js';
 export type WorkflowEventType =
   | 'spec.created'
   | 'spec.updated'
+  | 'spec.deleted'
   | 'spec.phase_changed'
   | 'task.created'
   | 'task.status_changed'
