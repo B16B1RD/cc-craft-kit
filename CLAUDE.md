@@ -248,15 +248,39 @@ await eventBus.emit(
 **主要テーブル:**
 
 - `specs` - 仕様書（フェーズ管理: requirements → design → tasks → implementation → completed）
+  - GitHub 連携情報は `github_sync` テーブルで管理（`specs` テーブルには GitHub 関連カラムなし）
 - `tasks` - タスク（ステータス: todo → in_progress → blocked → review → done）
 - `logs` - アクションログ（レベル: debug/info/warn/error）
-- `github_sync` - GitHub 同期状態管理
+- `github_sync` - GitHub 同期状態管理（**Issue/PR 情報の単一情報源**）
+  - `entity_type`: 連携対象エンティティ（`spec` または `task`）
+  - `entity_id`: 対象の仕様書 ID またはタスク ID
+  - `github_id`: GitHub API リソース ID
+  - `github_number`: Issue/PR 番号
+  - `github_node_id`: GraphQL API 用ノード ID
+  - `sync_status`: 同期ステータス（`success` / `failed` / `pending`）
 
 **重要なインデックス:**
 
 - `specs.phase` - フェーズでのフィルタリング用
 - `tasks.status` - ステータス検索用
 - `github_sync.entity_id` - 同期レコード検索用
+- `github_sync.entity_type` - エンティティタイプでのフィルタリング用
+
+**GitHub 統合のデータアクセスパターン:**
+
+仕様書と GitHub 情報を結合取得する場合は、以下のヘルパー関数を使用すること。
+
+```typescript
+// 単一仕様書 + GitHub 情報
+import { getSpecWithGitHubInfo } from '../commands/spec/helpers.js';
+const spec = await getSpecWithGitHubInfo(db, specId);
+
+// 複数仕様書 + GitHub 情報
+import { getSpecsWithGitHubInfo } from '../commands/spec/helpers.js';
+const specs = await getSpecsWithGitHubInfo(db, { phase: 'implementation' });
+```
+
+直接 JOIN を書く代わりに、これらのヘルパー関数を使用することで、一貫性のあるデータアクセスを実現します。
 
 ### カスタムスラッシュコマンド
 

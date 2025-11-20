@@ -180,20 +180,28 @@ interface cc-craft-kitPlugin {
 ### 2. GitHub同期フロー
 
 ```text
-1. Event: 'task:created'
+1. Event: 'spec.created' または 'task.created'
    ↓
 2. GitHub Client: リスナー起動
    ↓
 3. Octokit: Issue作成API呼び出し
    ↓
-4. Response: Issue ID取得
+4. Response: Issue ID, number, node_id 取得
    ↓
-5. Database: tasks テーブル更新
+5. Database: github_sync テーブルへINSERT
+   - entity_type: 'spec' または 'task'
+   - entity_id: 仕様書/タスクのUUID
+   - github_id: API返却のID
+   - github_number: Issue番号
+   - github_node_id: GraphQL用ノードID
+   - sync_status: 'success'
    ↓
-6. Database: github_sync テーブルへINSERT
+6. Event: 'github.issue_created' 発火
    ↓
-7. Event: 'github:issue:created' 発火
+7. Database: logs テーブルへ同期ログ記録
 ```
+
+**重要**: `specs` テーブルや `tasks` テーブルには GitHub 情報を保存しません。すべて `github_sync` テーブルで一元管理します。
 
 ## 設計原則
 
@@ -259,9 +267,10 @@ interface cc-craft-kitPlugin {
 
 ### 1. データベース最適化
 
-- インデックス設計 (phase, status, github_issue_id 等)
+- インデックス設計 (phase, status, github_sync.entity_id 等)
 - WAL モード有効化
 - 外部キー制約
+- `github_sync` テーブルによる GitHub 情報の一元管理（データ重複排除）
 
 ### 2. GitHub API
 
