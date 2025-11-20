@@ -33,11 +33,11 @@ function formatDateTime(date: Date): string {
  * テスト用仕様書作成ヘルパー（create.ts の関数を直接呼ばずに実装）
  */
 async function createSpecForTest(
+  db: ReturnType<typeof getDatabase>,
   name: string,
   description: string | undefined,
   specsDir: string
 ): Promise<string> {
-  const db = getDatabase();
   const id = randomUUID();
   const now = new Date().toISOString();
 
@@ -77,8 +77,11 @@ ${description || '(背景を記述してください)'}
 /**
  * テスト用仕様書削除ヘルパー（delete.ts の関数を直接呼ばずに実装）
  */
-async function deleteSpecForTest(specId: string, specsDir: string): Promise<void> {
-  const db = getDatabase();
+async function deleteSpecForTest(
+  db: ReturnType<typeof getDatabase>,
+  specId: string,
+  specsDir: string
+): Promise<void> {
 
   // DB レコード削除
   await db.deleteFrom('specs').where('id', '=', specId).execute();
@@ -164,7 +167,7 @@ describe('E2E: データベース整合性テスト', () => {
         const specName = `テスト仕様書 ${i + 1}`;
         const specDescription = `E2E テスト用の仕様書 ${i + 1}`;
 
-        const specId = await createSpecForTest(specName, specDescription, specsDir);
+        const specId = await createSpecForTest(db, specName, specDescription, specsDir);
         createdIds.push(specId);
 
         // 整合性チェック（作成後）
@@ -184,7 +187,7 @@ describe('E2E: データベース整合性テスト', () => {
       for (let i = 0; i < iterations; i++) {
         const specId = createdIds[i];
 
-        await deleteSpecForTest(specId, specsDir);
+        await deleteSpecForTest(db, specId, specsDir);
 
         // 整合性チェック（削除後）
         const deleteCheck = await checkDatabaseIntegrity(db, specsDir);
@@ -233,14 +236,14 @@ describe('E2E: データベース整合性テスト', () => {
       for (let i = 0; i < iterations; i++) {
         // 作成
         const specName = `交互テスト仕様書 ${i + 1}`;
-        const specId = await createSpecForTest(specName, undefined, specsDir);
+        const specId = await createSpecForTest(db, specName, undefined, specsDir);
 
         // 作成直後の整合性チェック
         const createCheck = await checkDatabaseIntegrity(db, specsDir);
         expect(createCheck.isValid).toBe(true);
 
         // 削除
-        await deleteSpecForTest(specId, specsDir);
+        await deleteSpecForTest(db, specId, specsDir);
 
         // 削除直後の整合性チェック
         const deleteCheck = await checkDatabaseIntegrity(db, specsDir);
@@ -285,7 +288,7 @@ describe('E2E: データベース整合性テスト', () => {
       // 20 個の仕様書を作成
       const createdIds: string[] = [];
       for (let i = 0; i < 20; i++) {
-        const specId = await createSpecForTest(`孤立テスト仕様書 ${i + 1}`, undefined, specsDir);
+        const specId = await createSpecForTest(db, `孤立テスト仕様書 ${i + 1}`, undefined, specsDir);
         createdIds.push(specId);
       }
 
@@ -295,7 +298,7 @@ describe('E2E: データベース整合性テスト', () => {
 
       // 10 個削除
       for (let i = 0; i < 10; i++) {
-        await deleteSpecForTest(createdIds[i], specsDir);
+        await deleteSpecForTest(db, createdIds[i], specsDir);
       }
 
       // 削除後チェック: 孤立レコードが 0 件
@@ -306,7 +309,7 @@ describe('E2E: データベース整合性テスト', () => {
 
       // 残りをすべて削除
       for (let i = 10; i < 20; i++) {
-        await deleteSpecForTest(createdIds[i], specsDir);
+        await deleteSpecForTest(db, createdIds[i], specsDir);
       }
 
       // 最終チェック: すべて削除され、孤立レコードが 0 件
