@@ -113,7 +113,7 @@ E2E テスト用の仕様書 ${i + 1}
       if ((createCheck.details.missingFiles?.length || 0) > 0) {
         throw new Error(`Missing files detected after creating spec ${i + 1}`);
       }
-      if ((createCheck.details.missingDbRecords?.length || 0) > 0) {
+      if ((createCheck.details.missingInDb?.length || 0) > 0) {
         throw new Error(`Missing DB records detected after creating spec ${i + 1}`);
       }
 
@@ -157,7 +157,7 @@ E2E テスト用の仕様書 ${i + 1}
       if ((deleteCheck.details.missingFiles?.length || 0) > 0) {
         throw new Error(`Missing files detected after deleting spec ${i + 1}`);
       }
-      if ((deleteCheck.details.missingDbRecords?.length || 0) > 0) {
+      if ((deleteCheck.details.missingInDb?.length || 0) > 0) {
         throw new Error(`Missing DB records detected after deleting spec ${i + 1}`);
       }
 
@@ -180,7 +180,7 @@ E2E テスト用の仕様書 ${i + 1}
     if ((finalCheck.details.missingFiles?.length || 0) > 0) {
       throw new Error('Orphaned records detected');
     }
-    if ((finalCheck.details.missingDbRecords?.length || 0) > 0) {
+    if ((finalCheck.details.missingInDb?.length || 0) > 0) {
       throw new Error('Missing DB records detected');
     }
 

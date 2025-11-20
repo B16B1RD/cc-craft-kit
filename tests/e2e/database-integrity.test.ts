@@ -168,7 +168,7 @@ describe('E2E: データベース整合性テスト', () => {
         const createCheck = await checkDatabaseIntegrity(db, specsDir);
         expect(createCheck.isValid).toBe(true);
         expect(createCheck.details.missingFiles).toHaveLength(0);
-        expect(createCheck.details.missingDbRecords).toHaveLength(0);
+        expect(createCheck.details.missingInDb).toHaveLength(0);
       }
 
       // 中間整合性チェック
@@ -187,7 +187,7 @@ describe('E2E: データベース整合性テスト', () => {
         const deleteCheck = await checkDatabaseIntegrity(db, specsDir);
         expect(deleteCheck.isValid).toBe(true);
         expect(deleteCheck.details.missingFiles).toHaveLength(0);
-        expect(deleteCheck.details.missingDbRecords).toHaveLength(0);
+        expect(deleteCheck.details.missingInDb).toHaveLength(0);
       }
 
       // 最終整合性チェック
@@ -196,7 +196,7 @@ describe('E2E: データベース整合性テスト', () => {
       expect(finalCheck.stats.totalDbRecords).toBe(0);
       expect(finalCheck.stats.totalFiles).toBe(0);
       expect(finalCheck.details.missingFiles).toHaveLength(0);
-      expect(finalCheck.details.missingDbRecords).toHaveLength(0);
+      expect(finalCheck.details.missingInDb).toHaveLength(0);
     }, 60000); // タイムアウト: 60 秒
 
     it('作成・削除を交互に実行しても不整合が発生しない', async () => {
@@ -250,7 +250,7 @@ describe('E2E: データベース整合性テスト', () => {
       const finalCheck = await checkDatabaseIntegrity(db, specsDir);
       expect(finalCheck.isValid).toBe(true);
       expect(finalCheck.details.missingFiles).toHaveLength(0);
-      expect(finalCheck.details.missingDbRecords).toHaveLength(0);
+      expect(finalCheck.details.missingInDb).toHaveLength(0);
     }, 60000); // タイムアウト: 60 秒
 
     it('孤立レコードが発生しない', async () => {
@@ -366,7 +366,7 @@ describe('E2E: データベース整合性テスト', () => {
       expect(check.stats.totalDbRecords).toBe(5);
       expect(check.stats.totalFiles).toBe(5);
       expect(check.details.missingFiles).toHaveLength(0);
-      expect(check.details.missingDbRecords).toHaveLength(0);
+      expect(check.details.missingInDb).toHaveLength(0);
     });
   });
 });

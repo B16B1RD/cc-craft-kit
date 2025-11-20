@@ -122,7 +122,7 @@ E2E テスト用の仕様書 ${i + 1}
       const createCheck = await checkDatabaseIntegrity(db, specsDir);
       expect(createCheck.isValid).toBe(true);
       expect(createCheck.details.missingFiles).toHaveLength(0);
-      expect(createCheck.details.missingDbRecords).toHaveLength(0);
+      expect(createCheck.details.missingInDb).toHaveLength(0);
     }
 
     // 中間整合性チェック
@@ -146,7 +146,7 @@ E2E テスト用の仕様書 ${i + 1}
       const deleteCheck = await checkDatabaseIntegrity(db, specsDir);
       expect(deleteCheck.isValid).toBe(true);
       expect(deleteCheck.details.missingFiles).toHaveLength(0);
-      expect(deleteCheck.details.missingDbRecords).toHaveLength(0);
+      expect(deleteCheck.details.missingInDb).toHaveLength(0);
     }
 
     // 最終整合性チェック
@@ -155,6 +155,6 @@ E2E テスト用の仕様書 ${i + 1}
     expect(finalCheck.stats.totalDbRecords).toBe(0);
     expect(finalCheck.stats.totalFiles).toBe(0);
     expect(finalCheck.details.missingFiles).toHaveLength(0);
-    expect(finalCheck.details.missingDbRecords).toHaveLength(0);
+    expect(finalCheck.details.missingInDb).toHaveLength(0);
   }, 30000); // タイムアウト: 30 秒
 });
