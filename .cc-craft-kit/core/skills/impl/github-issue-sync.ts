@@ -266,10 +266,7 @@ export class GitHubIssueSync implements Skill<GitHubIssueSyncInput, GitHubIssueS
           .on('github_sync.entity_type', '=', 'spec')
       )
       .where('specs.id', '=', input.specId)
-      .select([
-        'specs.id',
-        'github_sync.github_number as github_milestone_id',
-      ])
+      .select(['specs.id', 'github_sync.github_number as github_milestone_id'])
       .executeTakeFirst();
 
     if (!spec || !spec.github_milestone_id) {

@@ -132,10 +132,10 @@ describe('SyncService', () => {
           name: 'Old Name',
           description: null,
           phase: 'requirements',
-          github_issue_id: null,
-          github_project_id: null,
-          github_project_item_id: null,
-          github_milestone_id: null,
+          
+          
+          
+          
           created_at: '2025-11-19T09:00:00',
           updated_at: '2025-11-19T09:00:00',
         };
@@ -373,10 +373,10 @@ describe('SyncService', () => {
           name: 'Existing Spec',
           description: null,
           phase: 'requirements',
-          github_issue_id: null,
-          github_project_id: null,
-          github_project_item_id: null,
-          github_milestone_id: null,
+          
+          
+          
+          
           created_at: '2025-11-19T09:00:00',
           updated_at: '2025-11-19T09:00:00',
         };

@@ -48,9 +48,6 @@ describe('ensureGitHubIssue', () => {
           name: 'テスト仕様',
           description: 'トークン未設定テスト',
           phase: 'requirements',
-          github_issue_id: null,
-          github_project_id: null,
-          github_milestone_id: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -85,9 +82,6 @@ describe('ensureGitHubIssue', () => {
           name: 'テスト仕様',
           description: 'Issue 存在テスト',
           phase: 'requirements',
-          github_issue_id: 123,
-          github_project_id: null,
-          github_milestone_id: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -129,9 +123,6 @@ describe('ensureGitHubIssue', () => {
           name: 'テスト仕様',
           description: 'ログ記録テスト',
           phase: 'requirements',
-          github_issue_id: null,
-          github_project_id: null,
-          github_milestone_id: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })

@@ -13,6 +13,7 @@ import type { ProjectResponse } from '../../src/integrations/github/projects.js'
 export function createIssueFixture(overrides?: Partial<IssueResponse>): IssueResponse {
   return {
     id: 123456789,
+    node_id: 'MDU6SXNzdWUxMjM0NTY3ODk=',
     number: 1,
     title: 'Test Issue',
     body: 'This is a test issue body',

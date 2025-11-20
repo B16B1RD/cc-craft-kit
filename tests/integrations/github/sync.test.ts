@@ -69,9 +69,9 @@ describe('GitHubSyncService', () => {
           name: 'テスト仕様',
           description: 'GitHub同期テスト',
           phase: 'requirements',
-          github_issue_id: null,
-          github_project_id: null,
-          github_milestone_id: null,
+          
+          
+          
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -97,14 +97,15 @@ describe('GitHubSyncService', () => {
         })
       );
 
-      // 仕様書が更新されたことを確認
-      const updatedSpec = await lifecycle.db
-        .selectFrom('specs')
-        .where('id', '=', specId)
+      // github_sync レコードが作成されたことを確認
+      const syncRecord = await lifecycle.db
+        .selectFrom('github_sync')
+        .where('entity_id', '=', specId)
+        .where('entity_type', '=', 'spec')
         .selectAll()
         .executeTakeFirst();
 
-      expect(updatedSpec?.github_issue_id).toBe(mockIssueResponse.data.number);
+      expect(syncRecord?.github_number).toBe(mockIssueResponse.data.number);
 
       // 同期ログが記録されたことを確認
       const syncLogs = await lifecycle.db
@@ -118,7 +119,7 @@ describe('GitHubSyncService', () => {
       expect(syncLogs[0].entity_type).toBe('spec');
     });
 
-    test('既存 Issue を更新する（github_issue_id が設定済み）', async () => {
+    test('既存 Issue を更新する（github_sync が設定済み）', async () => {
       const specId = randomUUID();
       const existingIssueNumber = 123;
 
@@ -130,11 +131,23 @@ describe('GitHubSyncService', () => {
           name: '既存仕様',
           description: '既存Issue更新テスト',
           phase: 'design',
-          github_issue_id: existingIssueNumber,
-          github_project_id: null,
-          github_milestone_id: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'spec',
+          entity_id: specId,
+          github_id: String(existingIssueNumber),
+          github_number: existingIssueNumber,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
         })
         .execute();
 
@@ -191,9 +204,9 @@ describe('GitHubSyncService', () => {
           name: 'エラーテスト',
           description: null,
           phase: 'requirements',
-          github_issue_id: null,
-          github_project_id: null,
-          github_milestone_id: null,
+          
+          
+          
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -224,11 +237,23 @@ describe('GitHubSyncService', () => {
           name: '逆同期テスト',
           description: null,
           phase: 'implementation',
-          github_issue_id: issueNumber,
-          github_project_id: null,
-          github_milestone_id: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'spec',
+          entity_id: specId,
+          github_id: String(issueNumber),
+          github_number: issueNumber,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
         })
         .execute();
 
@@ -285,11 +310,23 @@ describe('GitHubSyncService', () => {
           name: 'クローズテスト',
           description: null,
           phase: 'implementation',
-          github_issue_id: issueNumber,
-          github_project_id: null,
-          github_milestone_id: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'spec',
+          entity_id: specId,
+          github_id: String(issueNumber),
+          github_number: issueNumber,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
         })
         .execute();
 
@@ -356,11 +393,23 @@ describe('GitHubSyncService', () => {
           name: 'Project追加テスト',
           description: null,
           phase: 'requirements',
-          github_issue_id: issueNumber,
-          github_project_id: null,
-          github_milestone_id: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'spec',
+          entity_id: specId,
+          github_id: String(issueNumber),
+          github_number: issueNumber,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
         })
         .execute();
 
@@ -405,15 +454,16 @@ describe('GitHubSyncService', () => {
       // Item ID が返されたことを確認
       expect(itemId).toBe(mockAddProjectV2ItemResponse.addProjectV2ItemById.item.id);
 
-      // 仕様書が更新されたことを確認
-      const updatedSpec = await lifecycle.db
-        .selectFrom('specs')
-        .where('id', '=', specId)
+      // github_sync にプロジェクト情報が保存されたことを確認
+      const projectSync = await lifecycle.db
+        .selectFrom('github_sync')
+        .where('entity_id', '=', specId)
+        .where('entity_type', '=', 'project')
         .selectAll()
         .executeTakeFirst();
 
-      expect(updatedSpec?.github_project_id).toBe(mockProjectV2Response.repository.projectV2.id);
-      expect(updatedSpec?.github_project_item_id).toBe(mockAddProjectV2ItemResponse.addProjectV2ItemById.item.id);
+      expect(projectSync?.github_id).toBe(mockAddProjectV2ItemResponse.addProjectV2ItemById.item.id);
+      expect(projectSync?.github_node_id).toBe(mockProjectV2Response.repository.projectV2.id);
     });
 
     test('Issue が紐づいていない場合はエラーをスローする', async () => {
@@ -427,9 +477,9 @@ describe('GitHubSyncService', () => {
           name: 'Projectエラーテスト',
           description: null,
           phase: 'requirements',
-          github_issue_id: null,
-          github_project_id: null,
-          github_milestone_id: null,
+          
+          
+          
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -458,9 +508,9 @@ describe('GitHubSyncService', () => {
           name: 'ログ記録テスト',
           description: null,
           phase: 'requirements',
-          github_issue_id: null,
-          github_project_id: null,
-          github_milestone_id: null,
+          
+          
+          
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -499,11 +549,23 @@ describe('GitHubSyncService', () => {
           name: '逆同期ログテスト',
           description: null,
           phase: 'implementation',
-          github_issue_id: issueNumber,
-          github_project_id: null,
-          github_milestone_id: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'spec',
+          entity_id: specId,
+          github_id: String(issueNumber),
+          github_number: issueNumber,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
         })
         .execute();
 
@@ -550,9 +612,9 @@ describe('GitHubSyncService', () => {
           name: '状態検証テスト',
           description: null,
           phase: 'requirements',
-          github_issue_id: null,
-          github_project_id: null,
-          github_milestone_id: null,
+          
+          
+          
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })

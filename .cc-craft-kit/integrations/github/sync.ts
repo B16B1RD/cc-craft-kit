@@ -56,7 +56,11 @@ export class GitHubSyncService {
     // 既存のIssue確認
     if (spec.github_issue_number) {
       // 既存のIssue本文を取得して、テンプレートのままかチェック
-      const existingIssue = await this.issues.get(params.owner, params.repo, spec.github_issue_number);
+      const existingIssue = await this.issues.get(
+        params.owner,
+        params.repo,
+        spec.github_issue_number
+      );
       const isTemplate =
         existingIssue.body?.includes('(背景を記述してください)') ||
         existingIssue.body?.includes('(必須要件1)') ||
