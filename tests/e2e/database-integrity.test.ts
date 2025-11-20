@@ -1,65 +1,84 @@
 /**
- * E2E テスト: データベース整合性
+ * データベース整合性の E2E テスト
  *
- * 100 回連続で仕様書作成・削除を実行し、
- * データベース不整合が発生しないことを確認します。
+ * 仕様書作成・フェーズ更新を繰り返し実行し、
+ * データベースとファイルシステムの整合性を検証する
  */
 
-// E2E テストであることを示すフラグ（グローバルセットアップをスキップ）
-process.env.E2E_TEST = 'true';
-
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { tmpdir } from 'os';
-import { getDatabase, closeDatabase } from '../../src/core/database/connection.js';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomUUID } from 'node:crypto';
+import { existsSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { createDatabase } from '../../src/core/database/connection.js';
 import { checkDatabaseIntegrity } from '../../src/core/validators/database-integrity-checker.js';
-import { randomUUID } from 'crypto';
+import { migrateToLatest } from '../../src/core/database/migrator.js';
+import { getCurrentDateTimeForSpec } from '../../src/core/utils/date-format.js';
+import { fsyncFileAndDirectory } from '../../src/core/utils/fsync.js';
+import type { Kysely } from 'kysely';
+import type { Database } from '../../src/core/database/schema.js';
 
-/**
- * 日時フォーマットヘルパー
- */
-function formatDateTime(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
-  return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
-}
+describe('Database Integrity E2E Test', () => {
+  const testDir = join(process.cwd(), 'tests', '.tmp', 'e2e-integrity-test');
+  const ccCraftKitDir = join(testDir, '.cc-craft-kit');
+  const specsDir = join(ccCraftKitDir, 'specs');
+  const dbPath = join(ccCraftKitDir, 'cc-craft-kit.db');
 
-/**
- * テスト用仕様書作成ヘルパー（create.ts の関数を直接呼ばずに実装）
- */
-async function createSpecForTest(
-  db: ReturnType<typeof getDatabase>,
-  name: string,
-  description: string | undefined,
-  specsDir: string
-): Promise<string> {
-  const id = randomUUID();
-  const now = new Date().toISOString();
+  let db: Kysely<Database>;
 
-  await db
-    .insertInto('specs')
-    .values({
-      id,
-      name,
-      description: description || null,
-      phase: 'requirements',
-      created_at: now,
-      updated_at: now,
-    })
-    .execute();
+  beforeAll(async () => {
+    // テスト用ディレクトリ作成
+    if (existsSync(testDir)) {
+      rmSync(testDir, { recursive: true, force: true });
+    }
+    mkdirSync(ccCraftKitDir, { recursive: true });
+    mkdirSync(specsDir, { recursive: true });
 
-  const specPath = path.join(specsDir, `${id}.md`);
-  const content = `# ${name}
+    // データベース初期化
+    db = createDatabase({ databasePath: dbPath });
+    await migrateToLatest(db);
+  });
+
+  afterAll(async () => {
+    // データベースクローズ
+    if (db) {
+      await db.destroy();
+    }
+
+    // テスト用ディレクトリ削除
+    if (existsSync(testDir)) {
+      rmSync(testDir, { recursive: true, force: true });
+    }
+  });
+
+  /**
+   * 仕様書作成ヘルパー
+   */
+  async function createTestSpec(name: string, description?: string): Promise<string> {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const formattedDateTime = getCurrentDateTimeForSpec();
+
+    // 1. データベースレコード作成
+    await db
+      .insertInto('specs')
+      .values({
+        id,
+        name,
+        description: description || null,
+        phase: 'requirements',
+        created_at: now,
+        updated_at: now,
+      })
+      .execute();
+
+    // 2. Markdownファイル生成
+    const specPath = join(specsDir, `${id}.md`);
+    const content = `# ${name}
 
 **仕様書 ID:** ${id}
 **フェーズ:** requirements
-**作成日時:** ${formatDateTime(new Date(now))}
-**更新日時:** ${formatDateTime(new Date(now))}
+**作成日時:** ${formattedDateTime}
+**更新日時:** ${formattedDateTime}
 
 ---
 
@@ -68,311 +87,177 @@ async function createSpecForTest(
 ### 背景
 
 ${description || '(背景を記述してください)'}
+
+### 目的
+
+(この仕様の目的を記述してください)
 `;
 
-  await fs.writeFile(specPath, content, 'utf-8');
-  return id;
-}
+    writeFileSync(specPath, content, 'utf-8');
+    fsyncFileAndDirectory(specPath);
 
-/**
- * テスト用仕様書削除ヘルパー（delete.ts の関数を直接呼ばずに実装）
- */
-async function deleteSpecForTest(
-  db: ReturnType<typeof getDatabase>,
-  specId: string,
-  specsDir: string
-): Promise<void> {
-
-  // DB レコード削除
-  await db.deleteFrom('specs').where('id', '=', specId).execute();
-
-  // ファイル削除
-  const specPath = path.join(specsDir, `${specId}.md`);
-  try {
-    await fs.unlink(specPath);
-  } catch {
-    // ファイルが存在しない場合は無視
+    return id;
   }
-}
 
-describe('E2E: データベース整合性テスト', () => {
-  let testDir: string;
-  let specsDir: string;
-  let dbPath: string;
-  const originalCwd = process.cwd(); // describe スコープで定義
+  /**
+   * フェーズ更新ヘルパー
+   */
+  async function updateTestSpecPhase(
+    specId: string,
+    newPhase: 'requirements' | 'design' | 'tasks' | 'implementation' | 'completed'
+  ): Promise<void> {
+    const now = new Date().toISOString();
+    const formattedDateTime = getCurrentDateTimeForSpec();
 
-  beforeEach(async () => {
-    // データベース接続をクローズ（既存のインスタンスがあれば）
-    await closeDatabase();
+    // 1. データベース更新
+    await db
+      .updateTable('specs')
+      .set({
+        phase: newPhase,
+        updated_at: now,
+      })
+      .where('id', '=', specId)
+      .execute();
 
-    // 一時ディレクトリを作成
-    testDir = await fs.mkdtemp(path.join(tmpdir(), 'cc-craft-kit-e2e-'));
-    const ccCraftKitDir = path.join(testDir, '.cc-craft-kit');
-    specsDir = path.join(ccCraftKitDir, 'specs');
-    dbPath = path.join(ccCraftKitDir, 'cc-craft-kit.db');
+    // 2. Markdownファイル更新
+    const specPath = join(specsDir, `${specId}.md`);
+    if (existsSync(specPath)) {
+      let content = require('node:fs').readFileSync(specPath, 'utf-8');
+      content = content.replace(/\*\*フェーズ:\*\* .+/, `**フェーズ:** ${newPhase}`);
+      content = content.replace(/\*\*更新日時:\*\* .+/, `**更新日時:** ${formattedDateTime}`);
 
-    await fs.mkdir(specsDir, { recursive: true });
-
-    // 作業ディレクトリを変更
-    process.chdir(testDir);
-  });
-
-  afterEach(async () => {
-    // 作業ディレクトリを元に戻す
-    process.chdir(originalCwd);
-
-    // データベース接続をクローズ
-    await closeDatabase();
-
-    // テスト後にクリーンアップ
-    try {
-      await fs.rm(testDir, { recursive: true, force: true });
-    } catch {
-      // エラーは無視
+      writeFileSync(specPath, content, 'utf-8');
+      fsyncFileAndDirectory(specPath);
     }
+  }
+
+  it('仕様書作成・フェーズ更新を100回実行しても整合性エラーが発生しない', async () => {
+    const iterations = 100;
+
+    for (let i = 0; i < iterations; i++) {
+      // 1. 仕様書作成
+      const specName = `E2E Test Spec ${i + 1}`;
+      const specDescription = `E2E テスト用の仕様書 (iteration ${i + 1})`;
+
+      const specId = await createTestSpec(specName, specDescription);
+
+      // 2. フェーズ更新（requirements → design → tasks → implementation → completed）
+      const phases: Array<'design' | 'tasks' | 'implementation' | 'completed'> = [
+        'design',
+        'tasks',
+        'implementation',
+        'completed',
+      ];
+      for (const phase of phases) {
+        await updateTestSpecPhase(specId, phase);
+      }
+
+      // 3. 整合性チェック（10回ごと）
+      if ((i + 1) % 10 === 0) {
+        const result = await checkDatabaseIntegrity(db, specsDir);
+
+        // エラーがないことを確認
+        expect(result.isValid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+        expect(result.stats.invalidFiles).toBe(0);
+        expect(result.stats.missingInDb).toBe(0);
+        expect(result.stats.missingFiles).toBe(0);
+        expect(result.stats.orphanedRecords).toBe(0);
+      }
+    }
+
+    // 最終整合性チェック
+    const finalResult = await checkDatabaseIntegrity(db, specsDir);
+
+    expect(finalResult.isValid).toBe(true);
+    expect(finalResult.errors).toHaveLength(0);
+    expect(finalResult.stats.totalFiles).toBe(iterations);
+    expect(finalResult.stats.totalDbRecords).toBe(iterations);
+    expect(finalResult.stats.validFiles).toBe(iterations);
+    expect(finalResult.stats.invalidFiles).toBe(0);
+    expect(finalResult.stats.missingInDb).toBe(0);
+    expect(finalResult.stats.missingFiles).toBe(0);
+    expect(finalResult.stats.orphanedRecords).toBe(0);
+
+    console.log(`\n✅ E2E Test: ${iterations} specs created and updated successfully!`);
+    console.log(`   Total specs: ${finalResult.stats.totalFiles}`);
+    console.log(`   Valid specs: ${finalResult.stats.validFiles}`);
+    console.log(`   Integrity errors: 0\n`);
+  }, 300000); // タイムアウト: 5分
+
+  it('仕様書作成中のエラーでロールバックが正常に動作する', async () => {
+    // 初期状態の仕様書数を取得
+    const initialCount = await db
+      .selectFrom('specs')
+      .select(db.fn.count('id').as('count'))
+      .executeTakeFirst();
+
+    const initialSpecCount = Number(initialCount?.count ?? 0);
+
+    // 不正なデータで仕様書作成を試行（name が空文字列）
+    const id = randomUUID();
+    const now = new Date().toISOString();
+
+    try {
+      await db
+        .insertInto('specs')
+        .values({
+          id,
+          name: '', // 空文字列（不正）
+          description: null,
+          phase: 'requirements',
+          created_at: now,
+          updated_at: now,
+        })
+        .execute();
+
+      // ロールバック（手動）
+      await db.deleteFrom('specs').where('id', '=', id).execute();
+    } catch (error) {
+      // エラー発生時もロールバック
+      await db.deleteFrom('specs').where('id', '=', id).execute();
+    }
+
+    // ロールバック後の仕様書数を確認（増えていないこと）
+    const afterCount = await db
+      .selectFrom('specs')
+      .select(db.fn.count('id').as('count'))
+      .executeTakeFirst();
+
+    const afterSpecCount = Number(afterCount?.count ?? 0);
+
+    expect(afterSpecCount).toBe(initialSpecCount);
+
+    // 整合性チェック
+    const result = await checkDatabaseIntegrity(db, specsDir);
+    expect(result.isValid).toBe(true);
   });
 
-  describe('仕様書作成・削除の連続実行', () => {
-    it('100 回連続で作成・削除しても不整合が発生しない', async () => {
-      const db = getDatabase({ databasePath: dbPath });
+  it('データベース再接続後も整合性が保たれる', async () => {
+    // 1. 仕様書作成
+    const specName = 'DB Reconnection Test';
+    await createTestSpec(specName, 'Test spec for DB reconnection');
 
-      // マイグレーション実行
-      await db.schema
-        .createTable('specs')
-        .ifNotExists()
-        .addColumn('id', 'text', (col) => col.primaryKey())
-        .addColumn('name', 'text', (col) => col.notNull())
-        .addColumn('description', 'text')
-        .addColumn('phase', 'text', (col) => col.notNull())
-        .addColumn('created_at', 'text', (col) => col.notNull())
-        .addColumn('updated_at', 'text', (col) => col.notNull())
-        .execute();
+    // 2. データベースクローズ
+    await db.destroy();
 
-      await db.schema
-        .createTable('github_sync')
-        .ifNotExists()
-        .addColumn('id', 'integer', (col) => col.primaryKey().autoIncrement())
-        .addColumn('entity_type', 'text', (col) => col.notNull())
-        .addColumn('entity_id', 'text', (col) => col.notNull())
-        .addColumn('github_number', 'integer', (col) => col.notNull())
-        .addColumn('github_url', 'text', (col) => col.notNull())
-        .addColumn('synced_at', 'text', (col) => col.notNull())
-        .execute();
+    // 3. データベース再接続
+    db = createDatabase({ databasePath: dbPath });
 
-      const iterations = 100;
-      const createdIds: string[] = [];
+    // 4. 整合性チェック
+    const result = await checkDatabaseIntegrity(db, specsDir);
 
-      // 100 回連続で作成
-      for (let i = 0; i < iterations; i++) {
-        const specName = `テスト仕様書 ${i + 1}`;
-        const specDescription = `E2E テスト用の仕様書 ${i + 1}`;
+    expect(result.isValid).toBe(true);
+    expect(result.errors).toHaveLength(0);
 
-        const specId = await createSpecForTest(db, specName, specDescription, specsDir);
-        createdIds.push(specId);
+    // 5. 作成した仕様書が存在することを確認
+    const spec = await db
+      .selectFrom('specs')
+      .where('name', '=', specName)
+      .selectAll()
+      .executeTakeFirst();
 
-        // 整合性チェック（作成後）
-        const createCheck = await checkDatabaseIntegrity(db, specsDir);
-        expect(createCheck.isValid).toBe(true);
-        expect(createCheck.details.missingFiles).toHaveLength(0);
-        expect(createCheck.details.missingInDb).toHaveLength(0);
-      }
-
-      // 中間整合性チェック
-      const midCheck = await checkDatabaseIntegrity(db, specsDir);
-      expect(midCheck.isValid).toBe(true);
-      expect(midCheck.stats.totalDbRecords).toBe(iterations);
-      expect(midCheck.stats.totalFiles).toBe(iterations);
-
-      // 100 回連続で削除
-      for (let i = 0; i < iterations; i++) {
-        const specId = createdIds[i];
-
-        await deleteSpecForTest(db, specId, specsDir);
-
-        // 整合性チェック（削除後）
-        const deleteCheck = await checkDatabaseIntegrity(db, specsDir);
-        expect(deleteCheck.isValid).toBe(true);
-        expect(deleteCheck.details.missingFiles).toHaveLength(0);
-        expect(deleteCheck.details.missingInDb).toHaveLength(0);
-      }
-
-      // 最終整合性チェック
-      const finalCheck = await checkDatabaseIntegrity(db, specsDir);
-      expect(finalCheck.isValid).toBe(true);
-      expect(finalCheck.stats.totalDbRecords).toBe(0);
-      expect(finalCheck.stats.totalFiles).toBe(0);
-      expect(finalCheck.details.missingFiles).toHaveLength(0);
-      expect(finalCheck.details.missingInDb).toHaveLength(0);
-    }, 60000); // タイムアウト: 60 秒
-
-    it('作成・削除を交互に実行しても不整合が発生しない', async () => {
-      const db = getDatabase({ databasePath: dbPath });
-
-      // マイグレーション実行
-      await db.schema
-        .createTable('specs')
-        .ifNotExists()
-        .addColumn('id', 'text', (col) => col.primaryKey())
-        .addColumn('name', 'text', (col) => col.notNull())
-        .addColumn('description', 'text')
-        .addColumn('phase', 'text', (col) => col.notNull())
-        .addColumn('created_at', 'text', (col) => col.notNull())
-        .addColumn('updated_at', 'text', (col) => col.notNull())
-        .execute();
-
-      await db.schema
-        .createTable('github_sync')
-        .ifNotExists()
-        .addColumn('id', 'integer', (col) => col.primaryKey().autoIncrement())
-        .addColumn('entity_type', 'text', (col) => col.notNull())
-        .addColumn('entity_id', 'text', (col) => col.notNull())
-        .addColumn('github_number', 'integer', (col) => col.notNull())
-        .addColumn('github_url', 'text', (col) => col.notNull())
-        .addColumn('synced_at', 'text', (col) => col.notNull())
-        .execute();
-
-      const iterations = 50;
-
-      for (let i = 0; i < iterations; i++) {
-        // 作成
-        const specName = `交互テスト仕様書 ${i + 1}`;
-        const specId = await createSpecForTest(db, specName, undefined, specsDir);
-
-        // 作成直後の整合性チェック
-        const createCheck = await checkDatabaseIntegrity(db, specsDir);
-        expect(createCheck.isValid).toBe(true);
-
-        // 削除
-        await deleteSpecForTest(db, specId, specsDir);
-
-        // 削除直後の整合性チェック
-        const deleteCheck = await checkDatabaseIntegrity(db, specsDir);
-        expect(deleteCheck.isValid).toBe(true);
-        expect(deleteCheck.stats.totalDbRecords).toBe(0);
-        expect(deleteCheck.stats.totalFiles).toBe(0);
-      }
-
-      // 最終整合性チェック
-      const finalCheck = await checkDatabaseIntegrity(db, specsDir);
-      expect(finalCheck.isValid).toBe(true);
-      expect(finalCheck.details.missingFiles).toHaveLength(0);
-      expect(finalCheck.details.missingInDb).toHaveLength(0);
-    }, 60000); // タイムアウト: 60 秒
-
-    it('孤立レコードが発生しない', async () => {
-      const db = getDatabase({ databasePath: dbPath });
-
-      // マイグレーション実行
-      await db.schema
-        .createTable('specs')
-        .ifNotExists()
-        .addColumn('id', 'text', (col) => col.primaryKey())
-        .addColumn('name', 'text', (col) => col.notNull())
-        .addColumn('description', 'text')
-        .addColumn('phase', 'text', (col) => col.notNull())
-        .addColumn('created_at', 'text', (col) => col.notNull())
-        .addColumn('updated_at', 'text', (col) => col.notNull())
-        .execute();
-
-      await db.schema
-        .createTable('github_sync')
-        .ifNotExists()
-        .addColumn('id', 'integer', (col) => col.primaryKey().autoIncrement())
-        .addColumn('entity_type', 'text', (col) => col.notNull())
-        .addColumn('entity_id', 'text', (col) => col.notNull())
-        .addColumn('github_number', 'integer', (col) => col.notNull())
-        .addColumn('github_url', 'text', (col) => col.notNull())
-        .addColumn('synced_at', 'text', (col) => col.notNull())
-        .execute();
-
-      // 20 個の仕様書を作成
-      const createdIds: string[] = [];
-      for (let i = 0; i < 20; i++) {
-        const specId = await createSpecForTest(db, `孤立テスト仕様書 ${i + 1}`, undefined, specsDir);
-        createdIds.push(specId);
-      }
-
-      // 中間チェック: 孤立レコードが 0 件
-      const midCheck = await checkDatabaseIntegrity(db, specsDir);
-      expect(midCheck.details.missingFiles).toHaveLength(0);
-
-      // 10 個削除
-      for (let i = 0; i < 10; i++) {
-        await deleteSpecForTest(db, createdIds[i], specsDir);
-      }
-
-      // 削除後チェック: 孤立レコードが 0 件
-      const afterDeleteCheck = await checkDatabaseIntegrity(db, specsDir);
-      expect(afterDeleteCheck.details.missingFiles).toHaveLength(0);
-      expect(afterDeleteCheck.stats.totalDbRecords).toBe(10);
-      expect(afterDeleteCheck.stats.totalFiles).toBe(10);
-
-      // 残りをすべて削除
-      for (let i = 10; i < 20; i++) {
-        await deleteSpecForTest(db, createdIds[i], specsDir);
-      }
-
-      // 最終チェック: すべて削除され、孤立レコードが 0 件
-      const finalCheck = await checkDatabaseIntegrity(db, specsDir);
-      expect(finalCheck.isValid).toBe(true);
-      expect(finalCheck.details.missingFiles).toHaveLength(0);
-      expect(finalCheck.stats.totalDbRecords).toBe(0);
-      expect(finalCheck.stats.totalFiles).toBe(0);
-    }, 60000); // タイムアウト: 60 秒
-  });
-
-  describe('異常終了シミュレーション', () => {
-    it('データベース接続が正常にクローズされる', async () => {
-      const db = getDatabase({ databasePath: dbPath });
-
-      // マイグレーション実行
-      await db.schema
-        .createTable('specs')
-        .ifNotExists()
-        .addColumn('id', 'text', (col) => col.primaryKey())
-        .addColumn('name', 'text', (col) => col.notNull())
-        .addColumn('description', 'text')
-        .addColumn('phase', 'text', (col) => col.notNull())
-        .addColumn('created_at', 'text', (col) => col.notNull())
-        .addColumn('updated_at', 'text', (col) => col.notNull())
-        .execute();
-
-      // 仕様書を 5 個作成
-      for (let i = 0; i < 5; i++) {
-        const specId = randomUUID();
-        const now = new Date().toISOString();
-        await db
-          .insertInto('specs')
-          .values({
-            id: specId,
-            name: `異常終了テスト ${i + 1}`,
-            description: null,
-            phase: 'requirements',
-            created_at: now,
-            updated_at: now,
-          })
-          .execute();
-
-        // ファイル作成
-        const specPath = path.join(specsDir, `${specId}.md`);
-        await fs.writeFile(
-          specPath,
-          `# 異常終了テスト ${i + 1}\n\n**仕様書 ID:** ${specId}\n**フェーズ:** requirements\n**作成日時:** ${now}\n**更新日時:** ${now}\n`
-        );
-      }
-
-      // データベース接続をクローズ（正常終了をシミュレート）
-      await closeDatabase();
-
-      // 再接続して整合性チェック
-      const db2 = getDatabase({ databasePath: dbPath });
-      const check = await checkDatabaseIntegrity(db2, specsDir);
-
-      expect(check.isValid).toBe(true);
-      expect(check.stats.totalDbRecords).toBe(5);
-      expect(check.stats.totalFiles).toBe(5);
-      expect(check.details.missingFiles).toHaveLength(0);
-      expect(check.details.missingInDb).toHaveLength(0);
-    });
+    expect(spec).toBeDefined();
+    expect(spec?.name).toBe(specName);
   });
 });

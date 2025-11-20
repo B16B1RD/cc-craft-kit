@@ -21,6 +21,9 @@ export function createMockGitHubClient(): jest.Mocked<IGitHubClient> {
       listForRepo: jest.fn(),
       createComment: jest.fn(),
     },
+    pulls: {
+      create: jest.fn(),
+    },
     users: {
       getAuthenticated: jest.fn(),
     },

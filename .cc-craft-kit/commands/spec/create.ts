@@ -4,7 +4,7 @@
 
 import '../../core/config/env.js';
 import { randomUUID } from 'node:crypto';
-import { existsSync, writeFileSync } from 'node:fs';
+import { existsSync, writeFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDatabase, closeDatabase } from '../../core/database/connection.js';
 import { getEventBusAsync } from '../../core/workflow/event-bus.js';
@@ -15,6 +15,8 @@ import {
   handleCLIError,
 } from '../utils/error-handler.js';
 import { validateRequired } from '../utils/validation.js';
+import { getCurrentDateTimeForSpec } from '../../core/utils/date-format.js';
+import { fsyncFileAndDirectory } from '../../core/utils/fsync.js';
 
 /**
  * Requirements テンプレート
@@ -119,60 +121,89 @@ export async function createSpec(
   // UUID生成
   const id = randomUUID();
   const now = new Date().toISOString();
+  const formattedDateTime = getCurrentDateTimeForSpec();
 
   // データベースに仕様書レコード作成
   console.log(formatInfo('Creating spec record in database...', options.color));
   const db = getDatabase();
 
-  await db
-    .insertInto('specs')
-    .values({
-      id,
-      name,
-      description: description || null,
-      phase: 'requirements',
-      created_at: now,
-      updated_at: now,
-    })
-    .execute();
-
-  // Markdownファイル生成
-  console.log(formatInfo('Generating spec file...', options.color));
   const specPath = join(specsDir, `${id}.md`);
-  const template = getRequirementsTemplate(name, description);
 
-  // テンプレートにメタデータを挿入
-  const content = template
-    .replace('**仕様書 ID:** (自動生成)', `**仕様書 ID:** ${id}`)
-    .replace('**作成日時:** (自動生成)', `**作成日時:** ${new Date(now).toLocaleString()}`)
-    .replace('**更新日時:** (自動生成)', `**更新日時:** ${new Date(now).toLocaleString()}`);
+  try {
+    // 1. データベースレコード作成
+    await db
+      .insertInto('specs')
+      .values({
+        id,
+        name,
+        description: description || null,
+        phase: 'requirements',
+        created_at: now,
+        updated_at: now,
+      })
+      .execute();
 
-  writeFileSync(specPath, content, 'utf-8');
+    // 2. Markdownファイル生成 + fsync()
+    console.log(formatInfo('Generating spec file...', options.color));
+    const template = getRequirementsTemplate(name, description);
 
-  // Note: content カラムはスキーマに存在しないため、ファイルのみに保存
+    // テンプレートにメタデータを挿入（日時形式を統一）
+    const content = template
+      .replace('**仕様書 ID:** (自動生成)', `**仕様書 ID:** ${id}`)
+      .replace('**作成日時:** (自動生成)', `**作成日時:** ${formattedDateTime}`)
+      .replace('**更新日時:** (自動生成)', `**更新日時:** ${formattedDateTime}`);
 
-  // spec.created イベントを発行
-  const eventBus = await getEventBusAsync();
-  await eventBus.emit(
-    eventBus.createEvent('spec.created', id, {
-      name,
-      description: description || null,
-      phase: 'requirements',
-    })
-  );
+    writeFileSync(specPath, content, 'utf-8');
 
-  console.log('');
-  console.log(formatSuccess('Specification created successfully!', options.color));
-  console.log('');
-  console.log(formatKeyValue('Spec ID', id, options.color));
-  console.log(formatKeyValue('Name', name, options.color));
-  console.log(formatKeyValue('Phase', 'requirements', options.color));
-  console.log(formatKeyValue('File', specPath, options.color));
-  console.log('');
-  console.log('Next steps:');
-  console.log('  1. Edit the spec file to define requirements');
-  console.log('  2. View the spec: /cft:spec-get ' + id.substring(0, 8));
-  console.log('  3. Move to design phase: /cft:spec-phase ' + id.substring(0, 8) + ' design');
+    // バッファフラッシュ（ファイル + ディレクトリ）
+    fsyncFileAndDirectory(specPath);
+
+    // 3. spec.created イベント発火（非同期ハンドラー登録を待機）
+    const eventBus = await getEventBusAsync();
+    await eventBus.emit(
+      eventBus.createEvent('spec.created', id, {
+        name,
+        description: description || null,
+        phase: 'requirements',
+      })
+    );
+
+    console.log('');
+    console.log(formatSuccess('Specification created successfully!', options.color));
+    console.log('');
+    console.log(formatKeyValue('Spec ID', id, options.color));
+    console.log(formatKeyValue('Name', name, options.color));
+    console.log(formatKeyValue('Phase', 'requirements', options.color));
+    console.log(formatKeyValue('File', specPath, options.color));
+    console.log('');
+    console.log('Next steps:');
+    console.log('  1. Edit the spec file to define requirements');
+    console.log('  2. View the spec: /cft:spec-get ' + id.substring(0, 8));
+    console.log('  3. Move to design phase: /cft:spec-phase ' + id.substring(0, 8) + ' design');
+  } catch (error) {
+    // エラー時のロールバック処理
+    console.error('');
+    console.error(formatInfo('Rolling back due to error...', options.color));
+
+    // DBレコード削除
+    try {
+      await db.deleteFrom('specs').where('id', '=', id).execute();
+    } catch (dbError) {
+      console.error('Failed to rollback database record:', dbError);
+    }
+
+    // ファイル削除
+    try {
+      if (existsSync(specPath)) {
+        unlinkSync(specPath);
+      }
+    } catch (fsError) {
+      console.error('Failed to rollback spec file:', fsError);
+    }
+
+    // エラーを再スロー
+    throw error;
+  }
 }
 
 // CLI エントリポイント
