@@ -28,6 +28,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:coverage:check": "npm run test:coverage && npx tsx src/scripts/monitor-coverage.ts",
     "test:integration": "tsx tests/integration/test-runner.ts",
     "test:all": "npm test && npm run test:integration",
     "lint": "eslint src --ext .ts",
