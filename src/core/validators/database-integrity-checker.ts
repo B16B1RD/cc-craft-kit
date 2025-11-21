@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import type { Kysely } from 'kysely';
 import type { Database } from '../database/schema.js';
 import { parseSpecFile, validateMetadata, type SpecMetadata } from './spec-file-validator.js';
+import { getCurrentBranch } from '../git/branch-cache.js';
 
 /**
  * 整合性チェック結果
@@ -182,7 +183,11 @@ export async function checkDatabaseIntegrity(
   const dbRecords = await db.selectFrom('specs').select(['id', 'name', 'branch_name']).execute();
   const dbRecordMap = new Map(dbRecords.map((r) => [r.id, r.name]));
 
-  // 3-1. ブランチ整合性チェック
+  // 3-1. ブランチフィルタリング用の許可リストを作成
+  const currentBranch = getCurrentBranch();
+  const allowedBranches = [currentBranch, 'main', 'develop'];
+
+  // 3-2. ブランチ整合性チェック
   for (const record of dbRecords) {
     // branch_name が null または空文字列の場合は不正
     if (!record.branch_name || record.branch_name.trim() === '') {
@@ -205,9 +210,16 @@ export async function checkDatabaseIntegrity(
     }
   }
 
-  // 4-2. DBレコードはあるがファイルがない
-  for (const [id, name] of dbRecordMap) {
+  // 4-2. DBレコードはあるがファイルがない（ブランチフィルタリング適用）
+  for (const record of dbRecords) {
+    const { id, name, branch_name } = record;
     const filePath = join(specsDir, `${id}.md`);
+
+    // 別ブランチの仕様書はファイルチェックをスキップ
+    if (!allowedBranches.includes(branch_name)) {
+      continue; // 正常と判定
+    }
+
     if (!existsSync(filePath)) {
       missingFiles.push({ id, name });
     } else if (!fileMetadataMap.has(id)) {

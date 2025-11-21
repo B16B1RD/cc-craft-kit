@@ -406,7 +406,7 @@ describe('Branch and PR Workflow E2E', () => {
       // requirements → design → tasks → implementation
       await updateSpecPhase(specId, 'design');
       await updateSpecPhase(specId, 'tasks');
-      await updateSpecPhase(db, specId, 'implementation');
+      await updateSpecPhase(specId, 'implementation');
 
       // PR作成を失敗させる
       mockClient.rest.pulls.create = jest.fn().mockRejectedValue(new Error('API Error'));
