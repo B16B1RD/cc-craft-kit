@@ -111,7 +111,9 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
         });
 
         console.log(`\n✓ GitHub Issue created automatically: #${issueNumber}`);
-        console.log(`  URL: https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/${issueNumber}\n`);
+        console.log(
+          `  URL: https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/${issueNumber}\n`
+        );
 
         // Project に自動追加
         try {
@@ -140,7 +142,10 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
         }
       } catch (error) {
         // 重複エラーの場合は警告のみ表示（エラーログ記録なし）
-        if (error instanceof Error && error.message.includes('既に GitHub Issue が作成されています')) {
+        if (
+          error instanceof Error &&
+          error.message.includes('既に GitHub Issue が作成されています')
+        ) {
           console.warn(`⚠️  ${error.message}\n`);
           return;
         }

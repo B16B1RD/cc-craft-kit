@@ -175,16 +175,12 @@ describe('Branch and PR Workflow E2E', () => {
       const tasksResult = await updateSpecPhase(specId, 'tasks');
       expect(tasksResult.success).toBe(true);
 
-      // 4. tasks → implementation（ブランチ自動作成）
+      // 4. tasks → implementation（ブランチは作成されない）
       const implResult = await updateSpecPhase(specId, 'implementation');
       expect(implResult.success).toBe(true);
 
-      // ブランチ作成コマンドが実行されたことを確認
-      expect(spawnSync).toHaveBeenCalledWith(
-        'git',
-        expect.arrayContaining(['checkout', '-b', expect.stringContaining('feature/')]),
-        expect.anything()
-      );
+      // NOTE: フェーズ移行時のブランチ自動作成機能は削除されました
+      // 仕様書作成時に既にブランチが作成されています
 
       // ブランチ作成後、現在のブランチを feature/ に変更
       (execSync as jest.MockedFunction<typeof execSync>).mockImplementation((cmd: string, options?: any) => {
@@ -244,7 +240,9 @@ describe('Branch and PR Workflow E2E', () => {
   });
 
   describe('Hotfix緊急修正フロー', () => {
-    test('緊急修正はmainブランチから分岐する', async () => {
+    // NOTE: フェーズ移行時のブランチ自動作成機能は削除されました
+    // 仕様書作成時のみブランチが作成されます
+    test.skip('緊急修正はmainブランチから分岐する', async () => {
       // 環境変数をクリア
       delete process.env.GITHUB_OWNER;
 
@@ -361,7 +359,8 @@ describe('Branch and PR Workflow E2E', () => {
   });
 
   describe('エラーハンドリング', () => {
-    test('ブランチ作成失敗時、フェーズをロールバックする', async () => {
+    // NOTE: フェーズ移行時のブランチ自動作成機能は削除されました
+    test.skip('ブランチ作成失敗時、フェーズをロールバックする', async () => {
       // spawnSyncのモックをオーバーライドしてブランチ作成を失敗させる
       (spawnSync as jest.MockedFunction<typeof spawnSync>).mockImplementation((cmd: string, args?: readonly string[]) => {
         if (cmd === 'git' && args) {
@@ -424,7 +423,8 @@ describe('Branch and PR Workflow E2E', () => {
   });
 
   describe('保護ブランチチェック', () => {
-    test('mainブランチで直接作業している場合、警告を表示する', async () => {
+    // NOTE: 保護ブランチ警告機能は削除されました
+    test.skip('mainブランチで直接作業している場合、警告を表示する', async () => {
       // 現在のブランチをmainに設定
       (execSync as jest.MockedFunction<typeof execSync>).mockImplementation((cmd: string, options?: any) => {
         // git rev-parse --verify でベースブランチ (develop, main) の場合は成功
