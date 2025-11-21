@@ -66,6 +66,7 @@ describe('Database Integrity E2E Test', () => {
         name,
         description: description || null,
         phase: 'requirements',
+        branch_name: 'main', // E2Eテストでは main ブランチを使用
         created_at: now,
         updated_at: now,
       })
@@ -206,6 +207,7 @@ ${description || '(背景を記述してください)'}
           name: '', // 空文字列（不正）
           description: null,
           phase: 'requirements',
+          branch_name: 'main', // E2Eテストでは main ブランチを使用
           created_at: now,
           updated_at: now,
         })
