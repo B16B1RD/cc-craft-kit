@@ -21,6 +21,7 @@ import {
   handleCLIError,
 } from './utils/error-handler.js';
 import { resolveProjectId } from '../integrations/github/project-resolver.js';
+import { checkDatabaseIntegrity } from '../core/validators/database-integrity-checker.js';
 
 /**
  * プロジェクト設定
@@ -99,8 +100,37 @@ export async function showStatus(
     console.warn('Warning: Failed to create database backup:', error);
   }
 
+  // データベース整合性チェック（自動実行）
+  const db = getDatabase();
+  const specsDir = join(ccCraftKitDir, 'specs');
+  let integrityWarnings: string[] = [];
+
+  try {
+    const integrityResult = await checkDatabaseIntegrity(db, specsDir);
+
+    // 警告がある場合のみ表示
+    if (!integrityResult.isValid || integrityResult.warnings.length > 0) {
+      integrityWarnings = [...integrityResult.errors, ...integrityResult.warnings];
+    }
+  } catch (error) {
+    // 整合性チェック失敗は警告のみ
+    console.warn('Warning: Failed to check database integrity:', error);
+  }
+
   console.log(formatHeading('cc-craft-kit Project Status', 1, options.color));
   console.log('');
+
+  // データベース整合性警告の表示
+  if (integrityWarnings.length > 0) {
+    console.log('\x1b[33m⚠️  Database integrity warnings:\x1b[0m');
+    for (const warning of integrityWarnings) {
+      console.log(`\x1b[33m     - ${warning}\x1b[0m`);
+    }
+    console.log('');
+    console.log(formatInfo('  Run the repair script to fix:', options.color));
+    console.log(formatInfo('    npx tsx .cc-craft-kit/scripts/repair-database.ts', options.color));
+    console.log('');
+  }
 
   // プロジェクト情報
   console.log(formatHeading('Project', 2, options.color));
@@ -138,9 +168,6 @@ export async function showStatus(
     );
     console.log('');
   }
-
-  // データベース取得
-  const db = getDatabase();
 
   // フェーズ別仕様書集計（github_sync との JOIN を使用）
   const specs = await getSpecsWithGitHubInfo(db, {
