@@ -339,12 +339,12 @@ ${spec.description || '説明なし'}
   }): Promise<void> {
     const { randomUUID } = await import('crypto');
 
-    // 既存のレコードを検索
+    // 既存のレコードを検索（entity_type と entity_id のみで検索）
+    // これにより、sync_status=failed のレコードも更新対象になる
     const existing = await this.db
       .selectFrom('github_sync')
       .where('entity_type', '=', 'spec')
       .where('entity_id', '=', params.spec_id)
-      .where('github_number', '=', params.github_issue_id)
       .selectAll()
       .executeTakeFirst();
 
