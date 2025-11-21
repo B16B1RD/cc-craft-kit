@@ -9,7 +9,7 @@ import { Kysely } from 'kysely';
 import { Database } from '../database/schema.js';
 import { EventBus, WorkflowEvent } from './event-bus.js';
 import { getErrorHandler } from '../errors/error-handler.js';
-import { generateBranchName, isHotfixBranch } from '../utils/branch-name-generator.js';
+import { isHotfixBranch } from '../utils/branch-name-generator.js';
 import {
   createPullRequest,
   recordPullRequestToIssue,
@@ -61,58 +61,6 @@ function getProtectedBranches(): string[] {
 function isProtectedBranch(branchName: string): boolean {
   const protectedBranches = getProtectedBranches();
   return protectedBranches.includes(branchName);
-}
-
-/**
- * 保護ブランチでの作業時の警告表示
- */
-async function handleProtectedBranchWarning(
-  event: WorkflowEvent<{ oldPhase: string; newPhase: string }>,
-  db: Kysely<Database>
-): Promise<void> {
-  try {
-    // Gitリポジトリ確認
-    if (!isGitRepository()) {
-      return;
-    }
-
-    // tasks → implementation の場合のみチェック
-    if (event.data.oldPhase !== 'tasks' || event.data.newPhase !== 'implementation') {
-      return;
-    }
-
-    // 現在のブランチを取得
-    const currentBranch = getCurrentBranch();
-    if (!currentBranch) {
-      return;
-    }
-
-    // 保護ブランチの場合は警告表示
-    if (isProtectedBranch(currentBranch)) {
-      // 仕様書取得
-      const spec = await db
-        .selectFrom('specs')
-        .where('id', '=', event.specId)
-        .selectAll()
-        .executeTakeFirst();
-
-      if (spec) {
-        const suggestedBranch = generateBranchName(spec.name);
-        console.warn('\n⚠️  Warning: You are on a protected branch:', currentBranch);
-        console.warn('   Suggested branch:', suggestedBranch);
-        console.warn('   This branch will be automatically created.\n');
-      }
-    }
-  } catch (error) {
-    // 警告表示のエラーは無視
-    const errorHandler = getErrorHandler();
-    const errorObj = error instanceof Error ? error : new Error(String(error));
-    await errorHandler.handle(errorObj, {
-      event: 'spec.phase_changed',
-      specId: event.specId,
-      action: 'protected_branch_warning',
-    });
-  }
 }
 
 /**
@@ -201,14 +149,6 @@ async function handlePullRequestCreationOnCompleted(
  * ブランチ管理のイベントハンドラーを登録
  */
 export function registerBranchManagementHandlers(eventBus: EventBus, db: Kysely<Database>): void {
-  // spec.phase_changed → 保護ブランチ警告（tasks → implementation）
-  eventBus.on<{ oldPhase: string; newPhase: string }>(
-    'spec.phase_changed',
-    async (event: WorkflowEvent<{ oldPhase: string; newPhase: string }>) => {
-      await handleProtectedBranchWarning(event, db);
-    }
-  );
-
   // spec.phase_changed → PR自動作成（implementation → completed）
   eventBus.on<{ oldPhase: string; newPhase: string }>(
     'spec.phase_changed',
