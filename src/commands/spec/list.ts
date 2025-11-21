@@ -9,7 +9,6 @@ import { getSpecsWithGitHubInfo } from '../../core/database/helpers.js';
 import { formatHeading, formatTable, formatKeyValue, OutputOptions } from '../utils/output.js';
 import { createProjectNotInitializedError, handleCLIError } from '../utils/error-handler.js';
 import { validatePhase, VALID_PHASES } from '../utils/validation.js';
-import { getCurrentBranch } from '../../core/git/branch-cache.js';
 
 /**
  * 仕様書一覧表示
@@ -36,19 +35,15 @@ export async function listSpecs(
   // フェーズバリデーション
   const validatedPhase = phase ? validatePhase(phase) : undefined;
 
-  // 現在のブランチ名を取得（ブランチフィルタリング用）
-  const currentBranch = getCurrentBranch();
-
-  // ヘルパー関数を使用して github_sync と JOIN（ブランチフィルタリング有効）
+  // ヘルパー関数を使用して github_sync と JOIN（全ブランチ表示）
   const specs = await getSpecsWithGitHubInfo(db, {
     phase: validatedPhase,
-    branchName: currentBranch, // ブランチフィルタリングを有効化
     limit: displayLimit,
     orderBy: 'created_at',
     orderDirection: 'desc',
   });
 
-  // 総数取得（フィルター前）
+  // 総数取得
   let totalQuery = db.selectFrom('specs').select(db.fn.countAll().as('count'));
   if (validatedPhase) {
     totalQuery = totalQuery.where('phase', '=', validatedPhase);
