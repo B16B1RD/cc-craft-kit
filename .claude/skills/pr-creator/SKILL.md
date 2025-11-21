@@ -42,7 +42,7 @@ completed フェーズに移行すると、自動的に実行されます。
 
 ### 手動実行（デバッグ用）
 
-スキルを直接実行することも可能です。
+スキルを直接実行できます。
 
 ```bash
 # Skill ツールで実行
@@ -260,7 +260,7 @@ done
 
 ### 設定ファイル
 
-**.textlintrc.json**
+#### .textlintrc.json
 
 ```json
 {
@@ -270,7 +270,7 @@ done
 }
 ```
 
-**.markdownlint.json**
+#### .markdownlint.json
 
 ```json
 {
@@ -283,7 +283,7 @@ done
 
 ### PR 作成がスキップされる
 
-**原因:** GitHub CLI がインストールされていない
+**原因:** GitHub CLI がインストールされていない。
 
 **解決策:**
 
@@ -300,7 +300,7 @@ winget install GitHub.cli
 
 ### textlint チェックエラー
 
-**原因:** PR 本文に日本語の校正エラーがある
+**原因:** PR 本文に日本語の校正エラーがある。
 
 **解決策:**
 
@@ -314,7 +314,7 @@ npm run textlint:fix /tmp/pr-body.md
 
 ### markdownlint チェックエラー
 
-**原因:** Markdown 構文エラーがある
+**原因:** Markdown 構文エラーがある。
 
 **解決策:**
 
@@ -328,7 +328,7 @@ npx markdownlint-cli2 --fix /tmp/pr-body.md
 
 ### API レート制限エラー
 
-**原因:** GitHub API の 1 時間あたりのリクエスト制限（5,000 回）を超過
+**原因:** GitHub API の 1 時間あたりのリクエスト制限（5,000 回）を超過。
 
 **解決策:**
 
