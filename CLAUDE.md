@@ -308,6 +308,12 @@ const filteredSpecs = await getSpecsWithGitHubInfo(db, {
 
 cc-craft-kit は、Git ブランチと仕様書を紐づけて管理し、ブランチ切り替え時のデータベース不整合を防止します。
 
+#### ブランチ作成のタイミング
+
+**重要**: ブランチは**仕様書作成時のみ**自動的に作成されます。フェーズ移行時（tasks → implementation）には、ブランチは作成されません。
+
+これにより、1 つの仕様書に対して 1 つのブランチのみが存在することが保証されます。
+
 #### 仕様書作成時の自動ブランチ作成
 
 仕様書を作成すると、自動的に専用ブランチが作成されます。
@@ -754,6 +760,44 @@ cc-craft-kit は仕様書と GitHub Issue の双方向同期をサポートし�
 
 - Issue 状態変更を Webhook で検知（将来実装）
 - `syncGitHubToSpec`ツールによる手動同期
+
+### GitHub Issue 重複作成防止
+
+cc-craft-kit は、同一仕様書に対して複数の GitHub Issue が作成されることを防止します。
+
+**防止メカニズム:**
+
+1. **アプリケーションレベルの重複チェック**
+   - `/cft:github-issue-create` コマンド実行時に `github_sync` テーブルをクエリ
+   - `entity_type='spec'` かつ `entity_id=<spec-id>` かつ `sync_status='success'` のレコードが存在する場合、エラーを throw
+   - エラーメッセージ: `この仕様書には既に GitHub Issue が作成されています: <Issue URL>`
+
+2. **データベースレベルの重複防止**
+   - `github_sync` テーブルに `UNIQUE(entity_type, entity_id)` 制約を追加
+   - 万が一アプリケーションレベルの重複チェックをすり抜けても、データベース制約でエラーになる
+
+3. **失敗したレコードの再作成**
+   - `sync_status='failed'` のレコードは無視され、再作成が許可される
+   - `recordSyncLog` メソッドが既存の `failed` レコードを `success` に更新する
+
+**使用例:**
+
+```bash
+# 仕様書作成（Issue が自動作成される）
+/cft:spec-create "新機能の実装"
+
+# 重複作成を試みる → エラー
+/cft:github-issue-create <spec-id>
+# ❌ Error: この仕様書には既に GitHub Issue が作成されています: https://github.com/owner/repo/issues/123
+```
+
+**実装ファイル:**
+
+- `src/integrations/github/sync.ts:56-69` - 重複チェックロジック
+- `src/core/workflow/github-integration.ts:104-110` - spec.created イベントハンドラー
+- `src/core/database/migrations/007_add_unique_constraint_to_github_sync.ts` - UNIQUE 制約追加
+- `tests/integrations/github/duplicate-issue-prevention.test.ts` - 単体テスト
+- `tests/e2e/github-issue-duplicate-prevention.test.ts` - E2E テスト
 
 ### Issue ナレッジベース化
 

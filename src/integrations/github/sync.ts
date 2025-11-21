@@ -53,6 +53,21 @@ export class GitHubSyncService {
       throw new Error(`Spec not found: ${params.specId}`);
     }
 
+    // 重複チェック: github_sync テーブルで既存 Issue を確認
+    const existingSync = await this.db
+      .selectFrom('github_sync')
+      .where('entity_type', '=', 'spec')
+      .where('entity_id', '=', params.specId)
+      .where('sync_status', '=', 'success')
+      .selectAll()
+      .executeTakeFirst();
+
+    if (existingSync && params.createIfNotExists) {
+      // 重複 Issue が存在する場合はエラー
+      const issueUrl = `https://github.com/${params.owner}/${params.repo}/issues/${existingSync.github_number}`;
+      throw new Error(`この仕様書には既に GitHub Issue が作成されています: ${issueUrl}`);
+    }
+
     // 既存のIssue確認
     if (spec.github_issue_number) {
       // 既存のIssue本文を取得して、テンプレートのままかチェック
@@ -324,12 +339,12 @@ ${spec.description || '説明なし'}
   }): Promise<void> {
     const { randomUUID } = await import('crypto');
 
-    // 既存のレコードを検索
+    // 既存のレコードを検索（entity_type と entity_id のみで検索）
+    // これにより、sync_status=failed のレコードも更新対象になる
     const existing = await this.db
       .selectFrom('github_sync')
       .where('entity_type', '=', 'spec')
       .where('entity_id', '=', params.spec_id)
-      .where('github_number', '=', params.github_issue_id)
       .selectAll()
       .executeTakeFirst();
 
