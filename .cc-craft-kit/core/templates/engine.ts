@@ -230,10 +230,7 @@ export class TemplateEngine {
   /**
    * サブエージェントテンプレートレンダリング
    */
-  async renderSubagent(
-    templateName: string,
-    vars: SubagentTemplateVars
-  ): Promise<string> {
+  async renderSubagent(templateName: string, vars: SubagentTemplateVars): Promise<string> {
     const template = await this.loadTemplate(templateName);
     return template(vars);
   }
@@ -241,10 +238,7 @@ export class TemplateEngine {
   /**
    * スキルテンプレートレンダリング
    */
-  async renderSkill(
-    templateName: string,
-    vars: SkillTemplateVars
-  ): Promise<string> {
+  async renderSkill(templateName: string, vars: SkillTemplateVars): Promise<string> {
     const template = await this.loadTemplate(templateName);
     return template(vars);
   }
