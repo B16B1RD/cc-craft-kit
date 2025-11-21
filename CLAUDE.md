@@ -675,7 +675,7 @@ export class YourService {
 
 ### データベース接続の安全性
 
-⚠️ **重要: データベース破損を防ぐための厳格なルール**
+データベース破損を防ぐための厳格なルール。
 
 1. **`getDatabase()` の使用**
    - データベース接続は **必ず** `getDatabase()` を使用すること
@@ -690,11 +690,11 @@ export class YourService {
 3. **正しい使用例**
 
    ```typescript
-   // ✅ 正しい
+   // 正しい例
    import { getDatabase } from '../core/database/connection.js';
    const db = getDatabase();
 
-   // ❌ 間違い（データベース破損の原因）
+   // 間違った例（データベース破損の原因）
    const db = getDatabase({ databasePath: '/custom/path.db' });
    ```
 
@@ -860,10 +860,10 @@ eventBus.on('spec:created', async (spec) => {
 
 ### .cc-craft-kit/ ディレクトリのファイル管理
 
-- **基本方針**: `.cc-craft-kit/` ディレクトリは `.gitignore` に含まれ、Git 管理対象外
-- **例外**: `.cc-craft-kit/specs/*.md` (仕様書ファイル) のみ Git 管理対象
-- **理由**: ドッグフーディング環境のため、データベース等の自動生成ファイルは除外するが、仕様書の変更履歴は記録する必要がある
-- **実装**: `.gitignore` にネゲーションパターン `!.cc-craft-kit/specs/` を追加し、仕様書ディレクトリのみ除外対象から外している
+- 基本方針: `.cc-craft-kit/` ディレクトリは `.gitignore` に含まれ、Git 管理対象外
+- 例外: `.cc-craft-kit/specs/*.md` (仕様書ファイル) のみ Git 管理対象
+- 理由: ドッグフーディング環境のため、データベース等の自動生成ファイルは除外するが、仕様書の変更履歴は記録する必要がある
+- 実装: `.gitignore` にネゲーションパターン `!.cc-craft-kit/specs/` を追加し、仕様書ディレクトリのみ除外対象から外している
 
 ## トラブルシューティング
 

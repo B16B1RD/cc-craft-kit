@@ -201,7 +201,7 @@ interface cc-craft-kitPlugin {
 7. Database: logs テーブルへ同期ログ記録
 ```
 
-**重要**: `specs` テーブルや `tasks` テーブルには GitHub 情報を保存しません。すべて `github_sync` テーブルで一元管理します。
+注意: `specs` テーブルや `tasks` テーブルには GitHub 情報を保存しません。すべて `github_sync` テーブルで一元管理します。
 
 ## 設計原則
 
