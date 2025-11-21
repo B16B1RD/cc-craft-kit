@@ -53,6 +53,91 @@ export interface TasksTemplateVars {
 }
 
 /**
+ * サブエージェントテンプレート変数
+ */
+export interface SubagentTemplateVars {
+  /**
+   * サブエージェント名
+   */
+  name: string;
+
+  /**
+   * サブエージェントの説明
+   */
+  description: string;
+
+  /**
+   * 使用可能なツール
+   */
+  tools: string[];
+
+  /**
+   * 使用するモデル
+   */
+  model: string;
+
+  /**
+   * 責任範囲
+   */
+  responsibilities: string[];
+
+  /**
+   * 出力フォーマット
+   */
+  outputFormat: string;
+
+  /**
+   * 使用例（オプション）
+   */
+  examples?: string[];
+
+  /**
+   * カスタムパラメータ（オプション）
+   */
+  parameters?: Record<string, unknown>;
+}
+
+/**
+ * スキルテンプレート変数
+ */
+export interface SkillTemplateVars {
+  /**
+   * スキル名
+   */
+  name: string;
+
+  /**
+   * スキルの説明
+   */
+  description: string;
+
+  /**
+   * 機能・能力
+   */
+  capabilities: string[];
+
+  /**
+   * 使用例
+   */
+  usageExamples: string[];
+
+  /**
+   * よくある問題と解決策（オプション）
+   */
+  commonIssues?: Array<{ issue: string; solution: string }>;
+
+  /**
+   * 設定ファイル（オプション）
+   */
+  configFiles?: string[];
+
+  /**
+   * カスタムパラメータ（オプション）
+   */
+  parameters?: Record<string, unknown>;
+}
+
+/**
  * テンプレートエンジン
  */
 export class TemplateEngine {
@@ -139,6 +224,22 @@ export class TemplateEngine {
    */
   async renderTasks(vars: TasksTemplateVars): Promise<string> {
     const template = await this.loadTemplate('tasks');
+    return template(vars);
+  }
+
+  /**
+   * サブエージェントテンプレートレンダリング
+   */
+  async renderSubagent(templateName: string, vars: SubagentTemplateVars): Promise<string> {
+    const template = await this.loadTemplate(templateName);
+    return template(vars);
+  }
+
+  /**
+   * スキルテンプレートレンダリング
+   */
+  async renderSkill(templateName: string, vars: SkillTemplateVars): Promise<string> {
+    const template = await this.loadTemplate(templateName);
     return template(vars);
   }
 
