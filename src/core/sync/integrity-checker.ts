@@ -3,6 +3,7 @@ import { Database } from '../database/schema.js';
 import { SpecFileParser } from './spec-file-parser.js';
 import { PathValidator } from './path-validator.js';
 import { readdir } from 'fs/promises';
+import { getCurrentBranch } from '../git/branch-cache.js';
 
 /**
  * 整合性チェックレポート
@@ -53,11 +54,26 @@ export class IntegrityChecker {
     const dbSpecs = await this.db.selectFrom('specs').selectAll().execute();
     const dbIds = dbSpecs.map((s) => s.id);
 
-    // 3. 差分を検出
-    const filesOnly = fileIds.filter((id) => !dbIds.includes(id));
-    const dbOnly = dbIds.filter((id) => !fileIds.includes(id));
+    // 3. ブランチフィルタリング用の許可リストを作成
+    const currentBranch = getCurrentBranch();
+    const allowedBranches = [currentBranch, 'main', 'develop'];
 
-    // 4. 共通IDでメタデータの一致確認
+    // 4. 差分を検出（ブランチフィルタリングを適用）
+    const filesOnly = fileIds.filter((id) => !dbIds.includes(id));
+    // dbOnly: 別ブランチの仕様書は除外
+    const dbOnly = dbIds.filter((id) => {
+      if (fileIds.includes(id)) {
+        return false; // ファイルが存在する
+      }
+      const dbRecord = dbSpecs.find((s) => s.id === id);
+      if (!dbRecord) {
+        return true; // データベースレコードがない（理論的にはあり得ない）
+      }
+      // 別ブランチの仕様書は「dbOnly」に含めない（正常と判定）
+      return allowedBranches.includes(dbRecord.branch_name);
+    });
+
+    // 5. 共通IDでメタデータの一致確認
     const commonIds = fileIds.filter((id) => dbIds.includes(id));
     const mismatch: Array<{ id: string; differences: string[] }> = [];
     const synced: string[] = [];
@@ -87,7 +103,7 @@ export class IntegrityChecker {
       }
     }
 
-    // 5. 同期率を計算
+    // 6. 同期率を計算
     const totalFiles = fileIds.length;
     const totalDbRecords = dbIds.length;
     const syncRate = totalFiles > 0 ? Math.round((synced.length / totalFiles) * 100) : 0;
