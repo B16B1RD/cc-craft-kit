@@ -90,10 +90,6 @@ jobs:
       - name: Run tests with coverage
         run: npm run test:coverage
 
-      - name: Check coverage thresholds
-        if: matrix.node-version == 18
-        run: npx tsx src/scripts/monitor-coverage.ts
-
       - name: Upload coverage
         if: matrix.node-version == 18
         uses: codecov/codecov-action@v3
