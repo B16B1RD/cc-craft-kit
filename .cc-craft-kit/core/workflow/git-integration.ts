@@ -194,6 +194,16 @@ async function handlePhaseChangeCommit(
       } else {
         console.log(`\n✓ Auto-committed: ${message}`);
       }
+
+      // completedフェーズ移行時のPR作成案内
+      if (event.data.newPhase === 'completed') {
+        console.log('\n📝 Next: Create Pull Request');
+        console.log('   Run the pr-creator skill to automatically create a PR:');
+        console.log('   - Skill tool will execute the pr-creator skill');
+        console.log('   - PR title and body will be generated from the spec');
+        console.log('   - textlint and markdownlint checks will be performed');
+        console.log('   - GitHub CLI will create the PR\n');
+      }
     } else {
       const errorHandler = getErrorHandler();
       await errorHandler.handle(new Error(result.error || 'Git commit failed'), {

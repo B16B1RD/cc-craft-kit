@@ -5,7 +5,7 @@
 import '../../core/config/env.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase } from '../../core/database/connection.js';
+import { getDatabase, closeDatabase } from '../../core/database/connection.js';
 import { GitHubClient } from '../../integrations/github/client.js';
 import { GitHubIssues } from '../../integrations/github/issues.js';
 import { GitHubProjects } from '../../integrations/github/projects.js';
@@ -18,6 +18,7 @@ import {
   handleCLIError,
 } from '../utils/error-handler.js';
 import { validateSpecId } from '../utils/validation.js';
+import { getSpecWithGitHubInfo } from '../../core/database/helpers.js';
 
 /**
  * GitHub設定を取得
@@ -73,11 +74,7 @@ export async function syncToGitHub(
   const db = getDatabase();
 
   // 仕様書検索（部分一致対応）
-  const spec = await db
-    .selectFrom('specs')
-    .selectAll()
-    .where('id', 'like', `${specId}%`)
-    .executeTakeFirst();
+  const spec = await getSpecWithGitHubInfo(db, specId);
 
   if (!spec) {
     throw createSpecNotFoundError(specId);
@@ -91,7 +88,7 @@ export async function syncToGitHub(
   console.log(
     formatKeyValue(
       'GitHub Issue',
-      spec.github_issue_id ? `#${spec.github_issue_id}` : '(not created)',
+      spec.github_issue_number ? `#${spec.github_issue_number}` : '(not created)',
       options.color
     )
   );
@@ -166,17 +163,13 @@ export async function syncFromGitHub(
   const db = getDatabase();
 
   // 仕様書検索（部分一致対応）
-  const spec = await db
-    .selectFrom('specs')
-    .selectAll()
-    .where('id', 'like', `${specId}%`)
-    .executeTakeFirst();
+  const spec = await getSpecWithGitHubInfo(db, specId);
 
   if (!spec) {
     throw createSpecNotFoundError(specId);
   }
 
-  if (!spec.github_issue_id) {
+  if (!spec.github_issue_number) {
     throw new Error('Spec has no linked GitHub Issue. Use "sync to-github" first.');
   }
 
@@ -184,7 +177,7 @@ export async function syncFromGitHub(
   console.log('');
   console.log(formatKeyValue('Spec ID', spec.id, options.color));
   console.log(formatKeyValue('Spec Name', spec.name, options.color));
-  console.log(formatKeyValue('GitHub Issue', `#${spec.github_issue_id}`, options.color));
+  console.log(formatKeyValue('GitHub Issue', `#${spec.github_issue_number}`, options.color));
   console.log('');
 
   // GitHub APIクライアント作成
@@ -198,7 +191,7 @@ export async function syncFromGitHub(
     await syncService.syncIssueToSpec({
       owner: githubConfig.owner,
       repo: githubConfig.repo,
-      issueNumber: spec.github_issue_id,
+      issueNumber: spec.github_issue_number,
     });
 
     console.log('');
@@ -235,9 +228,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
 
   if (direction === 'to-github') {
-    syncToGitHub(specId).catch((error) => handleCLIError(error));
+    syncToGitHub(specId)
+      .catch((error) => handleCLIError(error))
+      .finally(() => closeDatabase());
   } else if (direction === 'from-github') {
-    syncFromGitHub(specId).catch((error) => handleCLIError(error));
+    syncFromGitHub(specId)
+      .catch((error) => handleCLIError(error))
+      .finally(() => closeDatabase());
   } else {
     console.error('Error: direction must be "to-github" or "from-github"');
     process.exit(1);

@@ -163,10 +163,7 @@ export class SyncService {
         name: metadata.name,
         description: null, // ファイルには description がないためnull
         phase: metadata.phase,
-        github_issue_id: null,
-        github_project_id: null,
-        github_project_item_id: null,
-        github_milestone_id: null,
+        branch_name: 'develop', // TODO: ファイルからブランチ名を取得する仕組みを追加
         created_at: metadata.created_at,
         updated_at: metadata.updated_at,
       };

@@ -33,6 +33,7 @@ export interface UpdateIssueParams {
  */
 export interface IssueResponse {
   id: number;
+  node_id: string;
   number: number;
   title: string;
   body: string | null;
@@ -180,6 +181,7 @@ export class GitHubIssues {
    */
   private mapIssueResponse(data: {
     id: number;
+    node_id?: string;
     number: number;
     title: string;
     body?: string | null;
@@ -195,6 +197,7 @@ export class GitHubIssues {
   }): IssueResponse {
     return {
       id: data.id,
+      node_id: data.node_id ?? '',
       number: data.number,
       title: data.title,
       body: data.body ?? null,

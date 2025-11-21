@@ -2,6 +2,7 @@ import { Kysely } from 'kysely';
 import { Database } from '../../core/database/schema.js';
 import { GitHubIssues, CreateIssueParams, UpdateIssueParams } from './issues.js';
 import { GitHubProjects } from './projects.js';
+import { getSpecWithGitHubInfo } from '../../core/database/helpers.js';
 
 /**
  * 仕様書とIssueの同期パラメータ
@@ -46,16 +47,20 @@ export class GitHubSyncService {
    */
   async syncSpecToIssue(params: SyncSpecToIssueParams): Promise<number> {
     // 仕様書取得
-    const spec = await this.db
-      .selectFrom('specs')
-      .where('id', '=', params.specId)
-      .selectAll()
-      .executeTakeFirstOrThrow();
+    const spec = await getSpecWithGitHubInfo(this.db, params.specId);
+
+    if (!spec) {
+      throw new Error(`Spec not found: ${params.specId}`);
+    }
 
     // 既存のIssue確認
-    if (spec.github_issue_id) {
+    if (spec.github_issue_number) {
       // 既存のIssue本文を取得して、テンプレートのままかチェック
-      const existingIssue = await this.issues.get(params.owner, params.repo, spec.github_issue_id);
+      const existingIssue = await this.issues.get(
+        params.owner,
+        params.repo,
+        spec.github_issue_number
+      );
       const isTemplate =
         existingIssue.body?.includes('(背景を記述してください)') ||
         existingIssue.body?.includes('(必須要件1)') ||
@@ -65,7 +70,7 @@ export class GitHubSyncService {
       const updateParams: UpdateIssueParams = {
         owner: params.owner,
         repo: params.repo,
-        issueNumber: spec.github_issue_id,
+        issueNumber: spec.github_issue_number,
         title: `[${spec.phase}] ${spec.name}`,
         labels: [this.getPhaseLabel(spec.phase)],
         // テンプレートのままの場合は本文を更新、それ以外は履歴保持のため更新しない
@@ -89,7 +94,7 @@ export class GitHubSyncService {
         const commentResult = await this.issues.addComment(
           params.owner,
           params.repo,
-          spec.github_issue_id,
+          spec.github_issue_number,
           comment
         );
         console.log(`✓ Comment added: ${commentResult.id}`);
@@ -97,7 +102,7 @@ export class GitHubSyncService {
         console.error('Warning: Failed to add comment:', error);
       }
 
-      return spec.github_issue_id;
+      return spec.github_issue_number;
     } else if (params.createIfNotExists) {
       // Issue作成
       const createParams: CreateIssueParams = {
@@ -110,21 +115,22 @@ export class GitHubSyncService {
 
       const issue = await this.issues.create(createParams);
 
-      // 仕様書更新
-      await this.db
-        .updateTable('specs')
-        .set({ github_issue_id: issue.number })
-        .where('id', '=', params.specId)
-        .execute();
-
-      // 同期ログ記録
+      // 同期ログ記録（github_sync テーブルのみ更新）
       await this.recordSyncLog({
         spec_id: params.specId,
         github_issue_id: issue.number,
+        github_node_id: issue.node_id,
         sync_direction: 'to_github',
         status: 'success',
         details: { created: true, issue_url: issue.html_url },
       });
+
+      // specs テーブルの updated_at のみ更新
+      await this.db
+        .updateTable('specs')
+        .set({ updated_at: new Date().toISOString() })
+        .where('id', '=', params.specId)
+        .execute();
 
       return issue.number;
     } else {
@@ -139,15 +145,22 @@ export class GitHubSyncService {
     // Issue取得
     const issue = await this.issues.get(params.owner, params.repo, params.issueNumber);
 
-    // 紐づく仕様書検索
-    const spec = await this.db
-      .selectFrom('specs')
-      .where('github_issue_id', '=', params.issueNumber)
+    // 紐づく仕様書検索（github_sync テーブルから）
+    const syncRecord = await this.db
+      .selectFrom('github_sync')
+      .where('entity_type', '=', 'spec')
+      .where('github_number', '=', params.issueNumber)
       .selectAll()
       .executeTakeFirst();
 
-    if (!spec) {
+    if (!syncRecord) {
       throw new Error(`No spec linked to issue #${params.issueNumber}`);
+    }
+
+    const spec = await getSpecWithGitHubInfo(this.db, syncRecord.entity_id);
+
+    if (!spec) {
+      throw new Error(`Spec not found: ${syncRecord.entity_id}`);
     }
 
     // Issueの状態からフェーズ判定
@@ -181,13 +194,13 @@ export class GitHubSyncService {
    */
   async addSpecToProject(params: AddSpecToProjectParams): Promise<string> {
     // 仕様書取得
-    const spec = await this.db
-      .selectFrom('specs')
-      .where('id', '=', params.specId)
-      .selectAll()
-      .executeTakeFirstOrThrow();
+    const spec = await getSpecWithGitHubInfo(this.db, params.specId);
 
-    if (!spec.github_issue_id) {
+    if (!spec) {
+      throw new Error(`Spec not found: ${params.specId}`);
+    }
+
+    if (!spec.github_issue_number) {
       throw new Error('Spec has no linked GitHub Issue');
     }
 
@@ -199,7 +212,7 @@ export class GitHubSyncService {
     const issueNodeId = await this.projects.getIssueNodeId(
       params.owner,
       repoName,
-      spec.github_issue_id
+      spec.github_issue_number
     );
 
     // Projectにアイテム追加
@@ -208,14 +221,17 @@ export class GitHubSyncService {
       contentId: issueNodeId,
     });
 
-    // 仕様書更新（Project ID と Item ID を保存）
+    // Project 情報を github_sync テーブルに保存
     await this.db
-      .updateTable('specs')
-      .set({
-        github_project_id: project.id,
-        github_project_item_id: item.id, // Item ID も保存
+      .insertInto('github_sync')
+      .values({
+        entity_type: 'project',
+        entity_id: params.specId,
+        github_id: item.id,
+        github_node_id: project.id,
+        last_synced_at: new Date().toISOString(),
+        sync_status: 'success',
       })
-      .where('id', '=', params.specId)
       .execute();
 
     return item.id;
@@ -301,25 +317,49 @@ ${spec.description || '説明なし'}
   private async recordSyncLog(params: {
     spec_id: string;
     github_issue_id: number;
+    github_node_id?: string;
     sync_direction: 'to_github' | 'from_github';
     status: 'success' | 'error';
     details: Record<string, unknown>;
   }): Promise<void> {
     const { randomUUID } = await import('crypto');
-    // 仕様書とIssueの同期記録
-    // entity_type は 'spec' を使用（'issue' ではない）
-    await this.db
-      .insertInto('github_sync')
-      .values({
-        id: randomUUID(),
-        entity_type: 'spec',
-        entity_id: params.spec_id,
-        github_id: params.github_issue_id.toString(),
-        github_number: params.github_issue_id,
-        last_synced_at: new Date().toISOString(),
-        sync_status: params.status === 'success' ? 'success' : 'failed',
-        error_message: params.status === 'error' ? JSON.stringify(params.details) : null,
-      })
-      .execute();
+
+    // 既存のレコードを検索
+    const existing = await this.db
+      .selectFrom('github_sync')
+      .where('entity_type', '=', 'spec')
+      .where('entity_id', '=', params.spec_id)
+      .where('github_number', '=', params.github_issue_id)
+      .selectAll()
+      .executeTakeFirst();
+
+    const syncData = {
+      entity_type: 'spec' as const,
+      entity_id: params.spec_id,
+      github_id: params.github_issue_id.toString(),
+      github_number: params.github_issue_id,
+      github_node_id: params.github_node_id || null,
+      last_synced_at: new Date().toISOString(),
+      sync_status: (params.status === 'success' ? 'success' : 'failed') as 'success' | 'failed',
+      error_message: params.status === 'error' ? JSON.stringify(params.details) : null,
+    };
+
+    if (existing) {
+      // 既存レコードを更新
+      await this.db
+        .updateTable('github_sync')
+        .set(syncData)
+        .where('id', '=', existing.id)
+        .execute();
+    } else {
+      // 新規レコードを挿入
+      await this.db
+        .insertInto('github_sync')
+        .values({
+          id: randomUUID(),
+          ...syncData,
+        })
+        .execute();
+    }
   }
 }

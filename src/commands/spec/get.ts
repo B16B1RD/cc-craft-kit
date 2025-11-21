@@ -4,7 +4,8 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase } from '../../core/database/connection.js';
+import { getDatabase, closeDatabase } from '../../core/database/connection.js';
+import { getSpecWithGitHubInfo } from '../../core/database/helpers.js';
 import { formatHeading, formatKeyValue, formatMarkdown } from '../utils/output.js';
 import {
   createProjectNotInitializedError,
@@ -35,12 +36,8 @@ export async function getSpec(
   // データベース取得
   const db = getDatabase();
 
-  // 仕様書検索（部分一致対応）
-  const spec = await db
-    .selectFrom('specs')
-    .selectAll()
-    .where('id', 'like', `${specId}%`)
-    .executeTakeFirst();
+  // 仕様書検索（github_sync との JOIN を使用）
+  const spec = await getSpecWithGitHubInfo(db, specId);
 
   if (!spec) {
     throw createSpecNotFoundError(specId);
@@ -69,7 +66,7 @@ export async function getSpec(
   console.log(
     formatKeyValue(
       'GitHub Issue',
-      spec.github_issue_id ? `#${spec.github_issue_id}` : '(not created)',
+      spec.github_issue_number ? `#${spec.github_issue_number}` : '(not created)',
       options.color
     )
   );
@@ -88,7 +85,7 @@ export async function getSpec(
   console.log('');
   console.log(`  • Edit the file: ${specPath}`);
   console.log(`  • Update phase: /cft:spec-phase ${spec.id.substring(0, 8)} <phase>`);
-  if (!spec.github_issue_id) {
+  if (!spec.github_issue_number) {
     console.log(`  • Create GitHub issue: /cft:github-issue-create ${spec.id.substring(0, 8)}`);
   }
 }
@@ -103,5 +100,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  getSpec(specId).catch((error) => handleCLIError(error));
+  getSpec(specId)
+    .catch((error) => handleCLIError(error))
+    .finally(() => closeDatabase());
 }

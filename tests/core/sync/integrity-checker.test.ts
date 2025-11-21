@@ -55,10 +55,10 @@ describe('IntegrityChecker', () => {
           name: 'Spec 1',
           description: null,
           phase: 'requirements',
-          github_issue_id: null,
-          github_project_id: null,
-          github_project_item_id: null,
-          github_milestone_id: null,
+          
+          
+          
+          
           created_at: '2025-11-19T10:00:00',
           updated_at: '2025-11-19T10:00:00',
         };
@@ -97,10 +97,10 @@ describe('IntegrityChecker', () => {
             name: 'Spec 1',
             description: null,
             phase: 'requirements',
-            github_issue_id: null,
-            github_project_id: null,
-            github_project_item_id: null,
-            github_milestone_id: null,
+            
+            
+            
+            
             created_at: '2025-11-19T10:00:00',
             updated_at: '2025-11-19T10:00:00',
           },
@@ -109,10 +109,10 @@ describe('IntegrityChecker', () => {
             name: 'Spec 2',
             description: null,
             phase: 'design',
-            github_issue_id: null,
-            github_project_id: null,
-            github_project_item_id: null,
-            github_milestone_id: null,
+            
+            
+            
+            
             created_at: '2025-11-19T11:00:00',
             updated_at: '2025-11-19T11:00:00',
           },
@@ -194,10 +194,10 @@ describe('IntegrityChecker', () => {
           name: 'Deleted File',
           description: null,
           phase: 'requirements',
-          github_issue_id: null,
-          github_project_id: null,
-          github_project_item_id: null,
-          github_milestone_id: null,
+          
+          
+          
+          
           created_at: '2025-11-19T10:00:00',
           updated_at: '2025-11-19T10:00:00',
         };
@@ -225,10 +225,10 @@ describe('IntegrityChecker', () => {
             name: 'Deleted 1',
             description: null,
             phase: 'requirements',
-            github_issue_id: null,
-            github_project_id: null,
-            github_project_item_id: null,
-            github_milestone_id: null,
+            
+            
+            
+            
             created_at: '2025-11-19T10:00:00',
             updated_at: '2025-11-19T10:00:00',
           },
@@ -237,10 +237,10 @@ describe('IntegrityChecker', () => {
             name: 'Deleted 2',
             description: null,
             phase: 'design',
-            github_issue_id: null,
-            github_project_id: null,
-            github_project_item_id: null,
-            github_milestone_id: null,
+            
+            
+            
+            
             created_at: '2025-11-19T11:00:00',
             updated_at: '2025-11-19T11:00:00',
           },
@@ -267,10 +267,10 @@ describe('IntegrityChecker', () => {
           name: 'Old Name',
           description: null,
           phase: 'requirements',
-          github_issue_id: null,
-          github_project_id: null,
-          github_project_item_id: null,
-          github_milestone_id: null,
+          
+          
+          
+          
           created_at: '2025-11-19T10:00:00',
           updated_at: '2025-11-19T10:00:00',
         };
@@ -305,10 +305,10 @@ describe('IntegrityChecker', () => {
           name: 'Test Spec',
           description: null,
           phase: 'requirements',
-          github_issue_id: null,
-          github_project_id: null,
-          github_project_item_id: null,
-          github_milestone_id: null,
+          
+          
+          
+          
           created_at: '2025-11-19T10:00:00',
           updated_at: '2025-11-19T10:00:00',
         };
@@ -341,10 +341,10 @@ describe('IntegrityChecker', () => {
           name: 'Test Spec',
           description: null,
           phase: 'requirements',
-          github_issue_id: null,
-          github_project_id: null,
-          github_project_item_id: null,
-          github_milestone_id: null,
+          
+          
+          
+          
           created_at: '2025-11-19T10:00:00',
           updated_at: '2025-11-19T10:00:00',
         };
@@ -377,10 +377,10 @@ describe('IntegrityChecker', () => {
           name: 'Old Name',
           description: null,
           phase: 'requirements',
-          github_issue_id: null,
-          github_project_id: null,
-          github_project_item_id: null,
-          github_milestone_id: null,
+          
+          
+          
+          
           created_at: '2025-11-19T10:00:00',
           updated_at: '2025-11-19T10:00:00',
         };
@@ -422,10 +422,10 @@ describe('IntegrityChecker', () => {
           name: 'Test Spec',
           description: null,
           phase: 'requirements',
-          github_issue_id: null,
-          github_project_id: null,
-          github_project_item_id: null,
-          github_milestone_id: null,
+          
+          
+          
+          
           created_at: '2025-11-19T10:00:00',
           updated_at: '2025-11-19T10:00:00',
         };
@@ -453,10 +453,10 @@ describe('IntegrityChecker', () => {
           name: 'Test',
           description: null,
           phase: 'requirements',
-          github_issue_id: null,
-          github_project_id: null,
-          github_project_item_id: null,
-          github_milestone_id: null,
+          
+          
+          
+          
           created_at: '2025-11-19T10:00:00',
           updated_at: '2025-11-19T10:00:00',
         };
@@ -485,10 +485,10 @@ describe('IntegrityChecker', () => {
           name: 'Synced',
           description: null,
           phase: 'requirements',
-          github_issue_id: null,
-          github_project_id: null,
-          github_project_item_id: null,
-          github_milestone_id: null,
+          
+          
+          
+          
           created_at: '2025-11-19T10:00:00',
           updated_at: '2025-11-19T10:00:00',
         };
@@ -542,10 +542,10 @@ describe('IntegrityChecker', () => {
             name: 'Synced',
             description: null,
             phase: 'requirements',
-            github_issue_id: null,
-            github_project_id: null,
-            github_project_item_id: null,
-            github_milestone_id: null,
+            
+            
+            
+            
             created_at: '2025-11-19T10:00:00',
             updated_at: '2025-11-19T10:00:00',
           },
@@ -554,10 +554,10 @@ describe('IntegrityChecker', () => {
             name: 'Old Name',
             description: null,
             phase: 'design',
-            github_issue_id: null,
-            github_project_id: null,
-            github_project_item_id: null,
-            github_milestone_id: null,
+            
+            
+            
+            
             created_at: '2025-11-19T11:00:00',
             updated_at: '2025-11-19T11:00:00',
           },
@@ -566,10 +566,10 @@ describe('IntegrityChecker', () => {
             name: 'Deleted',
             description: null,
             phase: 'tasks',
-            github_issue_id: null,
-            github_project_id: null,
-            github_project_item_id: null,
-            github_milestone_id: null,
+            
+            
+            
+            
             created_at: '2025-11-19T12:00:00',
             updated_at: '2025-11-19T12:00:00',
           },
@@ -666,10 +666,10 @@ describe('IntegrityChecker', () => {
           name: `Spec ${i.toString().padStart(8, '0')}-0000-4000-8000-000000000000`,
           description: null,
           phase: 'requirements' as const,
-          github_issue_id: null,
-          github_project_id: null,
-          github_project_item_id: null,
-          github_milestone_id: null,
+          
+          
+          
+          
           created_at: '2025-11-19T10:00:00',
           updated_at: '2025-11-19T10:00:00',
         }));
@@ -707,10 +707,10 @@ describe('IntegrityChecker', () => {
           name: 'Test',
           description: null,
           phase: 'requirements',
-          github_issue_id: null,
-          github_project_id: null,
-          github_project_item_id: null,
-          github_milestone_id: null,
+          
+          
+          
+          
           created_at: '2025-11-19T10:00:00',
           updated_at: '2025-11-19T10:00:00',
           created_at: '2025-11-19T10:00:00',

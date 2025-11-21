@@ -20,8 +20,8 @@ const createMockDatabase = (): Kysely<Database> => {
             name: 'Test Spec',
             phase: 'requirements',
             description: null,
-            github_issue_id: null,
-            github_project_item_id: null,
+            
+            
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })),

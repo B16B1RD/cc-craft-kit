@@ -21,16 +21,15 @@ export type GitHubEntityType = 'spec' | 'task' | 'issue' | 'project' | 'sub_issu
 
 /**
  * Specs テーブル - 仕様書管理
+ *
+ * GitHub 関連情報は github_sync テーブルで管理されます
  */
 export interface SpecsTable {
   id: Generated<string>; // UUID
   name: string;
   description: string | null;
   phase: SpecPhase;
-  github_issue_id: number | null;
-  github_project_id: string | null;
-  github_project_item_id: string | null; // GitHub Project v2 Item Node ID
-  github_milestone_id: number | null;
+  branch_name: string; // 仕様書が作成されたブランチ名
   created_at: ColumnType<Date, string | undefined, never>;
   updated_at: ColumnType<Date, string | undefined, string>;
 }

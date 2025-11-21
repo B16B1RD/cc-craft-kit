@@ -123,11 +123,21 @@ export class GitHubIssueSync implements Skill<GitHubIssueSyncInput, GitHubIssueS
     const issues: GitHubIssueSyncOutput['issues'] = [];
     let milestoneId: number | undefined;
 
-    // Spec取得
+    // Spec取得（github_sync テーブルとの LEFT JOIN）
     const spec = await this.db
       .selectFrom('specs')
-      .where('id', '=', input.specId)
-      .selectAll()
+      .leftJoin('github_sync', (join) =>
+        join
+          .onRef('github_sync.entity_id', '=', 'specs.id')
+          .on('github_sync.entity_type', '=', 'spec')
+      )
+      .where('specs.id', '=', input.specId)
+      .select([
+        'specs.id',
+        'specs.name',
+        'specs.description',
+        'github_sync.github_number as github_milestone_id',
+      ])
       .executeTakeFirst();
 
     if (!spec) {
@@ -144,10 +154,20 @@ export class GitHubIssueSync implements Skill<GitHubIssueSyncInput, GitHubIssueS
 
         milestoneId = milestone.number;
 
+        // github_sync テーブルにマイルストーンを記録
+        const { randomUUID } = await import('crypto');
         await this.db
-          .updateTable('specs')
-          .set({ github_milestone_id: milestoneId })
-          .where('id', '=', input.specId)
+          .insertInto('github_sync')
+          .values({
+            id: randomUUID(),
+            entity_type: 'spec',
+            entity_id: input.specId,
+            github_id: milestoneId.toString(),
+            github_number: milestoneId,
+            last_synced_at: new Date().toISOString(),
+            sync_status: 'success',
+            error_message: null,
+          })
           .execute();
       } catch (error) {
         console.error('Failed to create milestone:', error);
@@ -237,11 +257,16 @@ export class GitHubIssueSync implements Skill<GitHubIssueSyncInput, GitHubIssueS
     const synced = { created: 0, updated: 0, skipped: 0 };
     const issues: GitHubIssueSyncOutput['issues'] = [];
 
-    // Spec取得
+    // Spec取得（github_sync テーブルとの LEFT JOIN）
     const spec = await this.db
       .selectFrom('specs')
-      .where('id', '=', input.specId)
-      .selectAll()
+      .leftJoin('github_sync', (join) =>
+        join
+          .onRef('github_sync.entity_id', '=', 'specs.id')
+          .on('github_sync.entity_type', '=', 'spec')
+      )
+      .where('specs.id', '=', input.specId)
+      .select(['specs.id', 'github_sync.github_number as github_milestone_id'])
       .executeTakeFirst();
 
     if (!spec || !spec.github_milestone_id) {

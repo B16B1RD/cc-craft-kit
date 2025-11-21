@@ -5,7 +5,7 @@
 import '../../core/config/env.js';
 import { existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase } from '../../core/database/connection.js';
+import { getDatabase, closeDatabase } from '../../core/database/connection.js';
 import { formatHeading, formatKeyValue, formatTable, OutputOptions } from '../utils/output.js';
 import { createProjectNotInitializedError, handleCLIError } from '../utils/error-handler.js';
 
@@ -125,5 +125,7 @@ export async function showDatabaseInfo(
 
 // CLI エントリポイント
 if (import.meta.url === `file://${process.argv[1]}`) {
-  showDatabaseInfo().catch((error) => handleCLIError(error));
+  showDatabaseInfo()
+    .catch((error) => handleCLIError(error))
+    .finally(() => closeDatabase());
 }

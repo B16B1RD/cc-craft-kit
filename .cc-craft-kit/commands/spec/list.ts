@@ -4,10 +4,12 @@
 
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase } from '../../core/database/connection.js';
+import { getDatabase, closeDatabase } from '../../core/database/connection.js';
+import { getSpecsWithGitHubInfo } from '../../core/database/helpers.js';
 import { formatHeading, formatTable, formatKeyValue, OutputOptions } from '../utils/output.js';
 import { createProjectNotInitializedError, handleCLIError } from '../utils/error-handler.js';
 import { validatePhase, VALID_PHASES } from '../utils/validation.js';
+import { getCurrentBranch } from '../../core/git/branch-cache.js';
 
 /**
  * 仕様書一覧表示
@@ -31,28 +33,24 @@ export async function listSpecs(
   // データベース取得
   const db = getDatabase();
 
-  // クエリ構築
-  let query = db
-    .selectFrom('specs')
-    .select(['id', 'name', 'phase', 'github_issue_id', 'created_at'])
-    .orderBy('created_at', 'desc');
+  // フェーズバリデーション
+  const validatedPhase = phase ? validatePhase(phase) : undefined;
 
-  // フェーズフィルター
-  if (phase) {
-    const validatedPhase = validatePhase(phase);
-    query = query.where('phase', '=', validatedPhase);
-  }
+  // 現在のブランチ名を取得（ブランチフィルタリング用）
+  const currentBranch = getCurrentBranch();
 
-  // リミット
-  query = query.limit(displayLimit);
-
-  // 実行
-  const specs = await query.execute();
+  // ヘルパー関数を使用して github_sync と JOIN（ブランチフィルタリング有効）
+  const specs = await getSpecsWithGitHubInfo(db, {
+    phase: validatedPhase,
+    branchName: currentBranch, // ブランチフィルタリングを有効化
+    limit: displayLimit,
+    orderBy: 'created_at',
+    orderDirection: 'desc',
+  });
 
   // 総数取得（フィルター前）
   let totalQuery = db.selectFrom('specs').select(db.fn.countAll().as('count'));
-  if (phase) {
-    const validatedPhase = validatePhase(phase);
+  if (validatedPhase) {
     totalQuery = totalQuery.where('phase', '=', validatedPhase);
   }
   const totalResult = await totalQuery.executeTakeFirst();
@@ -81,7 +79,7 @@ export async function listSpecs(
     spec.id.substring(0, 8) + '...',
     spec.name.length > 40 ? spec.name.substring(0, 37) + '...' : spec.name,
     spec.phase,
-    spec.github_issue_id ? `#${spec.github_issue_id}` : '-',
+    spec.github_issue_number ? `#${spec.github_issue_number}` : '-',
     new Date(spec.created_at).toLocaleDateString(),
   ]);
 
@@ -103,5 +101,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const phase = process.argv[2];
   const limit = process.argv[3] ? parseInt(process.argv[3], 10) : undefined;
 
-  listSpecs(phase, limit).catch((error) => handleCLIError(error));
+  listSpecs(phase, limit)
+    .catch((error) => handleCLIError(error))
+    .finally(() => closeDatabase());
 }

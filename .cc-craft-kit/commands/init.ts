@@ -4,7 +4,7 @@
 
 import { mkdirSync, existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase } from '../core/database/connection.js';
+import { getDatabase, closeDatabase } from '../core/database/connection.js';
 import { migrateToLatest } from '../core/database/migrator.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from './utils/output.js';
 import { createProjectAlreadyInitializedError, handleCLIError } from './utils/error-handler.js';
@@ -86,5 +86,7 @@ export async function initProject(
 if (import.meta.url === `file://${process.argv[1]}`) {
   const projectName = process.argv[2];
 
-  initProject(projectName).catch((error) => handleCLIError(error));
+  initProject(projectName)
+    .catch((error) => handleCLIError(error))
+    .finally(() => closeDatabase());
 }

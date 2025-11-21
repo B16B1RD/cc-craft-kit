@@ -135,12 +135,23 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
           name: 'テスト仕様書',
           description: 'Sub Issue テスト用',
           phase: 'requirements',
-          github_issue_id: 100,
-          github_project_id: null,
-          github_milestone_id: null,
-          github_project_item_id: 'project_item_node_id',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'spec',
+          entity_id: specId,
+          github_id: '100',
+          github_number: 100,
+          github_node_id: 'project_item_node_id',
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
         })
         .execute();
 
@@ -374,11 +385,23 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
           name: 'タスク完了テスト',
           description: null,
           phase: 'implementation',
-          github_issue_id: 200,
-          github_project_id: null,
-          github_milestone_id: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'spec',
+          entity_id: specId,
+          github_id: '200',
+          github_number: 200,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
         })
         .execute();
 
@@ -392,7 +415,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
           description: null,
           status: 'in_progress',
           priority: 1,
-          github_issue_id: null,
+          
           github_issue_number: null,
           assignee: null,
           created_at: new Date().toISOString(),
@@ -476,12 +499,23 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
           name: '完全ワークフローテスト',
           description: 'フェーズ移行の完全テスト',
           phase: 'requirements',
-          github_issue_id: 300,
-          github_project_id: null,
-          github_milestone_id: null,
-          github_project_item_id: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'spec',
+          entity_id: specId,
+          github_id: '300',
+          github_number: 300,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
         })
         .execute();
 
@@ -647,11 +681,23 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
           name: 'タスクなし仕様書',
           description: null,
           phase: 'requirements',
-          github_issue_id: 400,
-          github_project_id: null,
-          github_milestone_id: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'spec',
+          entity_id: specId,
+          github_id: '400',
+          github_number: 400,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
         })
         .execute();
 
@@ -729,11 +775,23 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
           name: 'API エラーテスト',
           description: null,
           phase: 'requirements',
-          github_issue_id: 500,
-          github_project_id: null,
-          github_milestone_id: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'spec',
+          entity_id: specId,
+          github_id: '500',
+          github_number: 500,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
         })
         .execute();
 
@@ -820,11 +878,23 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
           name: 'Sub Issue なしタスク',
           description: null,
           phase: 'implementation',
-          github_issue_id: 600,
-          github_project_id: null,
-          github_milestone_id: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'spec',
+          entity_id: specId,
+          github_id: '600',
+          github_number: 600,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
         })
         .execute();
 
@@ -838,7 +908,7 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
           description: null,
           status: 'in_progress',
           priority: 1,
-          github_issue_id: null,
+          
           github_issue_number: null,
           assignee: null,
           created_at: new Date().toISOString(),

@@ -75,29 +75,34 @@ export async function ensureGitHubIssue(
     return { issueNumber: null, wasCreated: false };
   }
 
-  // 2. 仕様書情報を取得
-  const spec = await db
+  // 2. 仕様書情報を取得（github_sync との JOIN）
+  const specWithGitHub = await db
     .selectFrom('specs')
-    .where('id', '=', specId)
-    .select(['github_issue_id', 'phase', 'name'])
+    .leftJoin('github_sync', (join) =>
+      join
+        .onRef('github_sync.entity_id', '=', 'specs.id')
+        .on('github_sync.entity_type', '=', 'spec')
+    )
+    .where('specs.id', '=', specId)
+    .select(['specs.phase', 'specs.name', 'github_sync.github_number as github_issue_number'])
     .executeTakeFirst();
 
-  if (!spec) {
+  if (!specWithGitHub) {
     console.warn(`⚠️  Spec ${specId} not found in database`);
     return { issueNumber: null, wasCreated: false };
   }
 
   // 3. completed フェーズの仕様書はスキップ（Issue は既にクローズ済みと想定）
-  if (spec.phase === 'completed') {
+  if (specWithGitHub.phase === 'completed') {
     // completed の仕様書は Issue 作成不要（既にクローズ済み）
-    return { issueNumber: spec.github_issue_id, wasCreated: false };
+    return { issueNumber: specWithGitHub.github_issue_number, wasCreated: false };
   }
 
   // 4. Issue 存在チェック
-  if (spec.github_issue_id) {
+  if (specWithGitHub.github_issue_number) {
     // データベースに Issue 番号が記録されている場合は、そのまま返す（API 呼び出しを削減）
     // Issue の状態確認は必要時のみ行う（status コマンド等）
-    return { issueNumber: spec.github_issue_id, wasCreated: false };
+    return { issueNumber: specWithGitHub.github_issue_number, wasCreated: false };
   }
 
   // 5. Issue 自動作成

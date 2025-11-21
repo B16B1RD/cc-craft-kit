@@ -204,14 +204,15 @@ describe('GitHub Integration Event Handlers', () => {
         labels: ['phase:requirements'],
       });
 
-      // データベース更新を確認
-      const updatedSpec = await lifecycle.db
-        .selectFrom('specs')
-        .where('id', '=', specId)
+      // github_sync レコードを確認
+      const syncRecord = await lifecycle.db
+        .selectFrom('github_sync')
+        .where('entity_id', '=', specId)
+        .where('entity_type', '=', 'spec')
         .selectAll()
         .executeTakeFirst();
 
-      expect(updatedSpec?.github_issue_id).toBe(123);
+      expect(syncRecord?.github_number).toBe(123);
 
       // 同期ログ記録を確認
       const syncLog = await lifecycle.db
@@ -345,14 +346,15 @@ describe('GitHub Integration Event Handlers', () => {
       // Issue作成が呼ばれたことを確認
       expect(mockGitHubIssues.create).toHaveBeenCalled();
 
-      // データベース更新を確認（Issue IDは記録されている）
-      const updatedSpec = await lifecycle.db
-        .selectFrom('specs')
-        .where('id', '=', specId)
+      // github_sync レコードを確認（Issue IDは記録されている）
+      const syncRecord = await lifecycle.db
+        .selectFrom('github_sync')
+        .where('entity_id', '=', specId)
+        .where('entity_type', '=', 'spec')
         .selectAll()
         .executeTakeFirst();
 
-      expect(updatedSpec?.github_issue_id).toBe(789);
+      expect(syncRecord?.github_number).toBe(789);
 
       consoleLogSpy.mockRestore();
       consoleWarnSpy.mockRestore();
@@ -407,9 +409,23 @@ describe('GitHub Integration Event Handlers', () => {
           name: 'Test Spec Phase Change',
           description: 'Test description',
           phase: 'design',
-          github_issue_id: 100,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'spec',
+          entity_id: specId,
+          github_id: '100',
+          github_number: 100,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
         })
         .execute();
 

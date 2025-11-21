@@ -25,12 +25,14 @@ export interface IntegrityCheckResult {
     missingInDb: number;
     missingFiles: number;
     orphanedRecords: number;
+    invalidBranches: number;
   };
   details: {
     invalidFiles: Array<{ filePath: string; reason: string }>;
     missingInDb: Array<{ filePath: string; metadata: SpecMetadata | null }>;
     missingFiles: Array<{ id: string; name: string }>;
     orphanedRecords: Array<{ id: string; name: string }>;
+    invalidBranches: Array<{ id: string; name: string; branchName: string | null }>;
   };
 }
 
@@ -55,11 +57,18 @@ export async function checkSqliteIntegrity(db: Kysely<Database>): Promise<Sqlite
       errors: [],
     };
   } catch (error) {
+    // テーブルが存在しない場合は正常（マイグレーション前の状態）
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('no such table')) {
+      return {
+        isValid: true,
+        errors: [],
+      };
+    }
+
     return {
       isValid: false,
-      errors: [
-        `Database corruption detected: ${error instanceof Error ? error.message : String(error)}`,
-      ],
+      errors: [`Database corruption detected: ${errorMessage}`],
     };
   }
 }
@@ -77,6 +86,7 @@ export async function checkDatabaseIntegrity(
   const missingInDb: Array<{ filePath: string; metadata: SpecMetadata | null }> = [];
   const missingFiles: Array<{ id: string; name: string }> = [];
   const orphanedRecords: Array<{ id: string; name: string }> = [];
+  const invalidBranches: Array<{ id: string; name: string; branchName: string | null }> = [];
 
   // 1. SQLite破損チェック
   const sqliteCheck = await checkSqliteIntegrity(db);
@@ -94,12 +104,14 @@ export async function checkDatabaseIntegrity(
         missingInDb: 0,
         missingFiles: 0,
         orphanedRecords: 0,
+        invalidBranches: 0,
       },
       details: {
         invalidFiles: [],
         missingInDb: [],
         missingFiles: [],
         orphanedRecords: [],
+        invalidBranches: [],
       },
     };
   }
@@ -119,12 +131,14 @@ export async function checkDatabaseIntegrity(
         missingInDb: 0,
         missingFiles: 0,
         orphanedRecords: 0,
+        invalidBranches: 0,
       },
       details: {
         invalidFiles: [],
         missingInDb: [],
         missingFiles: [],
         orphanedRecords: [],
+        invalidBranches: [],
       },
     };
   }
@@ -165,8 +179,20 @@ export async function checkDatabaseIntegrity(
   }
 
   // 3. データベースレコードの取得
-  const dbRecords = await db.selectFrom('specs').select(['id', 'name']).execute();
+  const dbRecords = await db.selectFrom('specs').select(['id', 'name', 'branch_name']).execute();
   const dbRecordMap = new Map(dbRecords.map((r) => [r.id, r.name]));
+
+  // 3-1. ブランチ整合性チェック
+  for (const record of dbRecords) {
+    // branch_name が null または空文字列の場合は不正
+    if (!record.branch_name || record.branch_name.trim() === '') {
+      invalidBranches.push({
+        id: record.id,
+        name: record.name,
+        branchName: record.branch_name,
+      });
+    }
+  }
 
   // 4. 整合性チェック
   // 4-1. ファイルはあるがDBレコードがない
@@ -207,6 +233,12 @@ export async function checkDatabaseIntegrity(
     warnings.push(`Found ${orphanedRecords.length} database record(s) with invalid spec file`);
   }
 
+  if (invalidBranches.length > 0) {
+    warnings.push(
+      `Found ${invalidBranches.length} database record(s) with missing or invalid branch_name`
+    );
+  }
+
   const isValid = errors.length === 0;
 
   return {
@@ -221,12 +253,14 @@ export async function checkDatabaseIntegrity(
       missingInDb: missingInDb.length,
       missingFiles: missingFiles.length,
       orphanedRecords: orphanedRecords.length,
+      invalidBranches: invalidBranches.length,
     },
     details: {
       invalidFiles,
       missingInDb,
       missingFiles,
       orphanedRecords,
+      invalidBranches,
     },
   };
 }
@@ -251,6 +285,7 @@ export function formatIntegrityCheckResult(result: IntegrityCheckResult): string
   lines.push(`  Missing in DB: ${result.stats.missingInDb}`);
   lines.push(`  Missing files: ${result.stats.missingFiles}`);
   lines.push(`  Orphaned records: ${result.stats.orphanedRecords}`);
+  lines.push(`  Invalid branches: ${result.stats.invalidBranches}`);
   lines.push('');
 
   // エラー
@@ -307,6 +342,16 @@ export function formatIntegrityCheckResult(result: IntegrityCheckResult): string
     for (const { id, name } of result.details.orphanedRecords) {
       lines.push(`  - ${id}`);
       lines.push(`    Name: ${name}`);
+    }
+    lines.push('');
+  }
+
+  if (result.details.invalidBranches.length > 0) {
+    lines.push('Invalid branch names:');
+    for (const { id, name, branchName } of result.details.invalidBranches) {
+      lines.push(`  - ${id}`);
+      lines.push(`    Name: ${name}`);
+      lines.push(`    Branch: ${branchName === null ? '(null)' : `"${branchName}"`}`);
     }
     lines.push('');
   }

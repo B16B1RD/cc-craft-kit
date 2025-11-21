@@ -25,8 +25,16 @@ describe('Event Logging Integration', () => {
   });
 
   afterEach(async () => {
-    // クリーンアップ
-    closeDatabase();
+    // テストデータをクリーンアップ
+    try {
+      await db.deleteFrom('logs').execute();
+      await db.deleteFrom('specs').execute();
+    } catch (error) {
+      // テーブルが存在しない場合はスキップ
+      console.warn('Cleanup warning:', error);
+    }
+    // データベース接続をクローズ
+    await closeDatabase();
   });
 
   it('should log GitHub API errors to logs table', async () => {

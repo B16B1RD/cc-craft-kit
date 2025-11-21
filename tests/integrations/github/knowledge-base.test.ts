@@ -27,11 +27,23 @@ describe('GitHubKnowledgeBase', () => {
         name: '進捗記録テスト',
         description: null,
         phase: 'implementation',
-        github_issue_id: 100,
-        github_project_id: null,
-        github_milestone_id: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+      })
+      .execute();
+
+    // github_sync レコード作成
+    await lifecycle.db
+      .insertInto('github_sync')
+      .values({
+        entity_type: 'spec',
+        entity_id: specId,
+        github_id: '100',
+        github_number: 100,
+        github_node_id: null,
+        last_synced_at: new Date().toISOString(),
+        sync_status: 'success',
+        error_message: null,
       })
       .execute();
 
@@ -78,11 +90,23 @@ describe('GitHubKnowledgeBase', () => {
         name: 'エラー解決テスト',
         description: null,
         phase: 'implementation',
-        github_issue_id: 200,
-        github_project_id: null,
-        github_milestone_id: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+      })
+      .execute();
+
+    // github_sync レコード作成
+    await lifecycle.db
+      .insertInto('github_sync')
+      .values({
+        entity_type: 'spec',
+        entity_id: specId,
+        github_id: '200',
+        github_number: 200,
+        github_node_id: null,
+        last_synced_at: new Date().toISOString(),
+        sync_status: 'success',
+        error_message: null,
       })
       .execute();
 
@@ -129,11 +153,23 @@ describe('GitHubKnowledgeBase', () => {
         name: 'Tips記録テスト',
         description: null,
         phase: 'implementation',
-        github_issue_id: 300,
-        github_project_id: null,
-        github_milestone_id: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+      })
+      .execute();
+
+    // github_sync レコード作成
+    await lifecycle.db
+      .insertInto('github_sync')
+      .values({
+        entity_type: 'spec',
+        entity_id: specId,
+        github_id: '300',
+        github_number: 300,
+        github_node_id: null,
+        last_synced_at: new Date().toISOString(),
+        sync_status: 'success',
+        error_message: null,
       })
       .execute();
 
@@ -181,11 +217,23 @@ describe('GitHubKnowledgeBase', () => {
         name: '複数ナレッジテスト',
         description: null,
         phase: 'implementation',
-        github_issue_id: 400,
-        github_project_id: null,
-        github_milestone_id: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+      })
+      .execute();
+
+    // github_sync レコード作成
+    await lifecycle.db
+      .insertInto('github_sync')
+      .values({
+        entity_type: 'spec',
+        entity_id: specId,
+        github_id: '400',
+        github_number: 400,
+        github_node_id: null,
+        last_synced_at: new Date().toISOString(),
+        sync_status: 'success',
+        error_message: null,
       })
       .execute();
 

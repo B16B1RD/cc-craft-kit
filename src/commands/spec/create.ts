@@ -6,7 +6,8 @@ import '../../core/config/env.js';
 import { randomUUID } from 'node:crypto';
 import { existsSync, writeFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase } from '../../core/database/connection.js';
+import { execSync } from 'node:child_process';
+import { getDatabase, closeDatabase } from '../../core/database/connection.js';
 import { getEventBusAsync } from '../../core/workflow/event-bus.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
 import {
@@ -17,6 +18,8 @@ import {
 import { validateRequired } from '../utils/validation.js';
 import { getCurrentDateTimeForSpec } from '../../core/utils/date-format.js';
 import { fsyncFileAndDirectory } from '../../core/utils/fsync.js';
+import { getCurrentBranch, clearBranchCache } from '../../core/git/branch-cache.js';
+import { createSpecBranch } from '../../core/git/branch-creation.js';
 
 /**
  * Requirements テンプレート
@@ -92,7 +95,7 @@ ${description || '(背景を記述してください)'}
 export async function createSpec(
   name: string,
   description?: string,
-  options: { color: boolean } = { color: true }
+  options: { color: boolean; branchName?: string } = { color: true }
 ): Promise<void> {
   const cwd = process.cwd();
   const ccCraftKitDir = join(cwd, '.cc-craft-kit');
@@ -129,7 +132,33 @@ export async function createSpec(
 
   const specPath = join(specsDir, `${id}.md`);
 
+  // ブランチ作成結果
+  let branchCreated = false;
+  let branchName: string | null = null;
+  let originalBranch: string | null = null;
+
   try {
+    // 0. ブランチ作成（仕様書作成時に自動作成）
+    const branchResult = options.branchName
+      ? createSpecBranch(id, options.branchName)
+      : createSpecBranch(id);
+
+    if (branchResult.created && branchResult.branchName) {
+      branchCreated = true;
+      branchName = branchResult.branchName;
+      originalBranch = branchResult.originalBranch;
+
+      // ブランチキャッシュをクリア（次回の getCurrentBranch() で最新を取得）
+      clearBranchCache();
+
+      console.log(formatInfo(`Created new branch: ${branchResult.branchName}`, options.color));
+    } else {
+      originalBranch = branchResult.originalBranch;
+      console.log(
+        formatInfo(branchResult.reason || 'ブランチ作成をスキップしました。', options.color)
+      );
+    }
+
     // 1. データベースレコード作成
     await db
       .insertInto('specs')
@@ -138,6 +167,7 @@ export async function createSpec(
         name,
         description: description || null,
         phase: 'requirements',
+        branch_name: branchCreated && branchName ? branchName : getCurrentBranch(),
         created_at: now,
         updated_at: now,
       })
@@ -185,6 +215,17 @@ export async function createSpec(
     console.error('');
     console.error(formatInfo('Rolling back due to error...', options.color));
 
+    // ブランチ削除（作成された場合のみ）
+    if (branchCreated && originalBranch && branchName) {
+      try {
+        execSync(`git checkout ${originalBranch}`, { stdio: 'ignore' });
+        execSync(`git branch -D ${branchName}`, { stdio: 'ignore' });
+        console.error(`Deleted branch: ${branchName}`);
+      } catch (branchError) {
+        console.error('Failed to rollback branch:', branchError);
+      }
+    }
+
     // DBレコード削除
     try {
       await db.deleteFrom('specs').where('id', '=', id).execute();
@@ -211,11 +252,17 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const name = process.argv[2];
   const description = process.argv[3];
 
+  // --branch-name オプションのパース
+  const branchNameIndex = process.argv.indexOf('--branch-name');
+  const branchName = branchNameIndex !== -1 ? process.argv[branchNameIndex + 1] : undefined;
+
   if (!name) {
     console.error('Error: spec-name is required');
-    console.error('Usage: npx tsx create.ts <spec-name> [description]');
+    console.error('Usage: npx tsx create.ts <spec-name> [description] [--branch-name <name>]');
     process.exit(1);
   }
 
-  createSpec(name, description).catch((error) => handleCLIError(error));
+  createSpec(name, description, { color: true, branchName })
+    .catch((error) => handleCLIError(error))
+    .finally(() => closeDatabase());
 }

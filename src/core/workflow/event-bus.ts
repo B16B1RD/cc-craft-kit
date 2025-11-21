@@ -7,6 +7,7 @@ import type { Metadata } from '../types/common.js';
 export type WorkflowEventType =
   | 'spec.created'
   | 'spec.updated'
+  | 'spec.deleted'
   | 'spec.phase_changed'
   | 'task.created'
   | 'task.status_changed'
@@ -178,6 +179,12 @@ let registrationInProgress = false;
  */
 async function registerHandlersAsync(bus: EventBus): Promise<void> {
   if (handlersRegistered || registrationInProgress) {
+    return;
+  }
+
+  // テスト環境では統合ハンドラーをスキップ
+  if (process.env.NODE_ENV === 'test' || process.env.E2E_TEST === 'true') {
+    handlersRegistered = true;
     return;
   }
 

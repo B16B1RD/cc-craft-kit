@@ -33,8 +33,16 @@ export class GitHubSyncChecker {
    * @returns GitHub同期レポート
    */
   async check(): Promise<GitHubSyncReport> {
-    // 1. 全仕様書を取得
-    const allSpecs = await this.db.selectFrom('specs').selectAll().execute();
+    // 1. 全仕様書を取得（github_sync との LEFT JOIN）
+    const allSpecs = await this.db
+      .selectFrom('specs')
+      .leftJoin('github_sync', (join) =>
+        join
+          .onRef('github_sync.entity_id', '=', 'specs.id')
+          .on('github_sync.entity_type', '=', 'spec')
+      )
+      .select(['specs.id', 'specs.name', 'github_sync.github_number as github_issue_number'])
+      .execute();
 
     // 2. GitHub同期テーブルから同期済み仕様書を取得
     const syncRecords = await this.db
@@ -44,8 +52,8 @@ export class GitHubSyncChecker {
       .execute();
 
     // 3. 同期済み・未同期の分類
-    const synced = allSpecs.filter((s) => s.github_issue_id !== null);
-    const notSynced = allSpecs.filter((s) => s.github_issue_id === null);
+    const synced = allSpecs.filter((s) => s.github_issue_number !== null);
+    const notSynced = allSpecs.filter((s) => s.github_issue_number === null);
 
     // 4. 同期エラーの検出
     const syncErrors = syncRecords

@@ -248,15 +248,268 @@ await eventBus.emit(
 **主要テーブル:**
 
 - `specs` - 仕様書（フェーズ管理: requirements → design → tasks → implementation → completed）
+  - GitHub 連携情報は `github_sync` テーブルで管理（`specs` テーブルには GitHub 関連カラムなし）
+  - `branch_name`: 仕様書が作成されたブランチ名（ブランチ間の分離管理）
 - `tasks` - タスク（ステータス: todo → in_progress → blocked → review → done）
 - `logs` - アクションログ（レベル: debug/info/warn/error）
-- `github_sync` - GitHub 同期状態管理
+- `github_sync` - GitHub 同期状態管理（**Issue/PR 情報の単一情報源**）
+  - `entity_type`: 連携対象エンティティ（`spec` または `task`）
+  - `entity_id`: 対象の仕様書 ID またはタスク ID
+  - `github_id`: GitHub API リソース ID
+  - `github_number`: Issue/PR 番号
+  - `github_node_id`: GraphQL API 用ノード ID
+  - `sync_status`: 同期ステータス（`success` / `failed` / `pending`）
 
 **重要なインデックス:**
 
 - `specs.phase` - フェーズでのフィルタリング用
+- `specs.branch_name` - ブランチでのフィルタリング用
+- `specs.(phase, branch_name)` - フェーズとブランチの複合フィルタリング用
 - `tasks.status` - ステータス検索用
 - `github_sync.entity_id` - 同期レコード検索用
+- `github_sync.entity_type` - エンティティタイプでのフィルタリング用
+
+**GitHub 統合のデータアクセスパターン:**
+
+仕様書と GitHub 情報を結合取得する場合は、以下のヘルパー関数を使用すること。
+
+```typescript
+// 単一仕様書 + GitHub 情報
+import { getSpecWithGitHubInfo } from '../commands/spec/helpers.js';
+const spec = await getSpecWithGitHubInfo(db, specId);
+
+// 複数仕様書 + GitHub 情報（フェーズフィルタリング）
+import { getSpecsWithGitHubInfo } from '../commands/spec/helpers.js';
+const specs = await getSpecsWithGitHubInfo(db, { phase: 'implementation' });
+
+// ブランチフィルタリング（現在のブランチ、main、develop のみ表示）
+import { getCurrentBranch } from '../core/git/branch-cache.js';
+const currentBranch = getCurrentBranch();
+const branchSpecs = await getSpecsWithGitHubInfo(db, { branchName: currentBranch });
+
+// フェーズとブランチの複合フィルタリング
+const filteredSpecs = await getSpecsWithGitHubInfo(db, {
+  phase: 'implementation',
+  branchName: currentBranch,
+});
+```
+
+直接 JOIN を書く代わりに、これらのヘルパー関数を使用することで、一貫性のあるデータアクセスを実現します。
+
+**ブランチフィルタリングの仕様:**
+
+- `branchName` オプションを指定すると、以下のブランチで作成された仕様書のみが表示されます：
+  - 指定されたブランチ（現在のブランチ）
+  - `main` ブランチ（全ブランチから参照可能）
+  - `develop` ブランチ（全ブランチから参照可能）
+- これにより、ブランチを切り替えても適切な仕様書のみが表示され、データベース不整合を防ぐ。
+
+### ブランチ管理
+
+cc-craft-kit は、Git ブランチと仕様書を紐づけて管理し、ブランチ切り替え時のデータベース不整合を防止します。
+
+#### 仕様書作成時の自動ブランチ作成
+
+仕様書を作成すると、自動的に専用ブランチが作成されます。
+
+```bash
+# 仕様書作成（feature ブランチで実行）
+/cft:spec-create "新機能の実装"
+
+# 自動的に以下が実行される：
+# 1. 仕様書 ID 生成: 12345678-1234-1234-1234-123456789abc
+# 2. ブランチ作成: spec/12345678
+# 3. データベースレコード作成: branch_name = "spec/12345678"
+```
+
+**ブランチ命名規則:**
+
+| 実行元ブランチ | カスタムブランチ名 | 生成されるブランチ名 |
+|---|---|---|
+| feature/* | なし | `spec/<短縮ID>` |
+| feature/* | あり | `spec/<短縮ID>-<カスタム名>` |
+| **develop** | なし | `feature/spec-<短縮ID>` |
+| **develop** | あり | `feature/spec-<短縮ID>-<カスタム名>` |
+| **main** | なし | `feature/spec-<短縮ID>` |
+| **main** | あり | `feature/spec-<短縮ID>-<カスタム名>` |
+
+**保護ブランチでの動作:**
+
+- v0.2.0 以降、`main` または `develop` ブランチから実行した場合、自動的に `feature/spec-` プレフィックス付きブランチを作成
+- これにより、保護ブランチでの直接作業を防ぎつつ、手動でのブランチ作成の手間を削減
+- 環境変数 `PROTECTED_BRANCHES` でカスタマイズ可能（デフォルト: `main,develop`）
+
+```bash
+# 保護ブランチのカスタマイズ（.env）
+PROTECTED_BRANCHES=main,develop,staging
+```
+
+#### ブランチフィルタリング
+
+`/cft:spec-list` コマンドは、現在のブランチに応じて表示される仕様書を自動的にフィルタリングします。
+
+**フィルタリングルール:**
+
+| 現在のブランチ | 表示される仕様書 |
+|---|---|
+| `main` | `main` と `develop` で作成された仕様書のみ |
+| `develop` | `main` と `develop` で作成された仕様書のみ |
+| `feature/test` | `main`, `develop`, `feature/test` で作成された仕様書 |
+
+**動作例:**
+
+```bash
+# main ブランチで実行
+$ git checkout main
+$ /cft:spec-list
+# → main と develop の仕様書のみ表示
+
+# feature ブランチで実行
+$ git checkout feature/new-feature
+$ /cft:spec-list
+# → main, develop, feature/new-feature の仕様書を表示
+```
+
+#### ブランチキャッシュ機構
+
+Git コマンドの実行コストを削減するため、プロセスレベルでブランチ名をキャッシュします。
+
+```typescript
+import { getCurrentBranch, clearBranchCache } from './core/git/branch-cache.js';
+
+// キャッシュを使用（推奨）
+const branch = getCurrentBranch(); // 初回のみ git コマンド実行
+
+// キャッシュをクリア（ブランチ切り替え後）
+clearBranchCache();
+const newBranch = getCurrentBranch(); // 再度 git コマンド実行
+```
+
+#### ブランチ作成ロジック
+
+仕様書作成時のブランチ作成ロジックは、`src/core/git/branch-creation.ts` に実装されています。
+
+**主な機能:**
+
+1. **セキュリティ強化**: UUID フォーマット検証とサニタイゼーションによりコマンドインジェクションを防止
+2. **保護ブランチからの自動ブランチ作成**: 環境変数 `PROTECTED_BRANCHES` (デフォルト: `main,develop`) で指定された保護ブランチから実行時、自動的に `feature/spec-` プレフィックス付きブランチを作成
+3. **ブランチ作成検証**: ブランチ作成後、実際に切り替わったか検証し、失敗時は自動ロールバック
+4. **明確なエラーメッセージ**: Git 未初期化、ブランチ作成失敗など、状況に応じた詳細なメッセージを返却
+
+```typescript
+import { createSpecBranch } from './core/git/branch-creation.js';
+
+// 仕様書作成時に呼び出す
+const result = createSpecBranch(specId);
+
+if (result.created) {
+  console.log(`Created branch: ${result.branchName}`);
+  // ブランチキャッシュをクリア
+  clearBranchCache();
+} else {
+  console.log(`Skipped: ${result.reason}`);
+}
+```
+
+**ブランチ作成結果の型定義:**
+
+```typescript
+interface BranchCreationResult {
+  created: boolean;                // ブランチが作成されたか
+  branchName: string | null;       // 作成されたブランチ名
+  originalBranch: string | null;   // 元のブランチ名
+  reason?: string;                 // スキップされた理由
+}
+```
+
+#### エラーハンドリングとロールバック
+
+仕様書作成中にエラーが発生した場合、以下を自動的にロールバックします。
+
+1. **データベースレコード削除** - 作成途中の仕様書レコードを削除
+2. **ファイル削除** - 作成途中の仕様書ファイルを削除
+3. **ブランチ削除** - 作成したブランチを削除し、元のブランチに戻る
+
+**実装例 (`src/commands/spec/create.ts`):**
+
+```typescript
+let branchCreated = false;
+let branchName: string | null = null;
+let originalBranch: string | null = null;
+
+try {
+  // 1. ブランチ作成
+  const branchResult = createSpecBranch(id);
+  if (branchResult.created && branchResult.branchName) {
+    branchCreated = true;
+    branchName = branchResult.branchName;
+    originalBranch = branchResult.originalBranch;
+    clearBranchCache();
+  }
+
+  // 2. データベースレコード作成
+  await db.insertInto('specs').values({ ... }).execute();
+
+  // 3. ファイル作成
+  writeFileSync(specPath, content);
+  fsyncFileAndDirectory(specPath);
+} catch (error) {
+  // ロールバック処理
+  if (branchCreated && originalBranch && branchName) {
+    execSync(`git checkout ${originalBranch}`, { stdio: 'ignore' });
+    execSync(`git branch -D ${branchName}`, { stdio: 'ignore' });
+  }
+  await db.deleteFrom('specs').where('id', '=', id).execute();
+  if (existsSync(specPath)) {
+    unlinkSync(specPath);
+  }
+  throw error;
+}
+```
+
+**セキュリティ対策:**
+
+- UUID フォーマット検証により、不正な仕様書 ID によるコマンドインジェクションを防止
+- ブランチ名のサニタイゼーション（16 進数のみ許可）により、特殊文字の混入を防止
+- `stdio: 'pipe'` によるコマンド実行で、エラーメッセージの漏洩を防止
+
+#### データベース整合性チェック
+
+ブランチ整合性を含むデータベース整合性チェックは、起動時および `/cft:status` コマンド実行時に自動実行されます。
+
+**チェック項目:**
+
+- `branch_name` が `null` または空文字列でないこと
+- データベースレコードと仕様書ファイルのメタデータが一致すること
+- 孤立したレコードやファイルが存在しないこと
+
+```bash
+# 整合性チェック実行
+$ /cft:status
+
+# 不整合が検出された場合
+⚠️  Database integrity warnings:
+  - Found 2 database record(s) with missing or invalid branch_name
+
+# 自動修復スクリプト実行
+$ npx tsx .cc-craft-kit/scripts/repair-database.ts
+```
+
+#### ブランチ切り替え時の注意事項
+
+ブランチを切り替えても、データベースレコードは残り続けます。これは意図的な設計です。
+
+**想定されるシナリオ:**
+
+1. **feature ブランチで仕様書を作成** - データベースに記録される
+2. **main ブランチに切り替え** - 仕様書ファイルは Git で管理されていないため消える
+3. **仕様書の一覧を表示** - ブランチフィルタリングにより、feature の仕様書は表示されない
+
+**データベース不整合が発生しない理由:**
+
+- ブランチフィルタリングにより、現在のブランチで参照できない仕様書は非表示になる
+- 元のブランチに戻れば、仕様書は再び表示される
+- データベースレコードは削除されないため、ブランチ間でデータが失われることはない
 
 ### カスタムスラッシュコマンド
 
@@ -422,7 +675,7 @@ export class YourService {
 
 ### データベース接続の安全性
 
-⚠️ **重要: データベース破損を防ぐための厳格なルール**
+データベース破損を防ぐための厳格なルール。
 
 1. **`getDatabase()` の使用**
    - データベース接続は **必ず** `getDatabase()` を使用すること
@@ -437,11 +690,11 @@ export class YourService {
 3. **正しい使用例**
 
    ```typescript
-   // ✅ 正しい
+   // 正しい例
    import { getDatabase } from '../core/database/connection.js';
    const db = getDatabase();
 
-   // ❌ 間違い（データベース破損の原因）
+   // 間違った例（データベース破損の原因）
    const db = getDatabase({ databasePath: '/custom/path.db' });
    ```
 
@@ -607,10 +860,10 @@ eventBus.on('spec:created', async (spec) => {
 
 ### .cc-craft-kit/ ディレクトリのファイル管理
 
-- **基本方針**: `.cc-craft-kit/` ディレクトリは `.gitignore` に含まれ、Git 管理対象外
-- **例外**: `.cc-craft-kit/specs/*.md` (仕様書ファイル) のみ Git 管理対象
-- **理由**: ドッグフーディング環境のため、データベース等の自動生成ファイルは除外するが、仕様書の変更履歴は記録する必要がある
-- **実装**: `.gitignore` にネゲーションパターン `!.cc-craft-kit/specs/` を追加し、仕様書ディレクトリのみ除外対象から外している
+- 基本方針: `.cc-craft-kit/` ディレクトリは `.gitignore` に含まれ、Git 管理対象外
+- 例外: `.cc-craft-kit/specs/*.md` (仕様書ファイル) のみ Git 管理対象
+- 理由: ドッグフーディング環境のため、データベース等の自動生成ファイルは除外するが、仕様書の変更履歴は記録する必要がある
+- 実装: `.gitignore` にネゲーションパターン `!.cc-craft-kit/specs/` を追加し、仕様書ディレクトリのみ除外対象から外している
 
 ## トラブルシューティング
 
@@ -708,7 +961,11 @@ cc-craft-kit v0.1.1 以降では、以下の修正により不整合が発生し
    - try-catch でエラーハンドリング
    - エラー時は DB レコードとファイルを自動削除
 
-4. **E2E テストによる検証**:
+4. **起動時整合性チェック**:
+   - `/cft:status` コマンド実行時に整合性チェックを自動実行
+   - 不整合が検出された場合、修復スクリプトの実行を案内
+
+5. **E2E テストによる検証**:
    - 100 回連続実行で不整合 0 件を達成
    - `tests/e2e/database-integrity.test.ts` で継続的に検証
 

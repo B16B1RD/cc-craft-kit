@@ -5,7 +5,7 @@
 import '../../core/config/env.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase } from '../../core/database/connection.js';
+import { getDatabase, closeDatabase } from '../../core/database/connection.js';
 import { getEventBusAsync } from '../../core/workflow/event-bus.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
 import {
@@ -15,6 +15,7 @@ import {
   handleCLIError,
 } from '../utils/error-handler.js';
 import { validateSpecId } from '../utils/validation.js';
+import { getSpecWithGitHubInfo } from '../../core/database/helpers.js';
 
 /**
  * GitHub設定を取得
@@ -71,17 +72,13 @@ export async function recordProgress(
   const db = getDatabase();
 
   // 仕様書検索（部分一致対応）
-  const spec = await db
-    .selectFrom('specs')
-    .selectAll()
-    .where('id', 'like', `${specId}%`)
-    .executeTakeFirst();
+  const spec = await getSpecWithGitHubInfo(db, specId);
 
   if (!spec) {
     throw createSpecNotFoundError(specId);
   }
 
-  if (!spec.github_issue_id) {
+  if (!spec.github_issue_number) {
     throw new Error(
       'Spec has no linked GitHub Issue. Create an issue first with "/cft:github-issue-create".'
     );
@@ -91,7 +88,7 @@ export async function recordProgress(
   console.log('');
   console.log(formatKeyValue('Spec ID', spec.id, options.color));
   console.log(formatKeyValue('Spec Name', spec.name, options.color));
-  console.log(formatKeyValue('GitHub Issue', `#${spec.github_issue_id}`, options.color));
+  console.log(formatKeyValue('GitHub Issue', `#${spec.github_issue_number}`, options.color));
   console.log('');
 
   // イベント発火
@@ -111,7 +108,7 @@ export async function recordProgress(
     console.log(
       formatKeyValue(
         'URL',
-        `https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/${spec.github_issue_id}`,
+        `https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/${spec.github_issue_number}`,
         options.color
       )
     );
@@ -160,17 +157,13 @@ export async function recordErrorSolution(
   const db = getDatabase();
 
   // 仕様書検索（部分一致対応）
-  const spec = await db
-    .selectFrom('specs')
-    .selectAll()
-    .where('id', 'like', `${specId}%`)
-    .executeTakeFirst();
+  const spec = await getSpecWithGitHubInfo(db, specId);
 
   if (!spec) {
     throw createSpecNotFoundError(specId);
   }
 
-  if (!spec.github_issue_id) {
+  if (!spec.github_issue_number) {
     throw new Error(
       'Spec has no linked GitHub Issue. Create an issue first with "/cft:github-issue-create".'
     );
@@ -180,7 +173,7 @@ export async function recordErrorSolution(
   console.log('');
   console.log(formatKeyValue('Spec ID', spec.id, options.color));
   console.log(formatKeyValue('Spec Name', spec.name, options.color));
-  console.log(formatKeyValue('GitHub Issue', `#${spec.github_issue_id}`, options.color));
+  console.log(formatKeyValue('GitHub Issue', `#${spec.github_issue_number}`, options.color));
   console.log('');
 
   // イベント発火
@@ -201,7 +194,7 @@ export async function recordErrorSolution(
     console.log(
       formatKeyValue(
         'URL',
-        `https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/${spec.github_issue_id}`,
+        `https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/${spec.github_issue_number}`,
         options.color
       )
     );
@@ -250,17 +243,13 @@ export async function recordTip(
   const db = getDatabase();
 
   // 仕様書検索（部分一致対応）
-  const spec = await db
-    .selectFrom('specs')
-    .selectAll()
-    .where('id', 'like', `${specId}%`)
-    .executeTakeFirst();
+  const spec = await getSpecWithGitHubInfo(db, specId);
 
   if (!spec) {
     throw createSpecNotFoundError(specId);
   }
 
-  if (!spec.github_issue_id) {
+  if (!spec.github_issue_number) {
     throw new Error(
       'Spec has no linked GitHub Issue. Create an issue first with "/cft:github-issue-create".'
     );
@@ -270,7 +259,7 @@ export async function recordTip(
   console.log('');
   console.log(formatKeyValue('Spec ID', spec.id, options.color));
   console.log(formatKeyValue('Spec Name', spec.name, options.color));
-  console.log(formatKeyValue('GitHub Issue', `#${spec.github_issue_id}`, options.color));
+  console.log(formatKeyValue('GitHub Issue', `#${spec.github_issue_number}`, options.color));
   console.log(formatKeyValue('Category', category, options.color));
   console.log('');
 
@@ -293,7 +282,7 @@ export async function recordTip(
     console.log(
       formatKeyValue(
         'URL',
-        `https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/${spec.github_issue_id}`,
+        `https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/${spec.github_issue_number}`,
         options.color
       )
     );
@@ -326,7 +315,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       console.error('Error: message is required');
       process.exit(1);
     }
-    recordProgress(specId, message).catch((error) => handleCLIError(error));
+    recordProgress(specId, message)
+      .catch((error) => handleCLIError(error))
+      .finally(() => closeDatabase());
   } else if (command === 'error') {
     const errorMsg = process.argv[4];
     const solution = process.argv.slice(5).join(' ');
@@ -334,7 +325,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       console.error('Error: error and solution are required');
       process.exit(1);
     }
-    recordErrorSolution(specId, errorMsg, solution).catch((error) => handleCLIError(error));
+    recordErrorSolution(specId, errorMsg, solution)
+      .catch((error) => handleCLIError(error))
+      .finally(() => closeDatabase());
   } else if (command === 'tip') {
     const category = process.argv[4];
     const tip = process.argv.slice(5).join(' ');
@@ -342,7 +335,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       console.error('Error: category and tip are required');
       process.exit(1);
     }
-    recordTip(specId, category, tip).catch((error) => handleCLIError(error));
+    recordTip(specId, category, tip)
+      .catch((error) => handleCLIError(error))
+      .finally(() => closeDatabase());
   } else {
     console.error('Error: command must be "progress", "error", or "tip"');
     process.exit(1);
