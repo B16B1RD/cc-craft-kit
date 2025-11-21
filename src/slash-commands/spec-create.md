@@ -46,6 +46,23 @@ argument-hint: "<spec-name> [description]"
    - 日本語: "データベース接続エラーを修正" → 英語: "fix-database-connection"
    - 英語: "Add User Authentication" → 英語: "add-user-authentication"
 
+## 自動ブランチ作成の動作（v0.2.0 以降）
+
+保護ブランチ（`main`、`develop`）から仕様書作成時、自動的に `feature/spec-` プレフィックス付きブランチが作成されます。
+
+**ブランチ命名規則:**
+
+| 実行元ブランチ | カスタムブランチ名 | 生成されるブランチ名 |
+|---|---|---|
+| feature/* | なし | `spec/<短縮ID>` |
+| feature/* | あり | `spec/<短縮ID>-<カスタム名>` |
+| **develop** | なし | `feature/spec-<短縮ID>` |
+| **develop** | あり | `feature/spec-<短縮ID>-<カスタム名>` |
+| **main** | なし | `feature/spec-<短縮ID>` |
+| **main** | あり | `feature/spec-<短縮ID>-<カスタム名>` |
+
+この機能により、保護ブランチでの直接作業を防ぎつつ、手動でのブランチ作成の手間を削減します。
+
 ---
 
 以下のコマンドを実行して仕様書を作成してください。
