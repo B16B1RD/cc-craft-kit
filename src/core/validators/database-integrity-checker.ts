@@ -181,7 +181,7 @@ export async function checkDatabaseIntegrity(
 
   // 3. データベースレコードの取得
   const dbRecords = await db.selectFrom('specs').select(['id', 'name', 'branch_name']).execute();
-  const dbRecordMap = new Map(dbRecords.map((r) => [r.id, r.name]));
+  const dbRecordMap = new Map(dbRecords.map((r) => [r.id, r]));
 
   // 3-1. ブランチフィルタリング用の許可リストを作成
   const currentBranch = getCurrentBranch();
@@ -200,9 +200,17 @@ export async function checkDatabaseIntegrity(
   }
 
   // 4. 整合性チェック
-  // 4-1. ファイルはあるがDBレコードがない
+  // 4-1. ファイルはあるがDBレコードがない（ブランチフィルタリング適用）
   for (const [id, metadata] of fileMetadataMap) {
-    if (!dbRecordMap.has(id)) {
+    const dbRecord = dbRecordMap.get(id);
+
+    // データベースレコードが存在し、かつブランチが許可リストに含まれない場合はスキップ
+    if (dbRecord && !allowedBranches.includes(dbRecord.branch_name)) {
+      continue; // 別ブランチの仕様書なのでスキップ
+    }
+
+    // データベースレコードが存在しない場合は、本当にDBに登録されていない
+    if (!dbRecord) {
       missingInDb.push({
         filePath: join(specsDir, `${id}.md`),
         metadata,
