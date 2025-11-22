@@ -151,7 +151,12 @@ export async function createSpec(
       // ブランチキャッシュをクリア（次回の getCurrentBranch() で最新を取得）
       clearBranchCache();
 
-      console.log(formatInfo(`Created new branch: ${branchResult.branchName}`, options.color));
+      console.log(
+        formatInfo(
+          `Created branch: ${branchResult.branchName}, switched back to ${branchResult.originalBranch}`,
+          options.color
+        )
+      );
     } else {
       originalBranch = branchResult.originalBranch;
       console.log(
