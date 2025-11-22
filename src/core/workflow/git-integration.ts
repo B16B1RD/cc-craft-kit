@@ -229,6 +229,20 @@ async function gitCommit(
     });
 
     if (commitResult.status !== 0) {
+      // コミット失敗時はステージングをロールバック
+      try {
+        const resetResult = spawnSync('git', ['reset', 'HEAD'], {
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+
+        if (resetResult.status === 0) {
+          console.log('\nℹ Rolled back staged changes (git reset HEAD)');
+        }
+      } catch (resetError) {
+        // ロールバック失敗はログ記録のみ（フェーズ切り替えは継続）
+        console.warn('\n⚠ Failed to rollback staged changes:', resetError);
+      }
+
       return { success: false, error: commitResult.stderr.toString() };
     }
 
