@@ -1,9 +1,9 @@
 # 各フェーズ完了時未コミットのファイルがある（主に仕様書ファイル）
 
 **仕様書 ID:** 20a0ff2e-bab4-43f3-838a-decfd71a96da
-**フェーズ:** requirements
+**フェーズ:** completed
 **作成日時:** 2025/11/22 18:46:45
-**更新日時:** 2025/11/22 18:46:45
+**更新日時:** 2025/11/22 19:21:12
 
 ---
 
@@ -14,7 +14,7 @@
 現在、cc-craft-kit では各フェーズ完了時（特に `/cft:spec-create` 実行時）に Git 自動コミット機能が実装されているが、以下の問題が発生している。
 
 1. **仕様書ファイルがコミットされない**
-   - `spec.created` イベント発火時の自動コミットは実装されているが、実際にはファイルがコミットされないケースが多発
+   - `spec.created` イベント発火時の自動コミット機能は実装済みだが、実際にはファイルがコミットされないケースが多発
    - 手動コミットが必要になり、ワークフローが中断される
 
 2. **他のフェーズでも同様の問題**
@@ -112,8 +112,8 @@
 
 ## 4. 制約条件
 
-- **Git リポジトリ必須**: 機能を使用するには、プロジェクトが Git リポジトリである必要がある
-- **Node.js 環境**: textlint/markdownlint は Node.js パッケージのため、`npx` コマンドが使用可能である必要がある
+- **Git リポジトリ必須**: 機能を使用するには、プロジェクトを Git リポジトリとして初期化する必要がある
+- **Node.js 環境**: textlint/markdownlint は Node.js パッケージのため、`npx` コマンドを使用可能にする必要がある
 - **既存コミット履歴への影響**: 過去のコミットには影響を与えず、新規コミットのみが対象
 - **pre-commit フック互換性**: husky + lint-staged の既存設定と互換性を保つこと
 
@@ -145,3 +145,366 @@
 - [markdownlint Documentation](https://github.com/DavidAnson/markdownlint)
 - [husky Documentation](https://typicode.github.io/husky/)
 - [lint-staged Documentation](https://github.com/okonet/lint-staged)
+
+---
+
+## 7. 設計
+
+### 7.1. アーキテクチャ概要
+
+Git 自動コミット機能は、イベント駆動アーキテクチャを活用し、以下のコンポーネントで構成される。
+
+```text
+┌─────────────────────────────────────────────────────────┐
+│  Slash Commands (/cft:spec-create, /cft:spec-phase)    │
+│  - 仕様書作成・フェーズ変更のエントリーポイント        │
+└────────────────┬────────────────────────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────────────────────────┐
+│  Event Bus (EventEmitter2)                              │
+│  - spec.created イベント発火                            │
+│  - spec.phase_changed イベント発火                      │
+└────────────────┬────────────────────────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────────────────────────┐
+│  Git Integration Handler                                │
+│  - handleSpecCreatedCommit()                            │
+│  - handlePhaseChangeCommit()                            │
+│  - 自動コミット処理の統合ロジック                       │
+└────────────────┬────────────────────────────────────────┘
+                 │
+    ┌────────────┼────────────┐
+    ▼            ▼            ▼
+┌────────┐  ┌────────┐  ┌──────────┐
+│ textlint│  │ Git CLI│  │ Logger   │
+│ 自動修正│  │ 実行   │  │ ログ記録 │
+└────────┘  └────────┘  └──────────┘
+```
+
+### 7.2. コミットフロー設計
+
+#### 7.2.1. spec.created イベント時のコミットフロー
+
+```typescript
+// 1. イベント発火（commands/spec/create.ts）
+await eventBus.emit(
+  eventBus.createEvent('spec.created', specId, { phase: 'requirements' })
+);
+
+// 2. ハンドラー実行（core/workflow/git-integration.ts）
+async function handleSpecCreatedCommit(specId: string) {
+  try {
+    // 2-1. 仕様書ファイルパスを取得
+    const specFile = `.cc-craft-kit/specs/${specId}.md`;
+
+    // 2-2. textlint 自動修正を実行
+    await runTextlintFix(specFile);
+
+    // 2-3. Git add + commit 実行
+    await gitCommit(specFile, `feat: ${specName} の要件定義を完了`);
+
+    // 2-4. 成功ログ記録
+    logger.info('Auto-committed spec file', { specId, file: specFile });
+  } catch (error) {
+    // 2-5. エラーハンドリング（ロールバック + 警告表示）
+    await handleCommitError(error, specId);
+  }
+}
+```
+
+#### 7.2.2. spec.phase_changed イベント時のコミットフロー
+
+```typescript
+// 1. イベント発火（commands/spec/phase.ts）
+await eventBus.emit(
+  eventBus.createEvent('spec.phase_changed', specId, {
+    oldPhase,
+    newPhase,
+  })
+);
+
+// 2. ハンドラー実行（core/workflow/git-integration.ts）
+async function handlePhaseChangeCommit(
+  specId: string,
+  oldPhase: string,
+  newPhase: string
+) {
+  try {
+    // 2-1. コミット対象ファイルを決定
+    const files =
+      newPhase === 'completed'
+        ? getAllChangedFiles() // すべての変更ファイル
+        : [`.cc-craft-kit/specs/${specId}.md`]; // 仕様書ファイルのみ
+
+    // 2-2. textlint 自動修正を実行
+    await runTextlintFix(files);
+
+    // 2-3. Git add + commit 実行
+    const message = generateCommitMessage(specId, newPhase);
+    await gitCommit(files, message);
+
+    // 2-4. 成功ログ記録
+    logger.info('Auto-committed phase change', { specId, newPhase, files });
+  } catch (error) {
+    // 2-5. エラーハンドリング（ロールバック + 警告表示）
+    await handleCommitError(error, specId);
+  }
+}
+```
+
+### 7.3. textlint 自動修正の設計
+
+#### 7.3.1. runTextlintFix() 関数
+
+```typescript
+async function runTextlintFix(files: string | string[]): Promise<void> {
+  const fileList = Array.isArray(files) ? files : [files];
+
+  try {
+    // 1. textlint --fix 実行
+    const result = execSync(
+      `npx textlint --fix ${fileList.join(' ')}`,
+      { encoding: 'utf-8', stdio: 'pipe' }
+    );
+
+    // 2. 実行結果をログ記録
+    logger.debug('textlint --fix executed', { result, files: fileList });
+
+    // 3. エラーが残っている場合は throw
+    if (result.includes('✖')) {
+      throw new Error(`textlint errors remain: ${result}`);
+    }
+  } catch (error) {
+    // 4. エラーを再スロー（呼び出し元で処理）
+    throw new Error(`textlint --fix failed: ${error.message}`);
+  }
+}
+```
+
+#### 7.3.2. エラー分類と対応
+
+| エラー種別 | 検出方法 | 対応 |
+|---|---|---|
+| **自動修正可能** | textlint --fix で修正成功 | 修正後にコミット実行 |
+| **自動修正不可** | textlint --fix 後もエラー残存 | コミット中止、手動修正を案内 |
+| **textlint 実行失敗** | execSync がエラーを throw | コミット中止、エラー内容を表示 |
+
+### 7.4. Git コミット実行の設計
+
+#### 7.4.1. gitCommit() 関数
+
+```typescript
+async function gitCommit(
+  files: string | string[],
+  message: string
+): Promise<void> {
+  const fileList = Array.isArray(files) ? files : [files];
+
+  try {
+    // 1. git add 実行
+    execSync(`git add ${fileList.join(' ')}`, { stdio: 'pipe' });
+    logger.debug('git add executed', { files: fileList });
+
+    // 2. git commit 実行
+    const commitMessage = formatCommitMessage(message);
+    execSync(`git commit -m "${commitMessage}"`, { stdio: 'pipe' });
+    logger.info('git commit executed', { message: commitMessage });
+  } catch (error) {
+    // 3. コミット失敗時、ステージングをロールバック
+    execSync('git reset HEAD', { stdio: 'pipe' });
+    logger.warn('Rolled back staged changes', { error: error.message });
+
+    // 4. エラーを再スロー
+    throw new Error(`git commit failed: ${error.message}`);
+  }
+}
+```
+
+#### 7.4.2. コミットメッセージフォーマット
+
+```typescript
+function formatCommitMessage(message: string): string {
+  return `${message}
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>`;
+}
+```
+
+### 7.5. エラーハンドリングの設計
+
+#### 7.5.1. handleCommitError() 関数
+
+```typescript
+async function handleCommitError(error: Error, specId: string): Promise<void> {
+  // 1. エラー種別を判定
+  const errorType = classifyCommitError(error);
+
+  // 2. エラーログを記録
+  logger.error('Auto-commit failed', {
+    specId,
+    errorType,
+    message: error.message,
+    stack: error.stack,
+  });
+
+  // 3. ユーザーに警告メッセージを表示
+  console.warn(`
+⚠️  Git auto-commit failed: ${errorType}
+
+Error: ${error.message}
+
+You can commit manually with:
+  git add .cc-craft-kit/specs/${specId}.md
+  git commit -m "feat: Manual commit for ${specId}"
+
+Phase change was successful. Database and GitHub Issue were updated.
+  `);
+}
+```
+
+#### 7.5.2. エラー種別の分類
+
+```typescript
+function classifyCommitError(error: Error): string {
+  if (error.message.includes('textlint')) {
+    return 'textlint validation failed';
+  } else if (error.message.includes('pre-commit')) {
+    return 'pre-commit hook failed';
+  } else if (error.message.includes('git add')) {
+    return 'git add failed';
+  } else if (error.message.includes('git commit')) {
+    return 'git commit failed';
+  } else {
+    return 'unknown error';
+  }
+}
+```
+
+### 7.6. ログ記録の設計
+
+#### 7.6.1. ログレベル定義
+
+| レベル | 用途 | 例 |
+|---|---|---|
+| **debug** | コマンド実行ログ | `git status --porcelain` の出力 |
+| **info** | 成功ログ | `Auto-committed spec file` |
+| **warn** | 警告ログ | `Rolled back staged changes` |
+| **error** | エラーログ | `Auto-commit failed` |
+
+#### 7.6.2. ログ記録例
+
+```typescript
+// 成功ログ
+logger.info('Auto-committed spec file', {
+  specId: '20a0ff2e-bab4-43f3-838a-decfd71a96da',
+  file: '.cc-craft-kit/specs/20a0ff2e-bab4-43f3-838a-decfd71a96da.md',
+  commitHash: 'a387e08',
+});
+
+// エラーログ
+logger.error('Auto-commit failed', {
+  specId: '20a0ff2e-bab4-43f3-838a-decfd71a96da',
+  errorType: 'textlint validation failed',
+  message: 'textlint errors remain: 14:36 error 文末が"。"で終わっていません',
+  stack: 'Error: textlint --fix failed...',
+});
+```
+
+### 7.7. 既存コードの修正箇所
+
+#### 7.7.1. `src/core/workflow/git-integration.ts`
+
+**修正内容:**
+
+1. `handleSpecCreatedCommit()` 関数の追加
+   - textlint による自動修正
+   - 仕様書ファイルのみをコミット
+
+2. `handlePhaseChangeCommit()` 関数の修正
+   - textlint による自動修正
+   - completed フェーズではすべての変更ファイルをコミット
+   - エラー時はロールバック処理
+
+3. `runTextlintFix()` 関数の追加
+   - textlint --fix を実行
+   - エラーが残っている場合は throw
+
+4. `gitCommit()` 関数の追加
+   - git add + git commit を実行
+   - コミット失敗時は git reset HEAD でロールバック
+
+5. `handleCommitError()` 関数の追加
+   - エラー種別を分類
+   - ログ記録とユーザーへの警告表示
+
+#### 7.7.2. `src/core/workflow/event-bus.ts`
+
+**修正内容:**
+
+1. `spec.created` イベントハンドラーの登録
+   - `handleSpecCreatedCommit()` を自動実行
+
+2. `spec.phase_changed` イベントハンドラーの修正
+   - `handlePhaseChangeCommit()` を自動実行
+
+**変更なし:**
+
+- イベント発火ロジックは既存のまま維持
+- ハンドラー登録は `getEventBusAsync()` で自動実行
+
+---
+
+## 8. 実装タスクリスト
+
+### フェーズ: tasks
+
+以下のタスクを順次実装します。
+
+- [ ] **textlint 自動修正機能を実装** (`runTextlintFix` 関数)
+  - `npx textlint --fix` を実行し、自動修正可能なエラーを修正
+  - 修正不可能なエラーが残る場合は、エラーメッセージを返却
+  - 実装ファイル: `src/core/workflow/git-integration.ts`
+
+- [ ] **Git コミット実行機能を実装** (`gitCommit` 関数、ロールバック処理含む)
+  - `git add` でファイルをステージング
+  - `git commit` でコミット実行
+  - コミット失敗時は `git reset HEAD` でステージングをロールバック
+  - 実装ファイル: `src/core/workflow/git-integration.ts`
+
+- [ ] **spec.created イベントハンドラーを実装** (`handleSpecCreatedCommit` 関数)
+  - 仕様書ファイルのみを対象に textlint 自動修正 + Git コミット
+  - イベント発火時に自動的に実行される
+  - 実装ファイル: `src/core/workflow/git-integration.ts`
+
+- [ ] **spec.phase_changed イベントハンドラーを修正** (`handlePhaseChangeCommit` 関数)
+  - requirements/design/tasks/implementation フェーズ: 仕様書ファイルのみをコミット
+  - completed フェーズ: すべての変更ファイルをコミット
+  - textlint 自動修正 + Git コミットを実行
+  - 実装ファイル: `src/core/workflow/git-integration.ts`
+
+- [ ] **エラーハンドリング機能を実装** (`handleCommitError` 関数、エラー分類)
+  - エラー種別を分類 (textlint 失敗、pre-commit フック失敗、Git エラー)
+  - エラーログを記録し、ユーザーに警告メッセージを表示
+  - フェーズ変更は成功させ、データベース不整合を発生させない
+  - 実装ファイル: `src/core/workflow/git-integration.ts`
+
+- [ ] **ログ記録機能を追加** (debug/info/warn/error レベル)
+  - `git status --porcelain`, `textlint --fix`, `git add`, `git commit` の実行結果をログ記録
+  - エラー時は ERROR レベルでスタックトレースを記録
+  - 実装ファイル: `src/core/workflow/git-integration.ts`
+
+- [ ] **単体テストを作成** (textlint 自動修正、Git コミット、エラーハンドリング)
+  - `runTextlintFix()` のテスト (成功/失敗ケース)
+  - `gitCommit()` のテスト (成功/失敗/ロールバック)
+  - `handleCommitError()` のテスト (エラー分類)
+  - テストファイル: `tests/core/workflow/git-integration.test.ts`
+
+- [ ] **E2E テストを作成** (フェーズ移行時の自動コミット検証)
+  - 仕様書作成時の自動コミットを検証
+  - 各フェーズ移行時の自動コミットを検証
+  - pre-commit フック失敗時のロールバックを検証
+  - テストファイル: `tests/e2e/auto-commit.test.ts`
