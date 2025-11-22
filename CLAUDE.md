@@ -4,152 +4,43 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクト概要
 
-cc-craft-kit は、Claude Code 上で仕様駆動開発（SDD）、GitHub Projects/Issues 完全連携を実現する開発支援ツールキット。
-`.cc-craft-kit/` ディレクトリベースの軽量アーキテクチャ、カスタムスラッシュコマンド、サブエージェント、スキルの統合により、開発ワークフローを革新します。
+cc-craft-kit は、Claude Code 上で仕様駆動開発（SDD）を実現する開発支援ツールキット。
+詳細は README.md と docs/ARCHITECTURE.md を参照してください。
 
-## ⚠️ 重要: ソースコードとインストール先の関係
+## 開発フロー
 
-### ディレクトリ構成
+### ソースコード編集
 
-cc-craft-kit プロジェクトは、**自分自身を使って開発する（ドッグフーディング）** ため、以下のディレクトリ構造を採用しています。
+1. `src/` 配下のファイルを編集
+2. `npm run sync:dogfood` で `.cc-craft-kit/` へ同期
+3. スラッシュコマンド `/cft:*` で動作確認
 
-| ディレクトリ | 役割 | Git管理 | 説明 |
-|---|---|---|---|
-| **`src/`** | **ソースコード** | ✅ | 開発時に編集する本体のTypeScriptコード |
-| **`src/commands/`** | CLI実装 | ✅ | スラッシュコマンドから実行されるCLI実装 |
-| **`src/slash-commands/`** | スラッシュコマンド定義 | ✅ | Claude Codeのスラッシュコマンド定義 (`.md`) |
-| **`src/scripts/`** | 同期・マイグレーションスクリプト | ✅ | 整合性チェック、自動同期、マイグレーションツール |
-| **`.claude/commands/cc-craft-kit/`** | シンボリックリンク | ✅ | `src/slash-commands/` へのシンボリックリンク |
-| **`.cc-craft-kit/`** | **インストール先** | ❌ | cc-craft-kit 自身が cc-craft-kit を使うためのインストール先（ドッグフーディング用） |
+注意: `src/` を編集したら必ず `npm run sync:dogfood` を実行してください。
 
-### 開発フロー
-
-1. **編集**: `src/` 配下のファイルを編集
-2. **同期**: `npm run sync:dogfood` で `.cc-craft-kit/` へ TypeScript ファイルをコピー
-3. **実行**: スラッシュコマンド `/cft:*` を実行してテスト（`npx tsx` で直接実行）
-
-注意: `src/` を編集したら必ず `npm run sync:dogfood` を実行してください。ビルドは不要です。
-
-### 開発時の注意事項
-
-**❌ 間違った手順:**
+### よく使うコマンド
 
 ```bash
-# .cc-craft-kit/ のファイルを直接編集
-vim .cc-craft-kit/integrations/github/sync.ts  # NG!
-```
-
-**✅ 正しい手順:**
-
-```bash
-# 1. src/ のソースコードを編集
-vim src/integrations/github/sync.ts
-
-# 2. 同期実行（TypeScriptファイルをコピー）
-npm run sync:dogfood
-```
-
-### なぜ2つのコードベースが存在するのか
-
-cc-craft-kit は「自分自身を使って開発する」ため、開発中のプロジェクトディレクトリ内に `.cc-craft-kit/` ディレクトリがあります。これにより以下が可能になります。
-
-- cc-craft-kit の開発中に、cc-craft-kit のコマンド（`/cft:spec-create` など）を使用できる
-- 実際の運用環境と同じ構成でテスト可能
-- `.cc-craft-kit/` は `.gitignore` に含まれており、Git で管理されない
-
-### コード修正時の確認方法
-
-```bash
-# src/ と .cc-craft-kit/ の整合性チェック
-npm run check:sync
-
-# 差分がある場合は同期
-npm run sync:dogfood
-
-# 再度チェック
-npm run check:sync
-```
-
-## よく使うコマンド
-
-### 開発
-
-```bash
-# cc-craft-kit は TypeScript を直接実行するため、ビルド不要です
-# すべてのコマンドは npx tsx で直接実行されます
-
 # 型チェック
 npm run typecheck
-```
 
-### テスト
-
-```bash
 # 全テスト実行
 npm test
 
-# ウォッチモード
-npm run test:watch
-
-# カバレッジレポート
-npm run test:coverage
-```
-
-### リント・フォーマット
-
-```bash
 # ESLint実行
 npm run lint
 
 # ESLint自動修正
 npm run lint:fix
 
-# Prettier実行
-npm run format
-
-# textlintチェック（ドキュメント）
-npm run textlint
-
 # textlint自動修正
 npm run textlint:fix
-```
 
-### コマンド実行
-
-すべてのコマンドはスラッシュコマンド経由で実行します。
-
-```bash
-# 例: プロジェクト状態確認
-/cft:status
-
-# 直接実行（開発・デバッグ用）
-npx tsx .cc-craft-kit/commands/status.ts
-```
-
-### データベース
-
-```bash
-# マイグレーション実行
-npm run db:migrate
-```
-
-### ソースコード同期
-
-```bash
-# 整合性チェック
+# ソースコード同期
+npm run sync:dogfood
 npm run check:sync
 
-# ドッグフーディング環境へ同期
-npm run sync:dogfood
-
-# Dry-runモード（変更内容を確認のみ）
-npm run sync:dogfood:dry
-
-# 構造マイグレーション（初回のみ）
-npm run migrate:structure
-
-# マイグレーションのDry-run
-npm run migrate:structure:dry
+# データベースマイグレーション
+npm run db:migrate
 ```
 
 ## コーディング規約
@@ -157,7 +48,7 @@ npm run migrate:structure:dry
 ### TypeScript
 
 - strict mode を有効にして、すべての型チェックを厳格に実施すること
-- `any`型は禁止。`unknown`または具体的な型定義を使用すること（現在`any`型は 0 個）
+- `any`型は禁止。`unknown`または具体的な型定義を使用すること
 - camelCase（変数・関数）、PascalCase（クラス・型・インターフェース）の命名規則に従うこと
 - インデントは 2 スペースを使用すること
 
@@ -179,6 +70,57 @@ npm run migrate:structure:dry
 - SQL インジェクション対策として、Kysely のパラメータ化クエリのみを使用すること
 - HTML 出力時は必ずサニタイゼーションを実施すること
 - 認証情報は環境変数（`.env`）で管理し、コードに直接記述しないこと
+
+### データベース接続の安全性
+
+データベース破損を防ぐための厳格なルール。
+
+1. **`getDatabase()` の使用**
+   - データベース接続は **必ず** `getDatabase()` を使用すること
+   - `config` パラメータは指定しないこと（デフォルトパスを使用）
+   - 異なるパスが必要な場合は、必ず `closeDatabase()` を先に呼び出すこと
+
+2. **禁止事項**
+   - `createDatabase()` を直接呼び出さないこと
+   - `getDatabase({ databasePath: ... })` のように明示的なパス指定をしないこと
+   - 複数のデータベースインスタンスを同時に作成しないこと
+
+## テスト戦略
+
+### 単体テスト
+
+- テストファイルは `tests/`ディレクトリに`src/`と同じ構造で配置すること
+- ファイル名は `*.test.ts` とすること
+- データベース、GitHub API は必ずモック化すること
+- カバレッジ目標は 80%以上を目指すこと
+
+### テスト実行時の注意
+
+- データベースは`:memory:`モードでテスト
+- GitHub API 呼び出しは必ずモック化（レート制限回避）
+- **Git 操作は必ずモック化すること**（テスト実行時にブランチが変更されることを防止）
+
+## 開発時の注意事項
+
+### ソースコード管理
+
+- すべてのコード編集は `src/` で行う。`.cc-craft-kit/` 配下のファイルは自動生成されるため、直接編集しない
+- スラッシュコマンド定義を `src/slash-commands/` で管理する
+- 同期を忘れない。`src/` を編集したら `npm run sync:dogfood` を実行する
+- 型エラーは即座に修正する。`npx tsc --noEmit` でエラーが出た場合は、同期前に修正すること
+
+## トラブルシューティング
+
+### コマンドが起動しない
+
+1. `npx tsc --noEmit` で型エラーがないか確認
+2. `.env` ファイルが正しく設定されているか確認
+3. `npm run sync:dogfood` で同期が正常に完了しているか確認
+
+### データベースエラー
+
+1. `.cc-craft-kit/cc-craft-kit.db`が破損している可能性 → 削除して`npm run db:migrate`で再初期化
+2. マイグレーションの順序エラー → マイグレーションファイルの連番を確認
 
 ## 参考ドキュメント
 
