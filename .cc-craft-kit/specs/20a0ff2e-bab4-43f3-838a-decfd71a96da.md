@@ -1,9 +1,9 @@
 # 各フェーズ完了時未コミットのファイルがある（主に仕様書ファイル）
 
 **仕様書 ID:** 20a0ff2e-bab4-43f3-838a-decfd71a96da
-**フェーズ:** tasks
+**フェーズ:** implementation
 **作成日時:** 2025/11/22 18:46:45
-**更新日時:** 2025/11/22 18:59:31
+**更新日時:** 2025/11/22 19:01:01
 
 ---
 
@@ -455,3 +455,56 @@ logger.error('Auto-commit failed', {
 
 - イベント発火ロジックは既存のまま維持
 - ハンドラー登録は `getEventBusAsync()` で自動実行
+
+---
+
+## 8. 実装タスクリスト
+
+### フェーズ: tasks
+
+以下のタスクを順次実装します。
+
+- [ ] **textlint 自動修正機能を実装** (`runTextlintFix` 関数)
+  - `npx textlint --fix` を実行し、自動修正可能なエラーを修正
+  - 修正不可能なエラーが残る場合は、エラーメッセージを返却
+  - 実装ファイル: `src/core/workflow/git-integration.ts`
+
+- [ ] **Git コミット実行機能を実装** (`gitCommit` 関数、ロールバック処理含む)
+  - `git add` でファイルをステージング
+  - `git commit` でコミット実行
+  - コミット失敗時は `git reset HEAD` でステージングをロールバック
+  - 実装ファイル: `src/core/workflow/git-integration.ts`
+
+- [ ] **spec.created イベントハンドラーを実装** (`handleSpecCreatedCommit` 関数)
+  - 仕様書ファイルのみを対象に textlint 自動修正 + Git コミット
+  - イベント発火時に自動的に実行される
+  - 実装ファイル: `src/core/workflow/git-integration.ts`
+
+- [ ] **spec.phase_changed イベントハンドラーを修正** (`handlePhaseChangeCommit` 関数)
+  - requirements/design/tasks/implementation フェーズ: 仕様書ファイルのみをコミット
+  - completed フェーズ: すべての変更ファイルをコミット
+  - textlint 自動修正 + Git コミットを実行
+  - 実装ファイル: `src/core/workflow/git-integration.ts`
+
+- [ ] **エラーハンドリング機能を実装** (`handleCommitError` 関数、エラー分類)
+  - エラー種別を分類 (textlint 失敗、pre-commit フック失敗、Git エラー)
+  - エラーログを記録し、ユーザーに警告メッセージを表示
+  - フェーズ変更は成功させ、データベース不整合を発生させない
+  - 実装ファイル: `src/core/workflow/git-integration.ts`
+
+- [ ] **ログ記録機能を追加** (debug/info/warn/error レベル)
+  - `git status --porcelain`, `textlint --fix`, `git add`, `git commit` の実行結果をログ記録
+  - エラー時は ERROR レベルでスタックトレースを記録
+  - 実装ファイル: `src/core/workflow/git-integration.ts`
+
+- [ ] **単体テストを作成** (textlint 自動修正、Git コミット、エラーハンドリング)
+  - `runTextlintFix()` のテスト (成功/失敗ケース)
+  - `gitCommit()` のテスト (成功/失敗/ロールバック)
+  - `handleCommitError()` のテスト (エラー分類)
+  - テストファイル: `tests/core/workflow/git-integration.test.ts`
+
+- [ ] **E2E テストを作成** (フェーズ移行時の自動コミット検証)
+  - 仕様書作成時の自動コミットを検証
+  - 各フェーズ移行時の自動コミットを検証
+  - pre-commit フック失敗時のロールバックを検証
+  - テストファイル: `tests/e2e/auto-commit.test.ts`
