@@ -6,7 +6,7 @@ import '../../core/config/env.js';
 import { randomUUID } from 'node:crypto';
 import { existsSync, writeFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { getDatabase, closeDatabase } from '../../core/database/connection.js';
 import { getEventBusAsync } from '../../core/workflow/event-bus.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
@@ -135,7 +135,6 @@ export async function createSpec(
   // ブランチ作成結果
   let branchCreated = false;
   let branchName: string | null = null;
-  let originalBranch: string | null = null;
 
   try {
     // 0. ブランチ作成（仕様書作成時に自動作成）
@@ -146,14 +145,12 @@ export async function createSpec(
     if (branchResult.created && branchResult.branchName) {
       branchCreated = true;
       branchName = branchResult.branchName;
-      originalBranch = branchResult.originalBranch;
 
       // ブランチキャッシュをクリア（次回の getCurrentBranch() で最新を取得）
       clearBranchCache();
 
       console.log(formatInfo(`Created branch: ${branchResult.branchName}`, options.color));
     } else {
-      originalBranch = branchResult.originalBranch;
       console.log(
         formatInfo(branchResult.reason || 'ブランチ作成をスキップしました。', options.color)
       );
@@ -189,6 +186,7 @@ export async function createSpec(
     fsyncFileAndDirectory(specPath);
 
     // 3. spec.created イベント発火（非同期ハンドラー登録を待機）
+    // Git 自動コミットが完了するまで待機
     const eventBus = await getEventBusAsync();
     await eventBus.emit(
       eventBus.createEvent('spec.created', id, {
@@ -198,54 +196,9 @@ export async function createSpec(
       })
     );
 
-    // 4. 元のブランチに戻る（ブランチが作成された場合のみ）
-    if (branchCreated && originalBranch) {
-      try {
-        execSync(`git checkout ${originalBranch}`, { stdio: 'pipe' });
-        clearBranchCache();
-        console.log(formatInfo(`Switched back to ${originalBranch}`, options.color));
-      } catch {
-        // ブランチ切り替え失敗時のロールバック処理
-        console.error('');
-        console.error(formatInfo('Failed to switch back. Rolling back...', options.color));
-
-        // ブランチ削除を試みる
-        try {
-          execSync(`git checkout -f ${originalBranch}`, { stdio: 'ignore' });
-          if (branchName) {
-            execSync(`git branch -D ${branchName}`, { stdio: 'ignore' });
-            console.error(`Deleted branch: ${branchName}`);
-          }
-        } catch (branchError) {
-          console.error('Failed to rollback branch:', branchError);
-        }
-
-        // DBレコード削除
-        try {
-          await db.deleteFrom('specs').where('id', '=', id).execute();
-        } catch (dbError) {
-          console.error('Failed to rollback database record:', dbError);
-        }
-
-        // ファイル削除
-        try {
-          if (existsSync(specPath)) {
-            unlinkSync(specPath);
-          }
-        } catch (fsError) {
-          console.error('Failed to rollback spec file:', fsError);
-        }
-
-        const actualBranch = execSync('git rev-parse --abbrev-ref HEAD', {
-          encoding: 'utf-8',
-        }).trim();
-
-        throw new Error(
-          `Failed to switch back to ${originalBranch}. Current branch: ${actualBranch}. ` +
-            `All changes have been rolled back.`
-        );
-      }
-    }
+    // 4. ブランチ切り替えは不要（元のブランチに留まる）
+    // createSpecBranch() は git branch のみを実行し、切り替えを行わないため、
+    // 元のブランチに戻る処理は不要
 
     console.log('');
     console.log(formatSuccess('Specification created successfully!', options.color));
@@ -265,13 +218,14 @@ export async function createSpec(
     console.error(formatInfo('Rolling back due to error...', options.color));
 
     // ブランチ削除（作成された場合のみ）
-    if (branchCreated && originalBranch && branchName) {
+    if (branchCreated && branchName) {
       try {
-        execSync(`git checkout ${originalBranch}`, { stdio: 'ignore' });
-        execSync(`git branch -D ${branchName}`, { stdio: 'ignore' });
+        execFileSync('git', ['branch', '-D', branchName], { stdio: 'ignore' });
         console.error(`Deleted branch: ${branchName}`);
       } catch (branchError) {
-        console.error('Failed to rollback branch:', branchError);
+        const errorMessage =
+          branchError instanceof Error ? branchError.message : String(branchError);
+        console.error(`Failed to rollback branch: ${errorMessage}`);
       }
     }
 

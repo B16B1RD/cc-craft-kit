@@ -2,13 +2,13 @@
  * ブランチ作成機能のテスト
  */
 
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { createSpecBranch } from '../../../src/core/git/branch-creation.js';
 import { getCurrentBranch, clearBranchCache } from '../../../src/core/git/branch-cache.js';
 
-// execSync と getCurrentBranch をモック化
+// execFileSync と getCurrentBranch をモック化
 jest.mock('node:child_process', () => ({
-  execSync: jest.fn(),
+  execFileSync: jest.fn(),
 }));
 
 jest.mock('../../../src/core/git/branch-cache.js', () => ({
@@ -17,7 +17,7 @@ jest.mock('../../../src/core/git/branch-cache.js', () => ({
 }));
 
 describe('branch-creation', () => {
-  const mockExecSync = jest.mocked(execSync);
+  const mockExecFileSync = jest.mocked(execFileSync);
   const mockGetCurrentBranch = jest.mocked(getCurrentBranch);
 
   beforeEach(() => {
@@ -37,10 +37,10 @@ describe('branch-creation', () => {
 
       test('should accept valid UUID format', () => {
         const expectedBranch = `feature/spec-${shortId}`;
-        mockExecSync.mockReturnValueOnce(undefined as never); // git rev-parse
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse --is-inside-work-tree
         mockGetCurrentBranch.mockReturnValue('main');
-        mockExecSync.mockReturnValueOnce(undefined as never); // git checkout -b
-        mockExecSync.mockReturnValueOnce(expectedBranch as never); // git rev-parse --abbrev-ref HEAD
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git branch
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse --verify
 
         const result = createSpecBranch(validUuid);
 
@@ -52,7 +52,7 @@ describe('branch-creation', () => {
 
     describe('Git リポジトリチェック', () => {
       test('should return not created when not in git repository', () => {
-        mockExecSync.mockImplementation(() => {
+        mockExecFileSync.mockImplementation(() => {
           throw new Error('Not a git repository');
         });
 
@@ -65,22 +65,22 @@ describe('branch-creation', () => {
 
     describe('保護ブランチチェック', () => {
       beforeEach(() => {
-        mockExecSync.mockReturnValueOnce(undefined as never); // git rev-parse
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse
       });
 
       test('should create feature/spec-<id> branch from develop branch', () => {
         const expectedBranch = `feature/spec-${shortId}`;
         mockGetCurrentBranch.mockReturnValue('develop');
-        mockExecSync.mockReturnValueOnce(undefined as never); // git checkout -b
-        mockExecSync.mockReturnValueOnce(expectedBranch as never); // git rev-parse --abbrev-ref HEAD
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git branch
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse --verify
 
         const result = createSpecBranch(validUuid);
 
         expect(result.created).toBe(true);
         expect(result.branchName).toBe(expectedBranch);
         expect(result.originalBranch).toBe('develop');
-        expect(mockExecSync).toHaveBeenCalledWith(
-          `git checkout -b ${expectedBranch}`,
+        expect(mockExecFileSync).toHaveBeenCalledWith(
+          'git', ['branch', expectedBranch],
           expect.any(Object)
         );
       });
@@ -88,16 +88,16 @@ describe('branch-creation', () => {
       test('should create feature/spec-<id> branch from main branch', () => {
         const expectedBranch = `feature/spec-${shortId}`;
         mockGetCurrentBranch.mockReturnValue('main');
-        mockExecSync.mockReturnValueOnce(undefined as never); // git checkout -b
-        mockExecSync.mockReturnValueOnce(expectedBranch as never); // git rev-parse --abbrev-ref HEAD
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git branch
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse --verify
 
         const result = createSpecBranch(validUuid);
 
         expect(result.created).toBe(true);
         expect(result.branchName).toBe(expectedBranch);
         expect(result.originalBranch).toBe('main');
-        expect(mockExecSync).toHaveBeenCalledWith(
-          `git checkout -b ${expectedBranch}`,
+        expect(mockExecFileSync).toHaveBeenCalledWith(
+          'git', ['branch', expectedBranch],
           expect.any(Object)
         );
       });
@@ -106,16 +106,16 @@ describe('branch-creation', () => {
         const customName = 'auto-branch-creation';
         const expectedBranch = `feature/spec-${shortId}-${customName}`;
         mockGetCurrentBranch.mockReturnValue('develop');
-        mockExecSync.mockReturnValueOnce(undefined as never); // git checkout -b
-        mockExecSync.mockReturnValueOnce(expectedBranch as never); // git rev-parse
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git branch
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse --verify
 
         const result = createSpecBranch(validUuid, customName);
 
         expect(result.created).toBe(true);
         expect(result.branchName).toBe(expectedBranch);
         expect(result.originalBranch).toBe('develop');
-        expect(mockExecSync).toHaveBeenCalledWith(
-          `git checkout -b ${expectedBranch}`,
+        expect(mockExecFileSync).toHaveBeenCalledWith(
+          'git', ['branch', expectedBranch],
           expect.any(Object)
         );
       });
@@ -124,16 +124,16 @@ describe('branch-creation', () => {
         const customName = 'improve-ux';
         const expectedBranch = `feature/spec-${shortId}-${customName}`;
         mockGetCurrentBranch.mockReturnValue('main');
-        mockExecSync.mockReturnValueOnce(undefined as never); // git checkout -b
-        mockExecSync.mockReturnValueOnce(expectedBranch as never); // git rev-parse
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git branch
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse --verify
 
         const result = createSpecBranch(validUuid, customName);
 
         expect(result.created).toBe(true);
         expect(result.branchName).toBe(expectedBranch);
         expect(result.originalBranch).toBe('main');
-        expect(mockExecSync).toHaveBeenCalledWith(
-          `git checkout -b ${expectedBranch}`,
+        expect(mockExecFileSync).toHaveBeenCalledWith(
+          'git', ['branch', expectedBranch],
           expect.any(Object)
         );
       });
@@ -142,8 +142,8 @@ describe('branch-creation', () => {
         const customName = 'Improve@UX#Feature!';
         const expectedBranch = `feature/spec-${shortId}-improve-ux-feature`;
         mockGetCurrentBranch.mockReturnValue('develop');
-        mockExecSync.mockReturnValueOnce(undefined as never); // git checkout -b
-        mockExecSync.mockReturnValueOnce(expectedBranch as never); // git rev-parse
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git branch
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse --verify
 
         const result = createSpecBranch(validUuid, customName);
 
@@ -154,22 +154,22 @@ describe('branch-creation', () => {
 
     describe('通常ブランチからのブランチ作成', () => {
       beforeEach(() => {
-        mockExecSync.mockReturnValueOnce(undefined as never); // git rev-parse
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse
         mockGetCurrentBranch.mockReturnValue('feature/test');
       });
 
       test('should create spec/<id> branch from feature branch', () => {
         const expectedBranch = `spec/${shortId}`;
-        mockExecSync.mockReturnValueOnce(undefined as never); // git checkout -b
-        mockExecSync.mockReturnValueOnce(expectedBranch as never); // git rev-parse
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git branch
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse --verify
 
         const result = createSpecBranch(validUuid);
 
         expect(result.created).toBe(true);
         expect(result.branchName).toBe(expectedBranch);
         expect(result.originalBranch).toBe('feature/test');
-        expect(mockExecSync).toHaveBeenCalledWith(
-          `git checkout -b ${expectedBranch}`,
+        expect(mockExecFileSync).toHaveBeenCalledWith(
+          'git', ['branch', expectedBranch],
           expect.any(Object)
         );
       });
@@ -177,16 +177,16 @@ describe('branch-creation', () => {
       test('should create spec/<id>-<name> branch from feature branch with custom name', () => {
         const customName = 'improve-perf';
         const expectedBranch = `spec/${shortId}-${customName}`;
-        mockExecSync.mockReturnValueOnce(undefined as never); // git checkout -b
-        mockExecSync.mockReturnValueOnce(expectedBranch as never); // git rev-parse
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git branch
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse --verify
 
         const result = createSpecBranch(validUuid, customName);
 
         expect(result.created).toBe(true);
         expect(result.branchName).toBe(expectedBranch);
         expect(result.originalBranch).toBe('feature/test');
-        expect(mockExecSync).toHaveBeenCalledWith(
-          `git checkout -b ${expectedBranch}`,
+        expect(mockExecFileSync).toHaveBeenCalledWith(
+          'git', ['branch', expectedBranch],
           expect.any(Object)
         );
       });
@@ -194,20 +194,20 @@ describe('branch-creation', () => {
 
     describe('カスタムブランチ名なし(デフォルト)', () => {
       beforeEach(() => {
-        mockExecSync.mockReturnValueOnce(undefined as never); // git rev-parse
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse
         mockGetCurrentBranch.mockReturnValue('feature/test');
       });
 
       test('should create branch with default name format', () => {
-        mockExecSync.mockReturnValueOnce(undefined as never); // git checkout -b
-        mockExecSync.mockReturnValueOnce(`spec/${shortId}` as never); // git rev-parse
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git branch
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse --verify
 
         const result = createSpecBranch(validUuid);
 
         expect(result.created).toBe(true);
         expect(result.branchName).toBe(`spec/${shortId}`);
-        expect(mockExecSync).toHaveBeenCalledWith(
-          `git checkout -b spec/${shortId}`,
+        expect(mockExecFileSync).toHaveBeenCalledWith(
+          'git', ['branch', `spec/${shortId}`],
           expect.any(Object)
         );
       });
@@ -215,7 +215,7 @@ describe('branch-creation', () => {
 
     describe('カスタムブランチ名あり', () => {
       beforeEach(() => {
-        mockExecSync.mockReturnValueOnce(undefined as never); // git rev-parse
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse
         mockGetCurrentBranch.mockReturnValue('feature/test');
       });
 
@@ -223,15 +223,15 @@ describe('branch-creation', () => {
         const customName = 'improve-branch-naming';
         const expectedBranch = `spec/${shortId}-${customName}`;
 
-        mockExecSync.mockReturnValueOnce(undefined as never); // git checkout -b
-        mockExecSync.mockReturnValueOnce(expectedBranch as never); // git rev-parse
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git branch
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse --verify
 
         const result = createSpecBranch(validUuid, customName);
 
         expect(result.created).toBe(true);
         expect(result.branchName).toBe(expectedBranch);
-        expect(mockExecSync).toHaveBeenCalledWith(
-          `git checkout -b ${expectedBranch}`,
+        expect(mockExecFileSync).toHaveBeenCalledWith(
+          'git', ['branch', expectedBranch],
           expect.any(Object)
         );
       });
@@ -240,8 +240,8 @@ describe('branch-creation', () => {
         const customName = 'Improve-Branch-Naming';
         const expectedBranch = `spec/${shortId}-improve-branch-naming`;
 
-        mockExecSync.mockReturnValueOnce(undefined as never); // git checkout -b
-        mockExecSync.mockReturnValueOnce(expectedBranch as never); // git rev-parse
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git branch
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse --verify
 
         const result = createSpecBranch(validUuid, customName);
 
@@ -253,8 +253,8 @@ describe('branch-creation', () => {
         const customName = 'Improve@Branch#Naming!';
         const expectedBranch = `spec/${shortId}-improve-branch-naming`;
 
-        mockExecSync.mockReturnValueOnce(undefined as never); // git checkout -b
-        mockExecSync.mockReturnValueOnce(expectedBranch as never); // git rev-parse
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git branch
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse --verify
 
         const result = createSpecBranch(validUuid, customName);
 
@@ -266,8 +266,8 @@ describe('branch-creation', () => {
         const customName = 'fix--bug';
         const expectedBranch = `spec/${shortId}-fix-bug`;
 
-        mockExecSync.mockReturnValueOnce(undefined as never); // git checkout -b
-        mockExecSync.mockReturnValueOnce(expectedBranch as never); // git rev-parse
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git branch
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse --verify
 
         const result = createSpecBranch(validUuid, customName);
 
@@ -279,8 +279,8 @@ describe('branch-creation', () => {
         const customName = '-test-';
         const expectedBranch = `spec/${shortId}-test`;
 
-        mockExecSync.mockReturnValueOnce(undefined as never); // git checkout -b
-        mockExecSync.mockReturnValueOnce(expectedBranch as never); // git rev-parse
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git branch
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse --verify
 
         const result = createSpecBranch(validUuid, customName);
 
@@ -292,8 +292,8 @@ describe('branch-creation', () => {
         const customName = 'test_123-branch';
         const expectedBranch = `spec/${shortId}-test_123-branch`;
 
-        mockExecSync.mockReturnValueOnce(undefined as never); // git checkout -b
-        mockExecSync.mockReturnValueOnce(expectedBranch as never); // git rev-parse
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git branch
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse --verify
 
         const result = createSpecBranch(validUuid, customName);
 
@@ -304,33 +304,35 @@ describe('branch-creation', () => {
 
     describe('ブランチ作成検証', () => {
       beforeEach(() => {
-        mockExecSync.mockReturnValueOnce(undefined as never); // git rev-parse
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse
         mockGetCurrentBranch.mockReturnValue('feature/test');
       });
 
-      test('should throw error if created branch name does not match expected', () => {
+      test('should throw error if branch verification fails', () => {
         const expectedBranch = `spec/${shortId}`;
-        mockExecSync.mockReturnValueOnce(undefined as never); // git checkout -b
-        mockExecSync.mockReturnValueOnce('wrong-branch' as never); // git rev-parse
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git branch
+        mockExecFileSync.mockImplementation(() => {
+          throw new Error('Branch does not exist');
+        }); // git rev-parse --verify fails
 
         expect(() => createSpecBranch(validUuid)).toThrow(
-          `ブランチ作成に失敗しました。期待: ${expectedBranch}, 実際: wrong-branch`
+          `ブランチ作成に失敗しました: ${expectedBranch}`
         );
       });
     });
 
     describe('ブランチ作成後の状態', () => {
       beforeEach(() => {
-        mockExecSync.mockReturnValueOnce(undefined as never); // git rev-parse
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse
         mockGetCurrentBranch.mockReturnValue('feature/test');
       });
 
-      test('should stay on the newly created branch', () => {
+      test('should stay on the original branch after branch creation', () => {
         const expectedBranch = `spec/${shortId}`;
         const originalBranch = 'feature/test';
 
-        mockExecSync.mockReturnValueOnce(undefined as never); // git checkout -b
-        mockExecSync.mockReturnValueOnce(expectedBranch as never); // git rev-parse --abbrev-ref HEAD
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git branch
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse --verify
 
         const result = createSpecBranch(validUuid);
 
@@ -338,9 +340,9 @@ describe('branch-creation', () => {
         expect(result.branchName).toBe(expectedBranch);
         expect(result.originalBranch).toBe(originalBranch);
 
-        // 元のブランチに戻るコマンドが実行されていないことを確認
-        expect(mockExecSync).not.toHaveBeenCalledWith(
-          `git checkout ${originalBranch}`,
+        // ブランチ切り替えコマンドが実行されていないことを確認
+        expect(mockExecFileSync).not.toHaveBeenCalledWith(
+          expect.stringContaining('git checkout'),
           expect.any(Object)
         );
       });
@@ -348,7 +350,7 @@ describe('branch-creation', () => {
 
     describe('エラーハンドリング', () => {
       beforeEach(() => {
-        mockExecSync.mockReturnValueOnce(undefined as never); // git rev-parse
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse
       });
 
       test('should throw error when getCurrentBranch fails', () => {
@@ -361,14 +363,14 @@ describe('branch-creation', () => {
         );
       });
 
-      test('should throw error when git checkout fails', () => {
+      test('should throw error when git branch fails', () => {
         const expectedBranch = `spec/${shortId}`;
         mockGetCurrentBranch.mockReturnValue('feature/test');
-        mockExecSync.mockImplementation((cmd: string) => {
-          if (cmd === 'git rev-parse --is-inside-work-tree') {
+        mockExecFileSync.mockImplementation((cmd: string, args?: readonly string[]) => {
+          if (cmd === 'git' && args?.[0] === 'rev-parse') {
             return undefined as never;
           }
-          if (cmd.startsWith('git checkout -b')) {
+          if (cmd === 'git' && args?.[0] === 'branch') {
             throw new Error('fatal: A branch named "spec/12345678" already exists.');
           }
           return undefined as never;
@@ -382,14 +384,14 @@ describe('branch-creation', () => {
       test('should throw error when branch verification fails', () => {
         const expectedBranch = `spec/${shortId}`;
         mockGetCurrentBranch.mockReturnValue('feature/test');
-        mockExecSync
-          .mockReturnValueOnce(undefined as never) // git checkout -b
+        mockExecFileSync
+          .mockReturnValueOnce(undefined as never) // git branch
           .mockImplementation(() => {
             throw new Error('Failed to verify branch');
           });
 
         expect(() => createSpecBranch(validUuid)).toThrow(
-          'ブランチ作成の検証に失敗しました: Failed to verify branch'
+          `ブランチ作成に失敗しました: ${expectedBranch}`
         );
       });
     });
