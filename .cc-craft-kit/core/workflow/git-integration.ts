@@ -230,9 +230,88 @@ async function handlePhaseChangeCommit(
 }
 
 /**
+ * 仕様書作成時の自動コミット処理
+ */
+async function handleSpecCreatedCommit(
+  event: WorkflowEvent<{ name: string; description: string | null; phase: string }>,
+  db: Kysely<Database>
+): Promise<void> {
+  try {
+    // Gitリポジトリ確認
+    if (!isGitRepository()) {
+      const errorHandler = getErrorHandler();
+      await errorHandler.handle(new Error('Not a Git repository'), {
+        event: 'spec.created',
+        specId: event.specId,
+        phase: event.data.phase,
+        action: 'git_auto_commit',
+        message: 'Skipping auto-commit',
+      });
+      return;
+    }
+
+    // 仕様書取得
+    const spec = await db
+      .selectFrom('specs')
+      .where('id', '=', event.specId)
+      .selectAll()
+      .executeTakeFirst();
+
+    if (!spec) {
+      return;
+    }
+
+    // コミット対象ファイルの決定（requirements フェーズのみ）
+    const files = getCommitTargets('requirements', spec.id);
+
+    // コミットメッセージ生成
+    const message = generateCommitMessage(spec.name, 'requirements');
+
+    // Gitコミット実行
+    const result = await gitCommit(files, message);
+
+    if (result.success) {
+      if (result.skipped) {
+        console.log('\nℹ Auto-commit skipped: No files to commit (ignored by .gitignore)');
+      } else {
+        console.log(`\n✓ Auto-committed: ${message}`);
+      }
+    } else {
+      const errorHandler = getErrorHandler();
+      await errorHandler.handle(new Error(result.error || 'Git commit failed'), {
+        event: 'spec.created',
+        specId: event.specId,
+        phase: event.data.phase,
+        action: 'git_auto_commit',
+        commitMessage: message,
+        files,
+      });
+      console.log('You can commit manually with: git add . && git commit\n');
+    }
+  } catch (error) {
+    // エラーが発生しても仕様書作成は成功させる
+    const errorHandler = getErrorHandler();
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    await errorHandler.handle(errorObj, {
+      event: 'spec.created',
+      specId: event.specId,
+      action: 'git_auto_commit',
+    });
+  }
+}
+
+/**
  * Git統合のイベントハンドラーを登録
  */
 export function registerGitIntegrationHandlers(eventBus: EventBus, db: Kysely<Database>): void {
+  // spec.created → Git自動コミット
+  eventBus.on<{ name: string; description: string | null; phase: string }>(
+    'spec.created',
+    async (event: WorkflowEvent<{ name: string; description: string | null; phase: string }>) => {
+      await handleSpecCreatedCommit(event, db);
+    }
+  );
+
   // spec.phase_changed → Git自動コミット
   eventBus.on<{ oldPhase: string; newPhase: string }>(
     'spec.phase_changed',

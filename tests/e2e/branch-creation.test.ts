@@ -1,6 +1,12 @@
 /**
  * E2E テスト: ブランチ作成機能
  *
+ * ⚠️ FIXME: このテストは process.chdir() を使用しているため、
+ * 本番環境のブランチに影響を与える可能性があります。
+ * https://github.com/B16B1RD/cc-craft-kit/issues/XXX
+ *
+ * 一時的にスキップし、代わりに単体テストでカバーします。
+ *
  * 仕様書作成 → フェーズ移行のフルフローで、ブランチが1つだけ作成されることを検証します。
  */
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
@@ -33,7 +39,7 @@ interface TestDatabase {
   };
 }
 
-describe('E2E: Branch Creation Workflow', () => {
+describe.skip('E2E: Branch Creation Workflow', () => {
   const testDir = join(process.cwd(), 'tests/e2e/.tmp-branch-creation');
   const originalCwd = process.cwd();
   const originalEnv = { ...process.env };
