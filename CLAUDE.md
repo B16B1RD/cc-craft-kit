@@ -890,6 +890,12 @@ Issue は単なるタスク管理ではなく、以下の情報を統合記録�
 
 フェーズ変更時に変更内容を自動的に Git コミットする機能を提供します。特に completed フェーズ移行時のコミット漏れを防ぎます。
 
+**v0.2.0 以降の機能強化:**
+
+- 未コミット変更の事前チェック機能を追加
+- コミット失敗時の自動ロールバック機能を追加
+- コミットスキップ時のメッセージ表示を追加
+
 ### コミットタイミング
 
 | フェーズ | コミット対象 | コミットメッセージ |
@@ -900,22 +906,116 @@ Issue は単なるタスク管理ではなく、以下の情報を統合記録�
 | implementation | 仕様書ファイルのみ | `feat: <仕様書名> の実装を開始` |
 | **completed** | **全変更ファイル** | `feat: <仕様書名> を実装完了` |
 
-### 動作
+### 動作フロー
 
 1. `/cft:spec-phase <spec-id> <phase>` 実行
 2. `spec.phase_changed` イベント発火
-3. Git 統合ハンドラーが自動的にコミット実行
-4. コミット成功/失敗を通知
+3. **未コミット変更のチェック** (v0.2.0 以降)
+   - `hasUncommittedChanges()` で未コミット変更の有無を確認
+   - 変更がない場合は「No uncommitted changes, skipping auto-commit」メッセージを表示して終了
+4. Git 統合ハンドラーが自動的にコミット実行
+5. コミット成功/失敗を通知
+
+### 未コミット変更の検出
+
+#### checkGitStatus()
+
+`git status --porcelain` の出力をパースし、ファイルを以下のカテゴリに分類します。
+
+```typescript
+interface GitStatus {
+  hasChanges: boolean;      // 未コミット変更の有無
+  stagedFiles: string[];    // ステージングされたファイル
+  unstagedFiles: string[];  // 未ステージングのファイル
+  untrackedFiles: string[]; // 追跡されていないファイル
+}
+```
+
+**ステータスコードの解釈:**
+
+- `M  file.ts` → ステージング済み (stagedFiles)
+- `M file.ts` → 未ステージング (unstagedFiles)
+- `?? file.ts` → 未追跡 (untrackedFiles)
+
+#### hasUncommittedChanges()
+
+未コミット変更の有無を簡易的にチェックする関数です。
+
+```typescript
+function hasUncommittedChanges(): boolean {
+  try {
+    const gitStatus = checkGitStatus();
+    return gitStatus.hasChanges;
+  } catch {
+    // Git コマンド実行エラー時は false を返す
+    return false;
+  }
+}
+```
+
+**動作:**
+
+- 未コミット変更がある場合 → `true` を返す
+- 未コミット変更がない場合 → `false` を返す
+- Git リポジトリ未初期化の場合 → `false` を返す
+- Git コマンドエラーの場合 → `false` を返す（例外を握りつぶす）
+
+### コミット失敗時の自動ロールバック
+
+`git commit` が失敗した場合、ステージングされたファイルを自動的にリセットします。
+
+**ロールバック処理:**
+
+1. `git commit` 失敗を検知
+2. `git reset HEAD` を実行してステージングをクリア
+3. 「Rolled back staged changes (git reset HEAD)」メッセージを表示
+4. フェーズ切り替えは継続（エラーでもフェーズ変更は成功）
+
+**ロールバック失敗時:**
+
+- 警告メッセージ「Failed to rollback staged changes」を表示
+- フェーズ切り替えは継続
 
 ### エラーハンドリング
 
-- Git リポジトリ未初期化の場合、警告のみ表示し、フェーズ変更は成功
-- pre-commit フック失敗の場合、警告メッセージ表示し、手動コミット案内
-- コミット失敗の場合、エラーログ出力し、フェーズ変更は成功
+#### 1. Git リポジトリ未初期化
+
+- 警告メッセージを表示
+- フェーズ変更は成功
+
+#### 2. 未コミット変更なし
+
+- 情報メッセージ「No uncommitted changes, skipping auto-commit」を表示
+- コミットをスキップ
+- フェーズ変更は成功
+
+#### 3. pre-commit フック失敗
+
+- エラーログを記録
+- `git reset HEAD` でステージングをロールバック
+- 手動コミット手順を案内
+- フェーズ変更は成功
+
+#### 4. git add 失敗
+
+- エラーログを記録
+- 手動コミット手順を案内
+- フェーズ変更は成功
+
+#### 5. git commit 失敗
+
+- エラーログを記録
+- `git reset HEAD` でステージングをロールバック
+- 手動コミット手順を案内
+- フェーズ変更は成功
 
 ### 実装ファイル
 
 - `src/core/workflow/git-integration.ts` - Git 統合ハンドラー
+  - `checkGitStatus()` - Git ステータスのパースと分類
+  - `hasUncommittedChanges()` - 未コミット変更の簡易チェック
+  - `gitCommit()` - コミット実行とロールバック処理
+  - `handlePhaseChangeCommit()` - フェーズ変更時の自動コミット
 - `src/core/workflow/event-bus.ts` - 自動ハンドラー登録
 
 ## プラグインシステム
