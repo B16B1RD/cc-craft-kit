@@ -4,12 +4,14 @@
  * TDD実践: git-integration.ts のカバレッジを 0% → 80% に向上させる
  */
 
-import { execSync } from 'node:child_process';
+import { execSync, spawnSync, SpawnSyncReturns } from 'node:child_process';
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { checkGitStatus, hasUncommittedChanges } from '../../../src/core/workflow/git-integration.js';
 
 // モック化
 jest.mock('node:child_process');
 const mockedExecSync = execSync as jest.MockedFunction<typeof execSync>;
+const mockedSpawnSync = spawnSync as jest.MockedFunction<typeof spawnSync>;
 
 describe('Git Integration', () => {
   beforeEach(() => {
@@ -147,6 +149,155 @@ describe('Git Integration', () => {
 
       // Assert
       expect(output.toString()).toContain('file1.txt');
+    });
+  });
+
+  describe('checkGitStatus', () => {
+    it('should return no changes when not a git repository', () => {
+      // Arrange: git rev-parse が失敗する
+      mockedExecSync.mockImplementation(() => {
+        throw new Error('Not a git repository');
+      });
+
+      // Act
+      const result = checkGitStatus();
+
+      // Assert
+      expect(result).toEqual({
+        hasChanges: false,
+        stagedFiles: [],
+        unstagedFiles: [],
+        untrackedFiles: [],
+      });
+    });
+
+    it('should detect staged files', () => {
+      // Arrange: git repository exists
+      mockedExecSync.mockReturnValue(Buffer.from('.git'));
+
+      // git status --porcelain の出力をモック
+      mockedSpawnSync.mockReturnValue({
+        status: 0,
+        stdout: 'M  file1.ts\nA  file2.ts\n',
+        stderr: '',
+      } as SpawnSyncReturns<Buffer>);
+
+      // Act
+      const result = checkGitStatus();
+
+      // Assert
+      expect(result.hasChanges).toBe(true);
+      expect(result.stagedFiles).toContain('file1.ts');
+      expect(result.stagedFiles).toContain('file2.ts');
+    });
+
+    it('should detect unstaged files', () => {
+      // Arrange
+      mockedExecSync.mockReturnValue(Buffer.from('.git'));
+      mockedSpawnSync.mockReturnValue({
+        status: 0,
+        stdout: 'M  file1.ts\n M file2.ts\n',
+        stderr: '',
+      } as SpawnSyncReturns<Buffer>);
+
+      // Act
+      const result = checkGitStatus();
+
+      // Assert
+      expect(result.hasChanges).toBe(true);
+      expect(result.stagedFiles).toContain('file1.ts');
+      expect(result.unstagedFiles).toContain('file2.ts');
+    });
+
+    it('should detect untracked files', () => {
+      // Arrange
+      mockedExecSync.mockReturnValue(Buffer.from('.git'));
+      mockedSpawnSync.mockReturnValue({
+        status: 0,
+        stdout: '?? newfile.ts\n',
+        stderr: '',
+      } as SpawnSyncReturns<Buffer>);
+
+      // Act
+      const result = checkGitStatus();
+
+      // Assert
+      expect(result.hasChanges).toBe(true);
+      expect(result.untrackedFiles).toContain('newfile.ts');
+    });
+
+    it('should handle git status failure', () => {
+      // Arrange
+      mockedExecSync.mockReturnValue(Buffer.from('.git'));
+      mockedSpawnSync.mockReturnValue({
+        status: 1,
+        stdout: '',
+        stderr: 'fatal: git error',
+      } as SpawnSyncReturns<Buffer>);
+
+      // Act & Assert
+      expect(() => checkGitStatus()).toThrow('git status failed');
+    });
+  });
+
+  describe('hasUncommittedChanges', () => {
+    it('should return true when there are uncommitted changes', () => {
+      // Arrange
+      mockedExecSync.mockReturnValue(Buffer.from('.git'));
+      mockedSpawnSync.mockReturnValue({
+        status: 0,
+        stdout: 'M  file1.ts\n',
+        stderr: '',
+      } as SpawnSyncReturns<Buffer>);
+
+      // Act
+      const result = hasUncommittedChanges();
+
+      // Assert
+      expect(result).toBe(true);
+    });
+
+    it('should return false when there are no uncommitted changes', () => {
+      // Arrange
+      mockedExecSync.mockReturnValue(Buffer.from('.git'));
+      mockedSpawnSync.mockReturnValue({
+        status: 0,
+        stdout: '',
+        stderr: '',
+      } as SpawnSyncReturns<Buffer>);
+
+      // Act
+      const result = hasUncommittedChanges();
+
+      // Assert
+      expect(result).toBe(false);
+    });
+
+    it('should return false when git command fails', () => {
+      // Arrange: git status が失敗する
+      mockedExecSync.mockReturnValue(Buffer.from('.git'));
+      mockedSpawnSync.mockImplementation(() => {
+        throw new Error('Git command failed');
+      });
+
+      // Act
+      const result = hasUncommittedChanges();
+
+      // Assert: エラーが発生しても false を返す
+      expect(result).toBe(false);
+    });
+
+    it('should return false when not a git repository', () => {
+      // Arrange
+      mockedExecSync.mockImplementation(() => {
+        throw new Error('Not a git repository');
+      });
+
+      // Act
+      const result = hasUncommittedChanges();
+
+      // Assert
+      expect(result).toBe(false);
     });
   });
 });
