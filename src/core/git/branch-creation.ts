@@ -4,7 +4,7 @@
  * 仕様書作成時のブランチ自動作成ロジックを提供します。
  */
 
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { getCurrentBranch } from './branch-cache.js';
 
 /**
@@ -12,13 +12,23 @@ import { getCurrentBranch } from './branch-cache.js';
  *
  * @param name カスタムブランチ名
  * @returns サニタイズされたブランチ名
+ * @throws Error サニタイゼーション後に空文字列になる場合
  */
 function sanitizeBranchName(name: string): string {
-  return name
+  const sanitized = name
     .toLowerCase()
-    .replace(/[^a-z0-9-_]/g, '-') // Git互換文字のみ
+    .replace(/[^a-z0-9-_]/g, '-') // Git 互換文字のみ許可（英数字、ハイフン、アンダースコア）
     .replace(/-+/g, '-') // 連続ハイフンを統合
     .replace(/^-|-$/g, ''); // 先頭・末尾のハイフンを削除
+
+  // サニタイゼーション後の検証
+  if (sanitized.length === 0) {
+    throw new Error(
+      'カスタムブランチ名が無効です。英数字、ハイフン、アンダースコアのみ使用できます。'
+    );
+  }
+
+  return sanitized;
 }
 
 /**
@@ -79,7 +89,7 @@ export function createSpecBranch(specId: string, customBranchName?: string): Bra
 
   // 1. Git リポジトリの存在確認
   try {
-    execSync('git rev-parse --is-inside-work-tree', { stdio: 'ignore' });
+    execFileSync('git', ['rev-parse', '--is-inside-work-tree'], { stdio: 'ignore' });
   } catch {
     return {
       created: false,
@@ -116,9 +126,9 @@ export function createSpecBranch(specId: string, customBranchName?: string): Bra
     // ブランチ作成処理へ進む（return しない）
   }
 
-  // 4. ブランチ作成
+  // 4. ブランチ作成（切り替えなし）
   try {
-    execSync(`git checkout -b ${branchName}`, { stdio: 'pipe' });
+    execFileSync('git', ['branch', branchName], { stdio: 'pipe' });
   } catch (error) {
     throw new Error(
       `ブランチ作成に失敗しました。既に同名のブランチが存在する可能性があります: ${error instanceof Error ? error.message : String(error)}`
@@ -126,32 +136,20 @@ export function createSpecBranch(specId: string, customBranchName?: string): Bra
   }
 
   // 5. ブランチ作成の検証
-  let currentBranch: string;
+  let branchExists: boolean;
   try {
-    currentBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
-  } catch (error) {
-    // 検証失敗時は元のブランチに戻る
-    try {
-      execSync(`git checkout ${originalBranch}`, { stdio: 'ignore' });
-    } catch {
-      // ロールバック失敗は無視（後続のエラーハンドリングに任せる）
-    }
-    throw new Error(
-      `ブランチ作成の検証に失敗しました: ${error instanceof Error ? error.message : String(error)}`
-    );
+    // git rev-parse でブランチの存在を確認
+    execFileSync('git', ['rev-parse', '--verify', branchName], { stdio: 'ignore' });
+    branchExists = true;
+  } catch {
+    branchExists = false;
   }
 
-  if (currentBranch !== branchName) {
-    // 検証失敗時は元のブランチに戻る
-    try {
-      execSync(`git checkout ${originalBranch}`, { stdio: 'ignore' });
-    } catch {
-      // ロールバック失敗は無視（後続のエラーハンドリングに任せる）
-    }
-    throw new Error(`ブランチ作成に失敗しました。期待: ${branchName}, 実際: ${currentBranch}`);
+  if (!branchExists) {
+    throw new Error(`ブランチ作成に失敗しました: ${branchName}`);
   }
 
-  // 6. ブランチ作成成功（元のブランチには戻らない）
+  // 6. ブランチ作成成功（切り替えは行わない）
   return {
     created: true,
     branchName,
