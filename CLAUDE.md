@@ -554,7 +554,11 @@ $ npx tsx .cc-craft-kit/scripts/repair-database.ts
 
 - `/cft:init <project-name> [description]` - プロジェクト初期化
 - `/cft:status` - プロジェクト状況表示
-- `/cft:spec-create <name> [description]` - 仕様書作成
+- `/cft:spec-create <name> [description]` - **仕様書作成 (v0.4.0: 自動完成機能を追加)**
+  - コードベース解析 (Explore サブエージェント) により制約条件・依存関係を自動収集
+  - 不明な情報は `AskUserQuestion` ツールで対話的に確認
+  - テンプレートのプレースホルダーを実際の内容で自動置換
+  - 品質レビュー (code-reviewer) はオプション (環境変数 `AUTO_REVIEW_SPEC=1` で有効化)
 - `/cft:spec-list [phase] [limit]` - 仕様書一覧
 - `/cft:spec-get <spec-id>` - 仕様書の詳細表示
 - `/cft:spec-phase <spec-id> <phase>` - フェーズ更新
