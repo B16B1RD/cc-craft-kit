@@ -12,6 +12,7 @@ import { registerBranchManagementHandlers } from '../../../src/core/workflow/bra
 import { EventBus, WorkflowEvent } from '../../../src/core/workflow/event-bus.js';
 import * as githubClient from '../../../src/integrations/github/client.js';
 import * as pullRequest from '../../../src/integrations/github/pull-request.js';
+import * as githubConfig from '../../../src/core/config/github-config.js';
 
 // モジュールモック
 jest.mock('node:child_process', () => ({
@@ -33,6 +34,19 @@ jest.mock('../../../src/core/errors/error-handler.js', () => ({
   })),
 }));
 
+jest.mock('../../../src/core/config/github-config.js', () => ({
+  getGitHubConfig: jest.fn(() => ({
+    owner: 'test-owner',
+    repo: 'test-repo',
+    defaultBaseBranch: 'develop',
+    protectedBranches: ['main', 'develop'],
+  })),
+}));
+
+jest.mock('../../../src/core/utils/branch-name-generator.js', () => ({
+  isHotfixBranch: jest.fn((branchName: string) => branchName.startsWith('hotfix/')),
+}));
+
 describe('Branch Management - PR Creation', () => {
   let lifecycle: DatabaseLifecycle;
   let eventBus: EventBus;
@@ -43,6 +57,7 @@ describe('Branch Management - PR Creation', () => {
   const mockGetGitHubClient = jest.mocked(githubClient.getGitHubClient);
   const mockCreatePullRequest = jest.mocked(pullRequest.createPullRequest);
   const mockRecordPullRequestToIssue = jest.mocked(pullRequest.recordPullRequestToIssue);
+  const mockGetGitHubConfig = jest.mocked(githubConfig.getGitHubConfig);
 
   beforeEach(async () => {
     lifecycle = await setupDatabaseLifecycle();
@@ -61,6 +76,12 @@ describe('Branch Management - PR Creation', () => {
     mockGetGitHubClient.mockReset();
     mockCreatePullRequest.mockReset();
     mockRecordPullRequestToIssue.mockReset();
+    mockGetGitHubConfig.mockReturnValue({
+      owner: 'test-owner',
+      repo: 'test-repo',
+      defaultBaseBranch: 'develop',
+      protectedBranches: ['main', 'develop'],
+    });
   });
 
   afterEach(async () => {
@@ -87,9 +108,10 @@ describe('Branch Management - PR Creation', () => {
         throw new Error('Unexpected command');
       });
 
-      // Given: GitHub クライアント未初期化
-      mockGetGitHubClient.mockImplementation(() => {
-        throw new Error('GitHub client not initialized. Call initGitHubClient() first.');
+      // Given: createPullRequest が GitHub クライアント未初期化エラーを返す
+      mockCreatePullRequest.mockResolvedValue({
+        success: false,
+        error: 'GitHub client not initialized',
       });
 
       // Given: 仕様書が存在する
@@ -108,7 +130,7 @@ describe('Branch Management - PR Creation', () => {
         .execute();
 
       // スパイでコンソール出力をキャプチャ
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
       // When: implementation → completed フェーズ移行イベントを発火
       const event: WorkflowEvent<{ oldPhase: string; newPhase: string }> = {
@@ -126,16 +148,18 @@ describe('Branch Management - PR Creation', () => {
       // 非同期処理の完了を待つ
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Then: GitHub クライアント取得が試みられた
-      expect(mockGetGitHubClient).toHaveBeenCalled();
-
-      // Then: createPullRequest が呼び出されていない
-      expect(mockCreatePullRequest).not.toHaveBeenCalled();
+      // Then: createPullRequest が呼び出された
+      expect(mockCreatePullRequest).toHaveBeenCalledWith(lifecycle.db, {
+        specId,
+        branchName: 'feature/test',
+        baseBranch: 'develop',
+      });
 
       // Then: 警告メッセージが表示された
-      expect(consoleWarnSpy).toHaveBeenCalledWith('\n⚠️  GitHub client not initialized');
+      expect(consoleWarnSpy).toHaveBeenCalledWith('\n⚠️  Failed to create pull request');
+      expect(consoleWarnSpy).toHaveBeenCalledWith('   Reason: GitHub client not initialized');
       expect(consoleWarnSpy).toHaveBeenCalledWith('   Please run: /cft:github-init <owner> <repo>');
-      expect(consoleWarnSpy).toHaveBeenCalledWith('   Skipping automatic PR creation\n');
+      expect(consoleWarnSpy).toHaveBeenCalledWith('');
 
       consoleWarnSpy.mockRestore();
     });
@@ -179,8 +203,8 @@ describe('Branch Management - PR Creation', () => {
         .execute();
 
       // スパイでコンソール出力をキャプチャ
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
       // When: implementation → completed フェーズ移行イベントを発火
       const event: WorkflowEvent<{ oldPhase: string; newPhase: string }> = {
@@ -276,8 +300,8 @@ describe('Branch Management - PR Creation', () => {
         .execute();
 
       // スパイでコンソール出力をキャプチャ
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
       // When: implementation → completed フェーズ移行イベントを発火
       const event: WorkflowEvent<{ oldPhase: string; newPhase: string }> = {
@@ -381,7 +405,7 @@ describe('Branch Management - PR Creation', () => {
         .execute();
 
       // スパイでコンソール出力をキャプチャ
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
       // When: implementation → completed フェーズ移行イベントを発火
       const event: WorkflowEvent<{ oldPhase: string; newPhase: string }> = {
@@ -415,6 +439,12 @@ describe('Branch Management - PR Creation', () => {
     test('GITHUB_DEFAULT_BASE_BRANCH が設定されている場合、それが使用される', async () => {
       // Given: 環境変数で base ブランチを指定
       process.env.GITHUB_DEFAULT_BASE_BRANCH = 'staging';
+      mockGetGitHubConfig.mockReturnValue({
+        owner: 'test-owner',
+        repo: 'test-repo',
+        defaultBaseBranch: 'staging',
+        protectedBranches: ['main', 'develop'],
+      });
 
       // Given: Git リポジトリは初期化済み
       mockExecSync.mockImplementation((cmd: string | Buffer) => {
@@ -469,7 +499,7 @@ describe('Branch Management - PR Creation', () => {
         .execute();
 
       // スパイでコンソール出力をキャプチャ
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
       // When: implementation → completed フェーズ移行イベントを発火
       const event: WorkflowEvent<{ oldPhase: string; newPhase: string }> = {
@@ -524,7 +554,7 @@ describe('Branch Management - PR Creation', () => {
         .execute();
 
       // スパイでコンソール出力をキャプチャ
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
       // When: implementation → completed フェーズ移行イベントを発火
       const event: WorkflowEvent<{ oldPhase: string; newPhase: string }> = {
@@ -576,7 +606,7 @@ describe('Branch Management - PR Creation', () => {
         .execute();
 
       // スパイでコンソール出力をキャプチャ
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
       // When: implementation → completed フェーズ移行イベントを発火
       const event: WorkflowEvent<{ oldPhase: string; newPhase: string }> = {
@@ -635,7 +665,7 @@ describe('Branch Management - PR Creation', () => {
         .execute();
 
       // スパイでコンソール出力をキャプチャ
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
       // When: implementation → completed フェーズ移行イベントを発火
       const event: WorkflowEvent<{ oldPhase: string; newPhase: string }> = {
@@ -693,7 +723,7 @@ describe('Branch Management - PR Creation', () => {
         .execute();
 
       // スパイでコンソール出力をキャプチャ
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
       // When: implementation → completed フェーズ移行イベントを発火
       const event: WorkflowEvent<{ oldPhase: string; newPhase: string }> = {
@@ -726,6 +756,12 @@ describe('Branch Management - PR Creation', () => {
     test('カスタム保護ブランチの場合、PR 作成がスキップされる', async () => {
       // Given: カスタム保護ブランチを設定
       process.env.PROTECTED_BRANCHES = 'main,develop,staging';
+      mockGetGitHubConfig.mockReturnValue({
+        owner: 'test-owner',
+        repo: 'test-repo',
+        defaultBaseBranch: 'develop',
+        protectedBranches: ['main', 'develop', 'staging'],
+      });
 
       // Given: Git リポジトリは初期化済み、現在のブランチは staging
       mockExecSync.mockImplementation((cmd: string | Buffer) => {
@@ -754,7 +790,7 @@ describe('Branch Management - PR Creation', () => {
         .execute();
 
       // スパイでコンソール出力をキャプチャ
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
       // When: implementation → completed フェーズ移行イベントを発火
       const event: WorkflowEvent<{ oldPhase: string; newPhase: string }> = {
