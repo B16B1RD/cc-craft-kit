@@ -14,6 +14,8 @@ import {
   createPullRequest,
   recordPullRequestToIssue,
 } from '../../integrations/github/pull-request.js';
+import { getGitHubClient } from '../../integrations/github/client.js';
+import { getGitHubConfig } from '../config/github-config.js';
 
 /**
  * Gitリポジトリの存在確認
@@ -43,24 +45,31 @@ function getCurrentBranch(): string | null {
 }
 
 /**
- * 保護ブランチのリストを取得
- */
-function getProtectedBranches(): string[] {
-  const branches = process.env.PROTECTED_BRANCHES;
-  if (branches) {
-    return branches.split(',').map((b) => b.trim());
-  }
-
-  // デフォルト: main, develop
-  return ['main', 'develop'];
-}
-
-/**
  * 指定されたブランチが保護ブランチかどうかを判定
  */
 function isProtectedBranch(branchName: string): boolean {
-  const protectedBranches = getProtectedBranches();
-  return protectedBranches.includes(branchName);
+  const config = getGitHubConfig();
+  return config.protectedBranches.includes(branchName);
+}
+
+/**
+ * PR作成失敗時のエラーメッセージを表示
+ */
+function printPullRequestError(error?: string): void {
+  console.warn('\n⚠️  Failed to create pull request');
+
+  if (error) {
+    console.warn(`   Reason: ${error}`);
+  }
+
+  if (error?.includes('not initialized')) {
+    console.warn('   Please run: /cft:github-init <owner> <repo>');
+  } else if (error?.includes('Repository owner or name not found')) {
+    console.warn('   Please set GITHUB_OWNER and GITHUB_REPO in .env');
+  } else {
+    console.warn('   Please create a PR manually');
+  }
+  console.warn('');
 }
 
 /**
@@ -96,12 +105,21 @@ async function handlePullRequestCreationOnCompleted(
       return;
     }
 
-    // ベースブランチ決定（hotfix の場合は main、それ以外は GITHUB_DEFAULT_BASE_BRANCH）
-    const baseBranch = isHotfixBranch(currentBranch)
-      ? 'main'
-      : process.env.GITHUB_DEFAULT_BASE_BRANCH || 'develop';
+    // ベースブランチ決定（hotfix の場合は main、それ以外は設定値）
+    const config = getGitHubConfig();
+    const baseBranch = isHotfixBranch(currentBranch) ? 'main' : config.defaultBaseBranch;
 
     console.log(`\nℹ Creating pull request from '${currentBranch}' to '${baseBranch}'...`);
+
+    // GitHub クライアント初期化状態を事前チェック
+    try {
+      getGitHubClient();
+    } catch {
+      console.warn('\n⚠️  GitHub client not initialized');
+      console.warn('   Please run: /cft:github-init <owner> <repo>');
+      console.warn('   Skipping automatic PR creation\n');
+      return; // PR作成をスキップ
+    }
 
     // PR作成
     const result = await createPullRequest(db, {
@@ -117,7 +135,7 @@ async function handlePullRequestCreationOnCompleted(
       await recordPullRequestToIssue(db, event.specId, result.pullRequestUrl);
 
       // github_sync テーブルに PR 番号を記録
-      await db
+      const updateResult = await db
         .updateTable('github_sync')
         .set({
           pr_number: result.pullRequestNumber,
@@ -126,10 +144,16 @@ async function handlePullRequestCreationOnCompleted(
         })
         .where('entity_id', '=', event.specId)
         .where('entity_type', '=', 'spec')
-        .execute();
+        .executeTakeFirst();
+
+      // 更新件数が 0 の場合は警告
+      if (!updateResult || updateResult.numUpdatedRows === 0n) {
+        console.warn('\n⚠️  Failed to record PR info to github_sync table');
+        console.warn(`   Spec ID: ${event.specId} does not have a github_sync record`);
+        console.warn('   Please check if the GitHub Issue was created for this spec\n');
+      }
     } else {
-      console.warn('\n⚠️  Failed to create pull request:', result.error);
-      console.warn('   Please create a PR manually\n');
+      printPullRequestError(result.error);
     }
   } catch (error) {
     // エラーが発生してもフェーズ変更は成功させる
@@ -140,8 +164,7 @@ async function handlePullRequestCreationOnCompleted(
       specId: event.specId,
       action: 'pr_auto_create',
     });
-    console.warn('\n⚠️  Failed to create pull request');
-    console.warn('   Please create a PR manually\n');
+    printPullRequestError();
   }
 }
 
