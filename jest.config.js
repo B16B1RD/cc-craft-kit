@@ -17,7 +17,6 @@ export default {
     '/tests/e2e/project-initialization\\.test\\.ts$',
     '/tests/e2e/phase-transition-commit\\.test\\.ts$', // モック調整が必要
     '/tests/core/filesystem/watcher\\.test\\.ts$',
-    '/tests/core/workflow/github-integration\\.test\\.ts$',
     '/tests/integrations/sub-issue-workflow\\.test\\.ts$',
     '/tests/scripts/check-sync\\.test\\.ts$',
     '/tests/scripts/migrate-structure\\.test\\.ts$',
