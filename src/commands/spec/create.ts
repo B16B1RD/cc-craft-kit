@@ -151,12 +151,7 @@ export async function createSpec(
       // ブランチキャッシュをクリア（次回の getCurrentBranch() で最新を取得）
       clearBranchCache();
 
-      console.log(
-        formatInfo(
-          `Created branch: ${branchResult.branchName}, switched back to ${branchResult.originalBranch}`,
-          options.color
-        )
-      );
+      console.log(formatInfo(`Created branch: ${branchResult.branchName}`, options.color));
     } else {
       originalBranch = branchResult.originalBranch;
       console.log(
@@ -202,6 +197,55 @@ export async function createSpec(
         phase: 'requirements',
       })
     );
+
+    // 4. 元のブランチに戻る（ブランチが作成された場合のみ）
+    if (branchCreated && originalBranch) {
+      try {
+        execSync(`git checkout ${originalBranch}`, { stdio: 'pipe' });
+        clearBranchCache();
+        console.log(formatInfo(`Switched back to ${originalBranch}`, options.color));
+      } catch (switchError) {
+        // ブランチ切り替え失敗時のロールバック処理
+        console.error('');
+        console.error(formatInfo('Failed to switch back. Rolling back...', options.color));
+
+        // ブランチ削除を試みる
+        try {
+          execSync(`git checkout -f ${originalBranch}`, { stdio: 'ignore' });
+          if (branchName) {
+            execSync(`git branch -D ${branchName}`, { stdio: 'ignore' });
+            console.error(`Deleted branch: ${branchName}`);
+          }
+        } catch (branchError) {
+          console.error('Failed to rollback branch:', branchError);
+        }
+
+        // DBレコード削除
+        try {
+          await db.deleteFrom('specs').where('id', '=', id).execute();
+        } catch (dbError) {
+          console.error('Failed to rollback database record:', dbError);
+        }
+
+        // ファイル削除
+        try {
+          if (existsSync(specPath)) {
+            unlinkSync(specPath);
+          }
+        } catch (fsError) {
+          console.error('Failed to rollback spec file:', fsError);
+        }
+
+        const actualBranch = execSync('git rev-parse --abbrev-ref HEAD', {
+          encoding: 'utf-8',
+        }).trim();
+
+        throw new Error(
+          `Failed to switch back to ${originalBranch}. Current branch: ${actualBranch}. ` +
+            `All changes have been rolled back.`
+        );
+      }
+    }
 
     console.log('');
     console.log(formatSuccess('Specification created successfully!', options.color));

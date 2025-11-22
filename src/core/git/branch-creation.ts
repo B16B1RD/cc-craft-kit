@@ -151,19 +151,7 @@ export function createSpecBranch(specId: string, customBranchName?: string): Bra
     throw new Error(`ブランチ作成に失敗しました。期待: ${branchName}, 実際: ${currentBranch}`);
   }
 
-  // 6. 元のブランチに戻る
-  try {
-    execSync(`git checkout ${originalBranch}`, { stdio: 'pipe' });
-  } catch {
-    // ブランチ切り替えに失敗した場合、現在のブランチを再取得
-    const actualBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
-
-    throw new Error(
-      `Failed to switch back to ${originalBranch}. Current branch: ${actualBranch}. ` +
-        `Please manually run: git checkout ${originalBranch}`
-    );
-  }
-
+  // 6. ブランチ作成成功（元のブランチには戻らない）
   return {
     created: true,
     branchName,
