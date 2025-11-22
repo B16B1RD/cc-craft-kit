@@ -6,7 +6,6 @@
 
     // Markdown
     "DavidAnson.vscode-markdownlint",
-    "taichi.vscode-textlint",
 
     // Git
     "eamodio.gitlens",
