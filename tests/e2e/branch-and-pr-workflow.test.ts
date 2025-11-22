@@ -156,10 +156,7 @@ describe('Branch and PR Workflow E2E', () => {
     jest.clearAllMocks();
   });
 
-  // Note: Feature開発フローのテストは handleBranchCreationOnImplementation 削除により不要になったため削除
-  // ブランチ作成は仕様書作成時のみ実行されるようになった
-
-  describe.skip('Feature開発フロー (廃止)', () => {
+  describe('Feature開発フロー', () => {
     test('仕様書作成 → tasks → implementation → completed の完全フロー', async () => {
       // 環境変数をクリア
       delete process.env.GITHUB_OWNER;
@@ -178,16 +175,12 @@ describe('Branch and PR Workflow E2E', () => {
       const tasksResult = await updateSpecPhase(specId, 'tasks');
       expect(tasksResult.success).toBe(true);
 
-      // 4. tasks → implementation（ブランチ自動作成）
+      // 4. tasks → implementation（ブランチは作成されない）
       const implResult = await updateSpecPhase(specId, 'implementation');
       expect(implResult.success).toBe(true);
 
-      // ブランチ作成コマンドが実行されたことを確認
-      expect(spawnSync).toHaveBeenCalledWith(
-        'git',
-        expect.arrayContaining(['checkout', '-b', expect.stringContaining('feature/')]),
-        expect.anything()
-      );
+      // NOTE: フェーズ移行時のブランチ自動作成機能は削除されました
+      // 仕様書作成時に既にブランチが作成されています
 
       // ブランチ作成後、現在のブランチを feature/ に変更
       (execSync as jest.MockedFunction<typeof execSync>).mockImplementation((cmd: string, options?: any) => {
@@ -246,8 +239,10 @@ describe('Branch and PR Workflow E2E', () => {
     }, 30000);
   });
 
-  describe.skip('Hotfix緊急修正フロー (廃止)', () => {
-    test('緊急修正はmainブランチから分岐する', async () => {
+  describe('Hotfix緊急修正フロー', () => {
+    // NOTE: フェーズ移行時のブランチ自動作成機能は削除されました
+    // 仕様書作成時のみブランチが作成されます
+    test.skip('緊急修正はmainブランチから分岐する', async () => {
       // 環境変数をクリア
       delete process.env.GITHUB_OWNER;
 
@@ -364,7 +359,8 @@ describe('Branch and PR Workflow E2E', () => {
   });
 
   describe('エラーハンドリング', () => {
-    test.skip('ブランチ作成失敗時、フェーズをロールバックする (廃止: ブランチ作成は仕様書作成時のみ)', async () => {
+    // NOTE: フェーズ移行時のブランチ自動作成機能は削除されました
+    test.skip('ブランチ作成失敗時、フェーズをロールバックする', async () => {
       // spawnSyncのモックをオーバーライドしてブランチ作成を失敗させる
       (spawnSync as jest.MockedFunction<typeof spawnSync>).mockImplementation((cmd: string, args?: readonly string[]) => {
         if (cmd === 'git' && args) {
@@ -410,7 +406,7 @@ describe('Branch and PR Workflow E2E', () => {
       // requirements → design → tasks → implementation
       await updateSpecPhase(specId, 'design');
       await updateSpecPhase(specId, 'tasks');
-      await updateSpecPhase(db, specId, 'implementation');
+      await updateSpecPhase(specId, 'implementation');
 
       // PR作成を失敗させる
       mockClient.rest.pulls.create = jest.fn().mockRejectedValue(new Error('API Error'));
@@ -426,8 +422,9 @@ describe('Branch and PR Workflow E2E', () => {
     }, 30000);
   });
 
-  describe.skip('保護ブランチチェック (廃止)', () => {
-    test('mainブランチで直接作業している場合、警告を表示する', async () => {
+  describe('保護ブランチチェック', () => {
+    // NOTE: 保護ブランチ警告機能は削除されました
+    test.skip('mainブランチで直接作業している場合、警告を表示する', async () => {
       // 現在のブランチをmainに設定
       (execSync as jest.MockedFunction<typeof execSync>).mockImplementation((cmd: string, options?: any) => {
         // git rev-parse --verify でベースブランチ (develop, main) の場合は成功

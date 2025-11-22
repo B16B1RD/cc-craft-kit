@@ -289,3 +289,132 @@ it('should handle errors gracefully', () => {
 - **Mock external dependencies**: Isolate the unit being tested
 - **Test edge cases and errors**: Don't just test the happy path
 - **Aim for high coverage, but prioritize critical paths**: 100% coverage isn't always necessary
+
+## Git 操作を含むテストの自動モック化
+
+**重要**: テスト対象のコードが以下を含む場合、**必ず自動的にモックを追加**してください。
+
+### モック化が必要な操作
+
+1. **`createSpecBranch()` 関数の呼び出し**
+2. **`execSync()` による Git コマンド実行** (`git checkout -b`, `git branch`, `git add`, `git commit` など)
+3. **ファイルシステム操作** (`writeFileSync`, `unlinkSync`, `mkdirSync`, `rmdirSync`)
+
+### モックのテンプレート
+
+#### パターン 1: `createSpecBranch()` のモック化
+
+```typescript
+import { vi } from 'vitest';
+import * as branchCreation from '../../src/core/git/branch-creation.js';
+
+// テストファイルの先頭でモック化
+vi.mock('../../src/core/git/branch-creation.js', () => ({
+  createSpecBranch: vi.fn(() => ({
+    created: true,
+    branchName: 'spec/12345678',
+    originalBranch: 'develop',
+  })),
+}));
+
+// テスト内での使用例
+describe('仕様書作成テスト', () => {
+  it('should create spec with branch', () => {
+    const mockCreateSpecBranch = vi.mocked(branchCreation.createSpecBranch);
+
+    // テスト実行
+    createSpec('test-spec');
+
+    // モックが呼ばれたことを確認
+    expect(mockCreateSpecBranch).toHaveBeenCalledWith(expect.any(String));
+  });
+});
+```
+
+#### パターン 2: `execSync()` のモック化
+
+```typescript
+import { vi } from 'vitest';
+import { execSync } from 'node:child_process';
+
+// テストファイルの先頭でモック化
+vi.mock('node:child_process', () => ({
+  execSync: vi.fn(),
+}));
+
+// テスト内での使用例
+describe('Git コマンド実行テスト', () => {
+  const mockExecSync = vi.mocked(execSync);
+
+  beforeEach(() => {
+    mockExecSync.mockReset();
+  });
+
+  it('should execute git command', () => {
+    mockExecSync.mockReturnValue(Buffer.from('success'));
+
+    // テスト実行
+    const result = runGitCommand('status');
+
+    // モックが呼ばれたことを確認
+    expect(mockExecSync).toHaveBeenCalledWith('git status', expect.any(Object));
+  });
+});
+```
+
+#### パターン 3: ファイルシステム操作のモック化
+
+```typescript
+import { vi } from 'vitest';
+import * as fs from 'node:fs';
+
+// テストファイルの先頭でモック化
+vi.mock('node:fs', () => ({
+  writeFileSync: vi.fn(),
+  unlinkSync: vi.fn(),
+  existsSync: vi.fn(() => true),
+  readFileSync: vi.fn(() => 'mock content'),
+}));
+
+// テスト内での使用例
+describe('ファイル操作テスト', () => {
+  const mockWriteFileSync = vi.mocked(fs.writeFileSync);
+
+  beforeEach(() => {
+    mockWriteFileSync.mockReset();
+  });
+
+  it('should write file', () => {
+    // テスト実行
+    writeSpecFile('test.md', 'content');
+
+    // モックが呼ばれたことを確認
+    expect(mockWriteFileSync).toHaveBeenCalledWith('test.md', 'content');
+  });
+});
+```
+
+### モック化の判断基準
+
+テスト対象のコードを分析し、以下のいずれかに該当する場合は**必ずモックを追加**してください:
+
+- ✅ `import { createSpecBranch } from` が含まれる → パターン 1 を使用
+- ✅ `import { execSync } from 'node:child_process'` が含まれる → パターン 2 を使用
+- ✅ `import { writeFileSync } from 'node:fs'` が含まれる → パターン 3 を使用
+- ✅ Git コマンド実行（`git checkout -b`, `git add`, `git commit`）が含まれる → パターン 2 を使用
+- ✅ ファイル作成・削除（`writeFileSync`, `unlinkSync`）が含まれる → パターン 3 を使用
+
+### モック化しない場合
+
+以下の場合はモック化**不要**です:
+
+- ❌ テスト対象が既にモック化されている（`vi.mock()` が既に存在する）
+- ❌ E2E テストで実際の Git 操作をテストする必要がある（ただし、`describe.skip` でスキップ推奨）
+- ❌ テスト対象がモックオブジェクトのみを扱う（実際の関数を呼び出さない）
+
+### 注意事項
+
+- **テスト実行時にブランチが変更されないこと**を最優先にしてください
+- **テストの独立性**を保つため、モックは各テストケースで初期化してください
+- **型安全性**を保つため、モックの戻り値は正しい型を指定してください
+- **エラーケースのテスト**では、モックがエラーを throw するように設定してください

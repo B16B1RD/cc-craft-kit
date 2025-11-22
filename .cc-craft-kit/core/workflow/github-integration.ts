@@ -10,6 +10,7 @@ import { EventBus, WorkflowEvent } from './event-bus.js';
 import { GitHubClient } from '../../integrations/github/client.js';
 import { GitHubIssues } from '../../integrations/github/issues.js';
 import { GitHubProjects } from '../../integrations/github/projects.js';
+import { GitHubSyncService } from '../../integrations/github/sync.js';
 import { resolveProjectId } from '../../integrations/github/project-resolver.js';
 import { mapPhaseToStatus, type Phase } from '../../integrations/github/phase-status-mapper.js';
 import { SubIssueManager } from '../../integrations/github/sub-issues.js';
@@ -95,103 +96,36 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
           return;
         }
 
-        // 仕様書取得
-        const spec = await getSpecWithGitHubInfo(db, event.specId);
-
-        if (!spec) {
-          return;
-        }
-
-        // 既にIssueが作成されている場合はスキップ
-        if (spec.github_issue_number) {
-          return;
-        }
-
-        // Markdownファイルを読み込んでIssue bodyとして使用
-        const specPath = join(ccCraftKitDir, 'specs', `${spec.id}.md`);
-        let body = '';
-        if (existsSync(specPath)) {
-          body = readFileSync(specPath, 'utf-8');
-        } else {
-          body = spec.description || '';
-        }
-
         // GitHub APIクライアント作成
         const client = new GitHubClient({ token: githubToken });
         const issues = new GitHubIssues(client);
+        const projects = new GitHubProjects(client);
+        const syncService = new GitHubSyncService(db, issues, projects);
 
-        // Issue作成
-        const issue = await issues.create({
+        // syncSpecToIssue メソッドで Issue 作成（重複チェック込み）
+        const issueNumber = await syncService.syncSpecToIssue({
+          specId: event.specId,
           owner: githubConfig.owner,
           repo: githubConfig.repo,
-          title: spec.name,
-          body,
-          labels: [`phase:${spec.phase}`],
+          createIfNotExists: true,
         });
 
-        // 同期ログ記録（github_sync テーブルのみ更新）
-        // specs テーブルへの github_issue_id 書き込みは削除
-        // entity_type は 'spec' を使用（'issue' ではない）
-        await db
-          .insertInto('github_sync')
-          .values({
-            entity_type: 'spec',
-            entity_id: spec.id,
-            github_id: issue.number.toString(),
-            github_number: issue.number,
-            github_node_id: issue.node_id,
-            last_synced_at: new Date().toISOString(),
-            sync_status: 'success',
-          })
-          .execute();
-
-        // specs テーブルの updated_at のみ更新
-        await db
-          .updateTable('specs')
-          .set({
-            updated_at: new Date().toISOString(),
-          })
-          .where('id', '=', spec.id)
-          .execute();
-
-        console.log(`\n✓ GitHub Issue created automatically: #${issue.number}`);
-        console.log(`  URL: ${issue.html_url}\n`);
+        console.log(`\n✓ GitHub Issue created automatically: #${issueNumber}`);
+        console.log(
+          `  URL: https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/${issueNumber}\n`
+        );
 
         // Project に自動追加
         try {
           const projectNumber = await resolveProjectId(ccCraftKitDir, githubToken);
 
           if (projectNumber) {
-            const projects = new GitHubProjects(client);
-
-            // Project の Node ID を取得
-            const project = await projects.get(githubConfig.owner, projectNumber);
-
-            // Issue の Node ID を取得
-            const issueNodeId = await projects.getIssueNodeId(
-              githubConfig.owner,
-              githubConfig.repo,
-              issue.number
-            );
-
-            // Project に Issue を追加
-            const item = await projects.addItem({
-              projectId: project.id,
-              contentId: issueNodeId,
+            // addSpecToProject メソッドを使用（重複チェック込み）
+            await syncService.addSpecToProject({
+              specId: event.specId,
+              owner: githubConfig.owner,
+              projectNumber,
             });
-
-            // Item ID を github_sync テーブルに保存
-            await db
-              .insertInto('github_sync')
-              .values({
-                entity_type: 'project',
-                entity_id: spec.id,
-                github_id: item.id,
-                github_node_id: project.id,
-                last_synced_at: new Date().toISOString(),
-                sync_status: 'success',
-              })
-              .execute();
 
             console.log(`✓ Added to GitHub Project #${projectNumber}\n`);
           }
@@ -207,7 +141,16 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
           );
         }
       } catch (error) {
-        // エラーが発生しても仕様書作成自体は成功させる
+        // 重複エラーの場合は警告のみ表示（エラーログ記録なし）
+        if (
+          error instanceof Error &&
+          error.message.includes('既に GitHub Issue が作成されています')
+        ) {
+          console.warn(`⚠️  ${error.message}\n`);
+          return;
+        }
+
+        // その他のエラーが発生しても仕様書作成自体は成功させる
         await logError('error', 'Failed to create GitHub issue automatically', error, {
           event: 'spec.created',
           specId: event.specId,

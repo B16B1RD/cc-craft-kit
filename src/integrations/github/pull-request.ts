@@ -4,8 +4,12 @@
 
 import { Kysely } from 'kysely';
 import { Database } from '../../core/database/schema.js';
-import { getGitHubClient } from './client.js';
+import { getGitHubClient, GitHubClient } from './client.js';
 import { execSync } from 'node:child_process';
+import { readFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { getErrorHandler } from '../../core/errors/error-handler.js';
+import { getGitHubConfig } from '../../core/config/github-config.js';
 
 /**
  * PR作成オプション
@@ -70,15 +74,31 @@ async function generatePullRequestBody(db: Kysely<Database>, specId: string): Pr
     throw new Error(`Spec not found: ${specId}`);
   }
 
-  // 仕様書ファイルを読み込んで受け入れ基準を抽出
-  // 簡易版: descriptionを使用
+  // 仕様書ファイルから受け入れ基準を抽出
+  let acceptanceCriteria = '仕様書ファイルを参照してください。';
+  const specPath = join(process.cwd(), '.cc-craft-kit', 'specs', `${spec.id}.md`);
+
+  if (existsSync(specPath)) {
+    try {
+      const content = readFileSync(specPath, 'utf-8');
+      // 「## 3. 受け入れ基準」セクションを抽出（次の ## または --- まで）
+      const match = content.match(/^## 3\. 受け入れ基準\s*\n([\s\S]*?)(?=\n## |\n---|$)/m);
+      if (match && match[1]) {
+        acceptanceCriteria = match[1].trim();
+      }
+    } catch {
+      // ファイル読み込みエラーは無視してデフォルトメッセージを使用
+      console.warn('Failed to extract acceptance criteria from spec file');
+    }
+  }
+
   const summary = spec.description || '仕様書の詳細を確認してください。';
 
   return `## Summary
 ${summary}
 
 ## 受け入れ基準
-仕様書ファイル \`.cc-craft-kit/specs/${spec.id}.md\` を参照してください。
+${acceptanceCriteria}
 
 ## Test plan
 - [ ] 単体テスト実行（\`npm test\`）
@@ -96,13 +116,30 @@ export async function createPullRequest(
   options: CreatePullRequestOptions
 ): Promise<CreatePullRequestResult> {
   try {
-    // GitHub クライアント取得
-    const client = getGitHubClient();
+    // GitHub クライアント取得（未初期化の場合は環境変数から初期化）
+    let client: GitHubClient;
+    try {
+      client = getGitHubClient();
+    } catch {
+      // 未初期化の場合は環境変数から初期化を試みる
+      const token = process.env.GITHUB_TOKEN;
+      if (!token) {
+        return {
+          success: false,
+          error: 'GitHub client not initialized',
+        };
+      }
+      const { initGitHubClient } = await import('./client.js');
+      client = initGitHubClient({ token });
+    }
+
+    // GitHub 設定取得
+    const config = getGitHubConfig();
 
     // リポジトリ情報取得
     const repository = getCurrentRepository();
-    const owner = options.owner || process.env.GITHUB_OWNER || repository?.owner;
-    const repo = options.repo || repository?.repo;
+    const owner = options.owner || config.owner || repository?.owner;
+    const repo = options.repo || config.repo || repository?.repo;
 
     if (!owner || !repo) {
       return {
@@ -125,8 +162,8 @@ export async function createPullRequest(
       };
     }
 
-    // ベースブランチ決定（デフォルト: develop）
-    const baseBranch = options.baseBranch || process.env.GITHUB_DEFAULT_BASE_BRANCH || 'develop';
+    // ベースブランチ決定
+    const baseBranch = options.baseBranch || config.defaultBaseBranch;
 
     // PR本文生成
     const body = await generatePullRequestBody(db, options.specId);
@@ -148,6 +185,17 @@ export async function createPullRequest(
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+
+    // エラーログを記録
+    const errorHandler = getErrorHandler();
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    await errorHandler.handle(errorObj, {
+      event: 'github.pr_create_failed',
+      specId: options.specId,
+      branchName: options.branchName,
+      baseBranch: options.baseBranch || 'develop',
+    });
+
     return {
       success: false,
       error: errorMessage,
@@ -178,9 +226,10 @@ export async function recordPullRequestToIssue(
     }
 
     // リポジトリ情報取得
+    const config = getGitHubConfig();
     const repository = getCurrentRepository();
-    const owner = process.env.GITHUB_OWNER || repository?.owner;
-    const repo = repository?.repo;
+    const owner = config.owner || repository?.owner;
+    const repo = config.repo || repository?.repo;
 
     if (!owner || !repo) {
       return;

@@ -15,6 +15,16 @@ import { getErrorHandler } from '../errors/error-handler.js';
 type Phase = 'requirements' | 'design' | 'tasks' | 'implementation' | 'completed';
 
 /**
+ * Git ステータス情報
+ */
+interface GitStatus {
+  hasChanges: boolean; // 未コミット変更の有無
+  stagedFiles: string[]; // ステージングされたファイル
+  unstagedFiles: string[]; // 未ステージングのファイル
+  untrackedFiles: string[]; // 追跡されていないファイル
+}
+
+/**
  * Gitリポジトリの存在確認
  */
 function isGitRepository(): boolean {
@@ -22,6 +32,90 @@ function isGitRepository(): boolean {
     execSync('git rev-parse --git-dir', { stdio: 'ignore' });
     return true;
   } catch {
+    return false;
+  }
+}
+
+/**
+ * Git ステータスをチェックし、未コミット変更を検出
+ * @returns Git ステータス情報
+ * @throws Git コマンド実行エラー時
+ */
+export function checkGitStatus(): GitStatus {
+  if (!isGitRepository()) {
+    return {
+      hasChanges: false,
+      stagedFiles: [],
+      unstagedFiles: [],
+      untrackedFiles: [],
+    };
+  }
+
+  try {
+    const result = spawnSync('git', ['status', '--porcelain'], {
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    if (result.status !== 0) {
+      throw new Error(`git status failed: ${result.stderr}`);
+    }
+
+    const lines = result.stdout.trim().split('\n').filter(Boolean);
+    const stagedFiles: string[] = [];
+    const unstagedFiles: string[] = [];
+    const untrackedFiles: string[] = [];
+
+    for (const line of lines) {
+      if (line.length < 3) continue;
+
+      const statusCode = line.substring(0, 2);
+      const filePath = line.substring(3);
+
+      // ステータスコードの1文字目: ステージングエリア
+      // ステータスコードの2文字目: 作業ツリー
+      const stagedStatus = statusCode[0];
+      const unstagedStatus = statusCode[1];
+
+      // 未追跡ファイル
+      if (statusCode === '??') {
+        untrackedFiles.push(filePath);
+        continue;
+      }
+
+      // ステージング済みファイル
+      if (stagedStatus !== ' ' && stagedStatus !== '?') {
+        stagedFiles.push(filePath);
+      }
+
+      // 未ステージングファイル
+      if (unstagedStatus !== ' ' && unstagedStatus !== '?') {
+        unstagedFiles.push(filePath);
+      }
+    }
+
+    return {
+      hasChanges: lines.length > 0,
+      stagedFiles,
+      unstagedFiles,
+      untrackedFiles,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to check git status: ${errorMessage}`);
+  }
+}
+
+/**
+ * 未コミット変更の有無を簡易チェック
+ * @returns 未コミット変更がある場合 true
+ */
+export function hasUncommittedChanges(): boolean {
+  try {
+    const gitStatus = checkGitStatus();
+    return gitStatus.hasChanges;
+  } catch {
+    // Git コマンド実行エラー時は false を返す
     return false;
   }
 }
@@ -135,6 +229,20 @@ async function gitCommit(
     });
 
     if (commitResult.status !== 0) {
+      // コミット失敗時はステージングをロールバック
+      try {
+        const resetResult = spawnSync('git', ['reset', 'HEAD'], {
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+
+        if (resetResult.status === 0) {
+          console.log('\nℹ Rolled back staged changes (git reset HEAD)');
+        }
+      } catch (resetError) {
+        // ロールバック失敗はログ記録のみ（フェーズ切り替えは継続）
+        console.warn('\n⚠ Failed to rollback staged changes:', resetError);
+      }
+
       return { success: false, error: commitResult.stderr.toString() };
     }
 
@@ -164,6 +272,12 @@ async function handlePhaseChangeCommit(
         action: 'git_auto_commit',
         message: 'Skipping auto-commit',
       });
+      return;
+    }
+
+    // 未コミット変更のチェック
+    if (!hasUncommittedChanges()) {
+      console.log('\nℹ No uncommitted changes, skipping auto-commit');
       return;
     }
 
@@ -230,9 +344,88 @@ async function handlePhaseChangeCommit(
 }
 
 /**
+ * 仕様書作成時の自動コミット処理
+ */
+async function handleSpecCreatedCommit(
+  event: WorkflowEvent<{ name: string; description: string | null; phase: string }>,
+  db: Kysely<Database>
+): Promise<void> {
+  try {
+    // Gitリポジトリ確認
+    if (!isGitRepository()) {
+      const errorHandler = getErrorHandler();
+      await errorHandler.handle(new Error('Not a Git repository'), {
+        event: 'spec.created',
+        specId: event.specId,
+        phase: event.data.phase,
+        action: 'git_auto_commit',
+        message: 'Skipping auto-commit',
+      });
+      return;
+    }
+
+    // 仕様書取得
+    const spec = await db
+      .selectFrom('specs')
+      .where('id', '=', event.specId)
+      .selectAll()
+      .executeTakeFirst();
+
+    if (!spec) {
+      return;
+    }
+
+    // コミット対象ファイルの決定（requirements フェーズのみ）
+    const files = getCommitTargets('requirements', spec.id);
+
+    // コミットメッセージ生成
+    const message = generateCommitMessage(spec.name, 'requirements');
+
+    // Gitコミット実行
+    const result = await gitCommit(files, message);
+
+    if (result.success) {
+      if (result.skipped) {
+        console.log('\nℹ Auto-commit skipped: No files to commit (ignored by .gitignore)');
+      } else {
+        console.log(`\n✓ Auto-committed: ${message}`);
+      }
+    } else {
+      const errorHandler = getErrorHandler();
+      await errorHandler.handle(new Error(result.error || 'Git commit failed'), {
+        event: 'spec.created',
+        specId: event.specId,
+        phase: event.data.phase,
+        action: 'git_auto_commit',
+        commitMessage: message,
+        files,
+      });
+      console.log('You can commit manually with: git add . && git commit\n');
+    }
+  } catch (error) {
+    // エラーが発生しても仕様書作成は成功させる
+    const errorHandler = getErrorHandler();
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    await errorHandler.handle(errorObj, {
+      event: 'spec.created',
+      specId: event.specId,
+      action: 'git_auto_commit',
+    });
+  }
+}
+
+/**
  * Git統合のイベントハンドラーを登録
  */
 export function registerGitIntegrationHandlers(eventBus: EventBus, db: Kysely<Database>): void {
+  // spec.created → Git自動コミット
+  eventBus.on<{ name: string; description: string | null; phase: string }>(
+    'spec.created',
+    async (event: WorkflowEvent<{ name: string; description: string | null; phase: string }>) => {
+      await handleSpecCreatedCommit(event, db);
+    }
+  );
+
   // spec.phase_changed → Git自動コミット
   eventBus.on<{ oldPhase: string; newPhase: string }>(
     'spec.phase_changed',

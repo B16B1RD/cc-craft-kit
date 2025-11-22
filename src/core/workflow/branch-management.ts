@@ -9,11 +9,12 @@ import { Kysely } from 'kysely';
 import { Database } from '../database/schema.js';
 import { EventBus, WorkflowEvent } from './event-bus.js';
 import { getErrorHandler } from '../errors/error-handler.js';
-import { generateBranchName, isHotfixBranch } from '../utils/branch-name-generator.js';
+import { isHotfixBranch } from '../utils/branch-name-generator.js';
 import {
   createPullRequest,
   recordPullRequestToIssue,
 } from '../../integrations/github/pull-request.js';
+import { getGitHubConfig } from '../config/github-config.js';
 
 /**
  * Gitリポジトリの存在確認
@@ -43,76 +44,31 @@ function getCurrentBranch(): string | null {
 }
 
 /**
- * 保護ブランチのリストを取得
- */
-function getProtectedBranches(): string[] {
-  const branches = process.env.PROTECTED_BRANCHES;
-  if (branches) {
-    return branches.split(',').map((b) => b.trim());
-  }
-
-  // デフォルト: main, develop
-  return ['main', 'develop'];
-}
-
-/**
  * 指定されたブランチが保護ブランチかどうかを判定
  */
 function isProtectedBranch(branchName: string): boolean {
-  const protectedBranches = getProtectedBranches();
-  return protectedBranches.includes(branchName);
+  const config = getGitHubConfig();
+  return config.protectedBranches.includes(branchName);
 }
 
 /**
- * 保護ブランチでの作業時の警告表示
+ * PR作成失敗時のエラーメッセージを表示
  */
-async function handleProtectedBranchWarning(
-  event: WorkflowEvent<{ oldPhase: string; newPhase: string }>,
-  db: Kysely<Database>
-): Promise<void> {
-  try {
-    // Gitリポジトリ確認
-    if (!isGitRepository()) {
-      return;
-    }
+function printPullRequestError(error?: string): void {
+  console.warn('\n⚠️  Failed to create pull request');
 
-    // tasks → implementation の場合のみチェック
-    if (event.data.oldPhase !== 'tasks' || event.data.newPhase !== 'implementation') {
-      return;
-    }
-
-    // 現在のブランチを取得
-    const currentBranch = getCurrentBranch();
-    if (!currentBranch) {
-      return;
-    }
-
-    // 保護ブランチの場合は警告表示
-    if (isProtectedBranch(currentBranch)) {
-      // 仕様書取得
-      const spec = await db
-        .selectFrom('specs')
-        .where('id', '=', event.specId)
-        .selectAll()
-        .executeTakeFirst();
-
-      if (spec) {
-        const suggestedBranch = generateBranchName(spec.name);
-        console.warn('\n⚠️  Warning: You are on a protected branch:', currentBranch);
-        console.warn('   Suggested branch:', suggestedBranch);
-        console.warn('   This branch will be automatically created.\n');
-      }
-    }
-  } catch (error) {
-    // 警告表示のエラーは無視
-    const errorHandler = getErrorHandler();
-    const errorObj = error instanceof Error ? error : new Error(String(error));
-    await errorHandler.handle(errorObj, {
-      event: 'spec.phase_changed',
-      specId: event.specId,
-      action: 'protected_branch_warning',
-    });
+  if (error) {
+    console.warn(`   Reason: ${error}`);
   }
+
+  if (error?.includes('not initialized')) {
+    console.warn('   Please run: /cft:github-init <owner> <repo>');
+  } else if (error?.includes('Repository owner or name not found')) {
+    console.warn('   Please set GITHUB_OWNER and GITHUB_REPO in .env');
+  } else {
+    console.warn('   Please create a PR manually');
+  }
+  console.warn('');
 }
 
 /**
@@ -148,10 +104,9 @@ async function handlePullRequestCreationOnCompleted(
       return;
     }
 
-    // ベースブランチ決定（hotfix の場合は main、それ以外は GITHUB_DEFAULT_BASE_BRANCH）
-    const baseBranch = isHotfixBranch(currentBranch)
-      ? 'main'
-      : process.env.GITHUB_DEFAULT_BASE_BRANCH || 'develop';
+    // ベースブランチ決定（hotfix の場合は main、それ以外は設定値）
+    const config = getGitHubConfig();
+    const baseBranch = isHotfixBranch(currentBranch) ? 'main' : config.defaultBaseBranch;
 
     console.log(`\nℹ Creating pull request from '${currentBranch}' to '${baseBranch}'...`);
 
@@ -169,7 +124,7 @@ async function handlePullRequestCreationOnCompleted(
       await recordPullRequestToIssue(db, event.specId, result.pullRequestUrl);
 
       // github_sync テーブルに PR 番号を記録
-      await db
+      const updateResult = await db
         .updateTable('github_sync')
         .set({
           pr_number: result.pullRequestNumber,
@@ -178,10 +133,16 @@ async function handlePullRequestCreationOnCompleted(
         })
         .where('entity_id', '=', event.specId)
         .where('entity_type', '=', 'spec')
-        .execute();
+        .executeTakeFirst();
+
+      // 更新件数が 0 の場合は警告
+      if (!updateResult || updateResult.numUpdatedRows === 0n) {
+        console.warn('\n⚠️  Failed to record PR info to github_sync table');
+        console.warn(`   Spec ID: ${event.specId} does not have a github_sync record`);
+        console.warn('   Please check if the GitHub Issue was created for this spec\n');
+      }
     } else {
-      console.warn('\n⚠️  Failed to create pull request:', result.error);
-      console.warn('   Please create a PR manually\n');
+      printPullRequestError(result.error);
     }
   } catch (error) {
     // エラーが発生してもフェーズ変更は成功させる
@@ -192,8 +153,7 @@ async function handlePullRequestCreationOnCompleted(
       specId: event.specId,
       action: 'pr_auto_create',
     });
-    console.warn('\n⚠️  Failed to create pull request');
-    console.warn('   Please create a PR manually\n');
+    printPullRequestError();
   }
 }
 
@@ -201,14 +161,6 @@ async function handlePullRequestCreationOnCompleted(
  * ブランチ管理のイベントハンドラーを登録
  */
 export function registerBranchManagementHandlers(eventBus: EventBus, db: Kysely<Database>): void {
-  // spec.phase_changed → 保護ブランチ警告（tasks → implementation）
-  eventBus.on<{ oldPhase: string; newPhase: string }>(
-    'spec.phase_changed',
-    async (event: WorkflowEvent<{ oldPhase: string; newPhase: string }>) => {
-      await handleProtectedBranchWarning(event, db);
-    }
-  );
-
   // spec.phase_changed → PR自動作成（implementation → completed）
   eventBus.on<{ oldPhase: string; newPhase: string }>(
     'spec.phase_changed',

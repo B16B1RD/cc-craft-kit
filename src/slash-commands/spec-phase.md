@@ -58,51 +58,7 @@ argument-hint: "<spec-id> <phase>"
 npx tsx .cc-craft-kit/commands/spec/phase.ts "$1" "$2"
 ```
 
-## フェーズ移行後の自動処理
+## Note
 
-重要: フェーズ移行が完了したら、ユーザーに確認を求めずに、以下の処理を**自動的に実行**してください。
-
-### tasks フェーズに移行した場合
-
-1. **仕様書ファイルを読み込む**: Read ツールで `.cc-craft-kit/specs/$1.md` を読み込む
-2. **受け入れ基準を解析**:「3. 受け入れ基準」セクションを確認し、実装すべき機能を理解する
-3. **タスクリストを生成**: TodoWrite ツールで実装タスクリストを作成する
-   - 各受け入れ基準を実装可能な単位に分解
-   - 依存関係と優先度を設定
-4. **仕様書にタスクセクションを追加**: Edit ツールで仕様書ファイルの末尾に「## 8. 実装タスクリスト」セクションを追加
-5. **GitHub へ通知**: `/cft:spec-update $1` で GitHub Issue の更新を通知
-
-### implementation フェーズに移行した場合
-
-1. **仕様書ファイルを読み込む**: Read ツールで `.cc-craft-kit/specs/$1.md` を読み込む
-2. **タスクリストを確認**:「8. 実装タスクリスト」セクションを確認
-3. **TodoWrite でタスクを表示**: TodoWrite ツールでタスクリストを表示し、進捗管理を開始
-
-#### 実装開始前の品質チェック（自動実行）
-
-実装を開始する前に、以下の品質チェックを**自動的に実行**してください。
-
-1. **TypeScript/ESLint スキルで既存コードをチェック**:
-   - Skill ツールで `typescript-eslint` スキルを実行
-   - 型エラーや ESLint 警告がある場合は、修正してから実装を開始
-   - `npm run lint` と `npx tsc --noEmit` を実行して確認
-
-#### 実装作業の開始
-
-1. **最初のタスクを開始**: タスクリストの最初の未完了タスクを in_progress に設定
-2. **実装を開始**:
-   - 対象ファイルを Read ツールで読み込む
-   - Edit ツールで必要な変更を実施
-   - タスク完了後、以下の品質チェックを実行：
-     - Task ツールで `test-generator` サブエージェントを実行し、単体テストを生成
-     - Task ツールで `code-reviewer` サブエージェントを実行し、コード品質を検証
-   - TodoWrite で completed に設定
-   - 次のタスクへ自動的に移行
-
-### その他のフェーズ
-
-requirements, design, completed フェーズの場合は、従来通りガイダンスメッセージを表示してください。
-
-- 仕様書の詳細確認: `/cft:spec-get <spec-id>`
-- GitHub Issue 作成: `/cft:github-issue-create <spec-id>`
-- 次のフェーズに移行: `/cft:spec-phase <spec-id> <next-phase>`
+フェーズ移行後の自動処理は TypeScript コードで実装されています(`src/core/workflow/phase-automation.ts`)。
+Claude Code のスラッシュコマンド定義には依存しません。
