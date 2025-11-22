@@ -319,6 +319,62 @@ describe('branch-creation', () => {
       });
     });
 
+    describe('ブランチ切り替えとロールバック', () => {
+      beforeEach(() => {
+        mockExecSync.mockReturnValueOnce(undefined as never); // git rev-parse
+        mockGetCurrentBranch.mockReturnValue('feature/test');
+      });
+
+      test('should switch back to original branch after creation', () => {
+        const expectedBranch = `spec/${shortId}`;
+        const originalBranch = 'feature/test';
+
+        mockExecSync.mockReturnValueOnce(undefined as never); // git checkout -b
+        mockExecSync.mockReturnValueOnce(expectedBranch as never); // git rev-parse --abbrev-ref HEAD
+        mockExecSync.mockReturnValueOnce(undefined as never); // git checkout <original>
+
+        const result = createSpecBranch(validUuid);
+
+        expect(result.created).toBe(true);
+        expect(result.branchName).toBe(expectedBranch);
+        expect(result.originalBranch).toBe(originalBranch);
+
+        // 元のブランチに戻るコマンドが実行されたことを確認
+        expect(mockExecSync).toHaveBeenCalledWith(
+          `git checkout ${originalBranch}`,
+          expect.objectContaining({ stdio: 'pipe' })
+        );
+      });
+
+      test('should continue even if switching back fails', () => {
+        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+        const expectedBranch = `spec/${shortId}`;
+        const originalBranch = 'feature/test';
+
+        mockExecSync.mockReturnValueOnce(undefined as never); // git checkout -b
+        mockExecSync.mockReturnValueOnce(expectedBranch as never); // git rev-parse --abbrev-ref HEAD
+        mockExecSync.mockImplementation((cmd: string) => {
+          if (cmd === `git checkout ${originalBranch}`) {
+            throw new Error('Failed to checkout');
+          }
+          return undefined as never;
+        });
+
+        const result = createSpecBranch(validUuid);
+
+        // ブランチ切り替え失敗でも成功とみなす
+        expect(result.created).toBe(true);
+        expect(result.branchName).toBe(expectedBranch);
+        expect(result.originalBranch).toBe(originalBranch);
+
+        // 警告メッセージが表示されたことを確認
+        expect(consoleWarnSpy).toHaveBeenCalledWith(`⚠️  Failed to switch back to ${originalBranch}`);
+        expect(consoleWarnSpy).toHaveBeenCalledWith(`   Please manually run: git checkout ${originalBranch}`);
+
+        consoleWarnSpy.mockRestore();
+      });
+    });
+
     describe('エラーハンドリング', () => {
       beforeEach(() => {
         mockExecSync.mockReturnValueOnce(undefined as never); // git rev-parse

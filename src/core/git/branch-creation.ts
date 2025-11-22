@@ -8,6 +8,20 @@ import { execSync } from 'node:child_process';
 import { getCurrentBranch } from './branch-cache.js';
 
 /**
+ * カスタムブランチ名をサニタイズ
+ *
+ * @param name カスタムブランチ名
+ * @returns サニタイズされたブランチ名
+ */
+function sanitizeBranchName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9-_]/g, '-') // Git互換文字のみ
+    .replace(/-+/g, '-') // 連続ハイフンを統合
+    .replace(/^-|-$/g, ''); // 先頭・末尾のハイフンを削除
+}
+
+/**
  * ブランチ作成結果
  */
 export interface BranchCreationResult {
@@ -55,13 +69,7 @@ export function createSpecBranch(specId: string, customBranchName?: string): Bra
   // ブランチ名生成
   let branchName: string;
   if (customBranchName) {
-    // カスタムブランチ名のサニタイズ
-    const sanitized = customBranchName
-      .toLowerCase()
-      .replace(/[^a-z0-9-_]/g, '-') // Git互換文字のみ
-      .replace(/-+/g, '-') // 連続ハイフンを統合
-      .replace(/^-|-$/g, ''); // 先頭・末尾のハイフンを削除
-
+    const sanitized = sanitizeBranchName(customBranchName);
     branchName = `spec/${shortSpecId}-${sanitized}`;
   } else {
     // フォールバック（従来形式）
@@ -99,13 +107,7 @@ export function createSpecBranch(specId: string, customBranchName?: string): Bra
   if (protectedBranches.includes(originalBranch)) {
     // 保護ブランチの場合、feature/ プレフィックス付きブランチを自動作成
     if (customBranchName) {
-      // カスタムブランチ名が指定された場合
-      const sanitized = customBranchName
-        .toLowerCase()
-        .replace(/[^a-z0-9-_]/g, '-') // Git互換文字のみ
-        .replace(/-+/g, '-') // 連続ハイフンを統合
-        .replace(/^-|-$/g, ''); // 先頭・末尾のハイフンを削除
-
+      const sanitized = sanitizeBranchName(customBranchName);
       branchName = `feature/spec-${shortSpecId}-${sanitized}`;
     } else {
       // カスタムブランチ名が未指定の場合
@@ -147,6 +149,19 @@ export function createSpecBranch(specId: string, customBranchName?: string): Bra
       // ロールバック失敗は無視（後続のエラーハンドリングに任せる）
     }
     throw new Error(`ブランチ作成に失敗しました。期待: ${branchName}, 実際: ${currentBranch}`);
+  }
+
+  // 6. 元のブランチに戻る
+  try {
+    execSync(`git checkout ${originalBranch}`, { stdio: 'pipe' });
+  } catch {
+    // ブランチ切り替えに失敗した場合、現在のブランチを再取得
+    const actualBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
+
+    throw new Error(
+      `Failed to switch back to ${originalBranch}. Current branch: ${actualBranch}. ` +
+        `Please manually run: git checkout ${originalBranch}`
+    );
   }
 
   return {
