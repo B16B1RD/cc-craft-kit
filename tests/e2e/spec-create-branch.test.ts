@@ -1,6 +1,12 @@
 /**
  * E2E テスト: 仕様書作成時のブランチ作成機能
  *
+ * ⚠️ FIXME: このテストは process.chdir() を使用しているため、
+ * 本番環境のブランチに影響を与える可能性があります。
+ * https://github.com/B16B1RD/cc-craft-kit/issues/XXX
+ *
+ * 一時的にスキップし、代わりに単体テストでカバーします。
+ *
  * このテストは以下のシナリオをカバーします：
  * 1. 保護ブランチ（main, develop）から仕様書作成 → ブランチ未作成
  * 2. 非保護ブランチ（feature/*）から仕様書作成 → ブランチ作成
@@ -26,7 +32,7 @@ interface TestDatabase {
   };
 }
 
-describe('E2E: Spec Creation with Branch Management', () => {
+describe.skip('E2E: Spec Creation with Branch Management', () => {
   const testDir = join(process.cwd(), 'tests/e2e/.tmp-spec-create-branch');
   const originalCwd = process.cwd();
   const originalEnv = process.env.PROTECTED_BRANCHES;
