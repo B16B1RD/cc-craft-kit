@@ -57,12 +57,28 @@ jest.mock('../../../src/integrations/github/client.js', () => ({
   GitHubClient: jest.fn().mockImplementation(() => ({})),
 }));
 
+// グローバルスコープでモックオブジェクトを定義
+const sharedMockGitHubIssues = {
+  create: jest.fn(),
+  update: jest.fn(),
+  addComment: jest.fn(),
+  close: jest.fn(),
+};
+
+const sharedMockGitHubProjects = {
+  get: jest.fn(),
+  getIssueNodeId: jest.fn(),
+  addItem: jest.fn(),
+  updateProjectStatus: jest.fn(),
+  verifyProjectStatusUpdate: jest.fn(),
+};
+
 jest.mock('../../../src/integrations/github/issues.js', () => ({
-  GitHubIssues: jest.fn().mockImplementation(() => mockGitHubIssues),
+  GitHubIssues: jest.fn().mockImplementation(() => sharedMockGitHubIssues),
 }));
 
 jest.mock('../../../src/integrations/github/projects.js', () => ({
-  GitHubProjects: jest.fn().mockImplementation(() => mockGitHubProjects),
+  GitHubProjects: jest.fn().mockImplementation(() => sharedMockGitHubProjects),
 }));
 
 jest.mock('../../../src/integrations/github/project-resolver.js', () => ({
@@ -71,6 +87,65 @@ jest.mock('../../../src/integrations/github/project-resolver.js', () => ({
 
 jest.mock('../../../src/integrations/github/sub-issues.js', () => ({
   SubIssueManager: jest.fn().mockImplementation(() => mockSubIssueManager),
+}));
+
+// GitHubSyncService のモック
+jest.mock('../../../src/integrations/github/sync.js', () => ({
+  GitHubSyncService: jest.fn().mockImplementation((db, issues, projects) => ({
+    syncSpecToIssue: async ({ specId, owner, repo, createIfNotExists }: { specId: string; owner: string; repo: string; createIfNotExists: boolean }) => {
+      // モックの create メソッドを呼び出す
+      const spec = await db.selectFrom('specs').where('id', '=', specId).selectAll().executeTakeFirst();
+      if (!spec) throw new Error('Spec not found');
+
+      const specFilePath = join(process.cwd(), 'specs', `${specId}.md`);
+      const specContent = existsSync(specFilePath) ? require('fs').readFileSync(specFilePath, 'utf-8') : `# ${spec.name}`;
+
+      const mockIssue = await issues.create({
+        owner,
+        repo,
+        title: spec.name,
+        body: specContent,
+        labels: [`phase:${spec.phase}`],
+      });
+
+      // github_sync レコード作成
+      await db.insertInto('github_sync').values({
+        entity_type: 'spec',
+        entity_id: specId,
+        github_id: String(mockIssue.number),
+        github_number: mockIssue.number,
+        github_node_id: mockIssue.node_id,
+        sync_status: 'success',
+        synced_at: new Date().toISOString(),
+      }).execute();
+
+      return mockIssue.number;
+    },
+    addSpecToProject: async ({ specId, owner, projectNumber }: { specId: string; owner: string; projectNumber: number }) => {
+      const spec = await db.selectFrom('specs').where('id', '=', specId).selectAll().executeTakeFirst();
+      if (!spec) throw new Error('Spec not found');
+
+      const syncRecord = await db.selectFrom('github_sync').where('entity_id', '=', specId).where('entity_type', '=', 'spec').selectAll().executeTakeFirst();
+      if (!syncRecord) throw new Error('Sync record not found');
+
+      const project = await projects.get(owner, projectNumber);
+      const nodeId = await projects.getIssueNodeId(owner, String(syncRecord.github_number));
+      const item = await projects.addItem(project.id, nodeId);
+
+      return item.id;
+    },
+    updateIssueLabels: async ({ specId, owner, repo, labels }: { specId: string; owner: string; repo: string; labels: string[] }) => {
+      const syncRecord = await db.selectFrom('github_sync').where('entity_id', '=', specId).where('entity_type', '=', 'spec').selectAll().executeTakeFirst();
+      if (!syncRecord) throw new Error('Sync record not found');
+
+      await issues.update({
+        owner,
+        repo,
+        issueNumber: syncRecord.github_number,
+        labels,
+      });
+    },
+  })),
 }));
 
 jest.mock('../../../src/core/utils/task-parser.js', () => ({
@@ -111,12 +186,16 @@ describe('GitHub Integration Event Handlers', () => {
     // テスト用データベース作成
     lifecycle = await setupDatabaseLifecycle();
 
-    // モックインスタンスを初期化
-    mockGitHubIssues = createMockGitHubIssues();
-    mockGitHubProjects = createMockGitHubProjects();
+    // モックインスタンスを初期化（共有モックを使用）
+    mockGitHubIssues = sharedMockGitHubIssues;
+    mockGitHubProjects = sharedMockGitHubProjects;
     mockSubIssueManager = createMockSubIssueManager();
     mockResolveProjectId = jest.fn();
     mockParseTaskListFromSpec = jest.fn();
+
+    // 共有モックをクリア
+    Object.values(sharedMockGitHubIssues).forEach((mock) => mock.mockClear());
+    Object.values(sharedMockGitHubProjects).forEach((mock) => mock.mockClear());
 
     // EventBus作成
     eventBus = new EventBus();
@@ -172,6 +251,7 @@ describe('GitHub Integration Event Handlers', () => {
           name: 'Test Spec',
           description: 'Test description',
           phase: 'requirements',
+          branch_name: 'feature/test',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -256,6 +336,7 @@ describe('GitHub Integration Event Handlers', () => {
           name: 'Test Spec with Project',
           description: 'Test description',
           phase: 'requirements',
+          branch_name: 'feature/test',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -320,6 +401,7 @@ describe('GitHub Integration Event Handlers', () => {
           name: 'Test Spec with Project Error',
           description: 'Test description',
           phase: 'requirements',
+          branch_name: 'feature/test',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -375,6 +457,7 @@ describe('GitHub Integration Event Handlers', () => {
           name: 'Test Spec No Token',
           description: 'Test description',
           phase: 'requirements',
+          branch_name: 'feature/test',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -409,6 +492,7 @@ describe('GitHub Integration Event Handlers', () => {
           name: 'Test Spec Phase Change',
           description: 'Test description',
           phase: 'design',
+          branch_name: 'feature/test',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
