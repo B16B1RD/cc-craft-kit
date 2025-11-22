@@ -41,7 +41,7 @@ function isGitRepository(): boolean {
  * @returns Git ステータス情報
  * @throws Git コマンド実行エラー時
  */
-function checkGitStatus(): GitStatus {
+export function checkGitStatus(): GitStatus {
   if (!isGitRepository()) {
     return {
       hasChanges: false,
@@ -110,7 +110,7 @@ function checkGitStatus(): GitStatus {
  * 未コミット変更の有無を簡易チェック
  * @returns 未コミット変更がある場合 true
  */
-function hasUncommittedChanges(): boolean {
+export function hasUncommittedChanges(): boolean {
   try {
     const gitStatus = checkGitStatus();
     return gitStatus.hasChanges;
