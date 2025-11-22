@@ -14,7 +14,6 @@ import {
   createPullRequest,
   recordPullRequestToIssue,
 } from '../../integrations/github/pull-request.js';
-import { getGitHubClient } from '../../integrations/github/client.js';
 import { getGitHubConfig } from '../config/github-config.js';
 
 /**
@@ -110,16 +109,6 @@ async function handlePullRequestCreationOnCompleted(
     const baseBranch = isHotfixBranch(currentBranch) ? 'main' : config.defaultBaseBranch;
 
     console.log(`\nℹ Creating pull request from '${currentBranch}' to '${baseBranch}'...`);
-
-    // GitHub クライアント初期化状態を事前チェック
-    try {
-      getGitHubClient();
-    } catch {
-      console.warn('\n⚠️  GitHub client not initialized');
-      console.warn('   Please run: /cft:github-init <owner> <repo>');
-      console.warn('   Skipping automatic PR creation\n');
-      return; // PR作成をスキップ
-    }
 
     // PR作成
     const result = await createPullRequest(db, {

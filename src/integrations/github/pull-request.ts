@@ -4,7 +4,7 @@
 
 import { Kysely } from 'kysely';
 import { Database } from '../../core/database/schema.js';
-import { getGitHubClient } from './client.js';
+import { getGitHubClient, GitHubClient } from './client.js';
 import { execSync } from 'node:child_process';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -116,8 +116,22 @@ export async function createPullRequest(
   options: CreatePullRequestOptions
 ): Promise<CreatePullRequestResult> {
   try {
-    // GitHub クライアント取得
-    const client = getGitHubClient();
+    // GitHub クライアント取得（未初期化の場合は環境変数から初期化）
+    let client: GitHubClient;
+    try {
+      client = getGitHubClient();
+    } catch {
+      // 未初期化の場合は環境変数から初期化を試みる
+      const token = process.env.GITHUB_TOKEN;
+      if (!token) {
+        return {
+          success: false,
+          error: 'GitHub client not initialized',
+        };
+      }
+      const { initGitHubClient } = await import('./client.js');
+      client = initGitHubClient({ token });
+    }
 
     // GitHub 設定取得
     const config = getGitHubConfig();
