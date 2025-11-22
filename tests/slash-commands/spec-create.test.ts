@@ -102,7 +102,7 @@ describe('Slash Command: /cft:spec-create', () => {
     it('should have "ブランチ作成後の動作" section', () => {
       // Assert
       expect(content).toContain('## ブランチ作成後の動作（v0.3.0 以降）');
-      expect(content).toContain('元のブランチに自動的に戻ります');
+      expect(content).toContain('元のブランチへ自動的に戻る');
     });
   });
 
@@ -116,7 +116,7 @@ describe('Slash Command: /cft:spec-create', () => {
 
     it('should have "仕様書自動完成フロー" section', () => {
       // Assert
-      expect(content).toContain('## 仕様書自動完成フロー (v0.4.0 以降)');
+      expect(content).toContain('## 仕様書の自動完成フロー (v0.4.0 以降)');
       expect(content).toContain('自動的に実行');
     });
 
@@ -206,24 +206,24 @@ describe('Slash Command: /cft:spec-create', () => {
 
     it('should have numbered steps in Phase 1', () => {
       // Assert
-      expect(content).toMatch(/2\.\s+\*\*コードベース解析\*\*/);
-      expect(content).toMatch(/3\.\s+\*\*情報の整理\*\*/);
+      expect(content).toMatch(/1\.\s+\*\*コードベース解析\*\*/);
+      expect(content).toMatch(/2\.\s+\*\*情報の整理\*\*/);
     });
 
     it('should have numbered steps in Phase 2', () => {
       // Assert
-      expect(content).toMatch(/4\.\s+\*\*対話的な質問\*\*/);
+      expect(content).toMatch(/1\.\s+\*\*対話的な質問\*\*/);
     });
 
     it('should have numbered steps in Phase 3', () => {
       // Assert
-      expect(content).toMatch(/5\.\s+\*\*自動完成された内容の反映\*\*/);
+      expect(content).toMatch(/1\.\s+\*\*自動完成された内容の反映\*\*/);
     });
 
     it('should have numbered steps in Phase 4', () => {
       // Assert
-      expect(content).toMatch(/6\.\s+\*\*仕様書の品質レビュー\*\*/);
-      expect(content).toMatch(/7\.\s+\*\*次のアクションを案内\*\*/);
+      expect(content).toMatch(/1\.\s+\*\*仕様書の品質レビュー\*\*/);
+      expect(content).toMatch(/2\.\s+\*\*次のアクションを案内\*\*/);
     });
   });
 
