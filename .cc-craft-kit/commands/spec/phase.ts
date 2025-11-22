@@ -17,6 +17,7 @@ import { validateSpecId, validatePhase, Phase } from '../utils/validation.js';
 import { ensureGitHubIssue } from '../../integrations/github/ensure-issue.js';
 import { getCurrentDateTimeForSpec } from '../../core/utils/date-format.js';
 import { fsyncFileAndDirectory } from '../../core/utils/fsync.js';
+import { switchBranch, BranchSwitchError } from '../../core/git/branch-switching.js';
 
 /**
  * 仕様書フェーズ更新
@@ -64,6 +65,27 @@ export async function updateSpecPhase(
 
   // GitHub Issue 自動リカバリー（フェーズ更新前に実行）
   await ensureGitHubIssue(db, spec.id);
+
+  // ブランチ切り替え（仕様書の branch_name が設定されている場合のみ）
+  if (spec.branch_name) {
+    try {
+      const result = switchBranch(spec.branch_name);
+
+      if (result.switched) {
+        console.log('');
+        console.log(formatSuccess(`✓ Switched to branch: ${result.targetBranch}`, options.color));
+        console.log('');
+      }
+    } catch (error) {
+      if (error instanceof BranchSwitchError) {
+        console.error('');
+        console.error(`❌ ${error.message}`);
+        console.error('');
+        throw error;
+      }
+      throw error;
+    }
+  }
 
   // データベース更新
   console.log(formatInfo('Updating database...', options.color));
