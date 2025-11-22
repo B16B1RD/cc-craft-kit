@@ -204,7 +204,7 @@ export async function createSpec(
         execSync(`git checkout ${originalBranch}`, { stdio: 'pipe' });
         clearBranchCache();
         console.log(formatInfo(`Switched back to ${originalBranch}`, options.color));
-      } catch (switchError) {
+      } catch {
         // ブランチ切り替え失敗時のロールバック処理
         console.error('');
         console.error(formatInfo('Failed to switch back. Rolling back...', options.color));
