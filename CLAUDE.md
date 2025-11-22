@@ -746,6 +746,73 @@ export class YourService {
 
 - データベースは`:memory:`モードでテスト
 - GitHub API 呼び出しは必ずモック化（レート制限回避）
+- **Git 操作は必ずモック化すること**（テスト実行時にブランチが変更されることを防止）
+
+#### Git 操作のモック化ガイドライン
+
+テストコードで Git 操作を含む関数をテストする場合、**必ず以下のようにモック化**してください。
+
+**モック化が必要な操作:**
+
+1. `createSpecBranch()` 関数の呼び出し
+2. `execSync()` による Git コマンド実行（`git checkout -b`, `git branch`, `git add`, `git commit` など）
+3. ファイルシステム操作（`writeFileSync`, `unlinkSync`, `mkdirSync`, `rmdirSync`）
+
+**モック化のパターン:**
+
+```typescript
+// パターン 1: createSpecBranch() のモック化
+import { vi } from 'vitest';
+import * as branchCreation from '../../src/core/git/branch-creation.js';
+
+vi.mock('../../src/core/git/branch-creation.js', () => ({
+  createSpecBranch: vi.fn(() => ({
+    created: true,
+    branchName: 'spec/12345678',
+    originalBranch: 'develop',
+  })),
+}));
+```
+
+```typescript
+// パターン 2: execSync のモック化
+import { vi } from 'vitest';
+import { execSync } from 'node:child_process';
+
+vi.mock('node:child_process', () => ({
+  execSync: vi.fn(),
+}));
+
+describe('Git Command Test', () => {
+  const mockExecSync = vi.mocked(execSync);
+
+  beforeEach(() => {
+    mockExecSync.mockReset();
+    mockExecSync.mockReturnValue(Buffer.from('success'));
+  });
+
+  // テスト実装
+});
+```
+
+```typescript
+// パターン 3: ファイルシステム操作のモック化
+import { vi } from 'vitest';
+import * as fs from 'node:fs';
+
+vi.mock('node:fs', () => ({
+  writeFileSync: vi.fn(),
+  unlinkSync: vi.fn(),
+  existsSync: vi.fn(() => true),
+  readFileSync: vi.fn(() => 'mock content'),
+}));
+```
+
+**参考:**
+
+- `.claude/agents/test-generator.md` の「Git 操作を含むテストの自動モック化」セクション
+- `tests/core/git/branch-creation.test.ts` - 正しいモック化の実装例
+- `tests/e2e/test-branch-stability.test.ts` - ブランチ変更検証テスト
 
 ## GitHub統合の仕組み
 
