@@ -18,6 +18,8 @@ import {
 import { getEventBusAsync } from '../../core/workflow/event-bus.js';
 import { BranchCleanupError } from '../../core/errors/branch-cleanup-error.js';
 import { getGitHubConfig } from '../../core/config/github-config.js';
+import { existsSync, readFileSync } from 'fs';
+import { join } from 'path';
 
 /**
  * PR クリーンアップ結果
@@ -28,6 +30,38 @@ export interface CleanupResult {
   branchName?: string;
   mergedAt?: string | null;
   error?: string;
+}
+
+/**
+ * config.json から GitHub 設定を読み込む
+ *
+ * @returns GitHub 設定（owner, repo）または null
+ */
+function loadGitHubConfigFromFile(): { owner: string; repo: string } | null {
+  const ccCraftKitDir = join(process.cwd(), '.cc-craft-kit');
+  const configPath = join(ccCraftKitDir, 'config.json');
+
+  if (!existsSync(configPath)) {
+    return null;
+  }
+
+  try {
+    const config = JSON.parse(readFileSync(configPath, 'utf-8'));
+    if (!config.github || !config.github.owner || !config.github.repo) {
+      return null;
+    }
+
+    return {
+      owner: config.github.owner,
+      repo: config.github.repo,
+    };
+  } catch (error) {
+    console.warn('⚠️  Warning: Failed to parse config.json. GitHub integration may not work.');
+    if (process.env.DEBUG) {
+      console.warn(error);
+    }
+    return null;
+  }
 }
 
 /**
@@ -71,8 +105,38 @@ export async function cleanupMergedPullRequest(
   db: Kysely<Database>,
   specId: string
 ): Promise<CleanupResult> {
-  const client = getGitHubClient();
-  const config = getGitHubConfig();
+  // GitHub クライアント取得（未初期化の場合は環境変数から初期化）
+  let client: GitHubClient;
+  try {
+    client = getGitHubClient();
+  } catch {
+    // 未初期化の場合は環境変数から初期化を試みる
+    const token = process.env.GITHUB_TOKEN;
+    if (!token) {
+      return {
+        success: false,
+        error:
+          'GitHub client not initialized. Run `/cft:github-init <owner> <repo>` or set GITHUB_TOKEN environment variable.',
+      };
+    }
+    const { initGitHubClient } = await import('./client.js');
+    client = initGitHubClient({ token });
+  }
+
+  // GitHub 設定取得（環境変数優先、config.json フォールバック）
+  const envConfig = getGitHubConfig();
+  const fileConfig = loadGitHubConfigFromFile();
+
+  const owner = envConfig.owner || fileConfig?.owner;
+  const repo = envConfig.repo || fileConfig?.repo;
+
+  if (!owner || !repo) {
+    return {
+      success: false,
+      error:
+        'GitHub repository not configured. Run `/cft:github-init <owner> <repo>` or set GITHUB_OWNER and GITHUB_REPO environment variables.',
+    };
+  }
 
   // 1. 仕様書と GitHub 情報を取得
   const spec = await getSpecWithGitHubInfo(db, specId);
@@ -91,34 +155,27 @@ export async function cleanupMergedPullRequest(
     };
   }
 
-  // 2. GitHub 設定確認
-  if (!config.owner || !config.repo) {
-    return {
-      success: false,
-      error: 'GitHub が設定されていません。/cft:github-init <owner> <repo> を実行してください。',
-    };
-  }
-
-  // 3. PR マージ状態を確認
+  // 2. PR マージ状態を確認
   let pr;
   try {
     const { data } = await client.rest.pulls.get({
-      owner: config.owner,
-      repo: config.repo,
+      owner,
+      repo,
       pull_number: spec.pr_number,
     });
     pr = data;
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      error: `PR の取得に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+      error: `Failed to fetch PR #${spec.pr_number} from ${owner}/${repo}: ${errorMessage}. Check your GitHub token and repository settings.`,
     };
   }
 
   if (!pr.merged) {
     return {
       success: false,
-      error: `PR #${spec.pr_number} はまだマージされていません。GitHub でマージを完了してから再実行してください。`,
+      error: `PR #${spec.pr_number} is not merged yet. Merge the PR on GitHub first, then run this command again.`,
     };
   }
 
