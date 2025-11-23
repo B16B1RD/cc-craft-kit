@@ -17,8 +17,9 @@
  *   - プロジェクト未初期化の場合、エラーがスローされる
  *   - specIdPrefix が未指定の場合、バリデーションエラーがスローされる
  *
- * - GitHub Issue クローズ機能
- *   - --close-github-issue 指定時、GitHub Issue が正常にクローズされる
+ * - GitHub Issue クローズ機能（デフォルト動作）
+ *   - デフォルト（オプションなし）で GitHub Issue が自動クローズされる
+ *   - --close-github-issue 指定時も正常に動作する（後方互換性）
  *   - GITHUB_TOKEN 未設定の場合、エラーメッセージが表示される
  *   - GitHub 設定が未設定の場合、エラーメッセージが表示される
  *   - GitHub Issue が存在しない場合（404エラー）、警告表示後に削除続行

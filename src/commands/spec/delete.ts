@@ -61,7 +61,7 @@ export async function deleteSpec(
   specIdPrefix: string,
   options: DeleteSpecOptions = {}
 ): Promise<void> {
-  const { color = true, skipConfirmation = false, closeGitHubIssue = false } = options;
+  const { color = true, skipConfirmation = false, closeGitHubIssue = true } = options;
   const cwd = process.cwd();
   const ccCraftKitDir = join(cwd, '.cc-craft-kit');
   const specsDir = join(ccCraftKitDir, 'specs');
