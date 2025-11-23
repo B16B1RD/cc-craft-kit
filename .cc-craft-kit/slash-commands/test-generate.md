@@ -33,12 +33,6 @@ argument-hint: "<file-pattern>"
 
 ---
 
-以下のコマンドを実行してテスト生成を開始してください。
-
-```bash
-npx tsx .cc-craft-kit/commands/quality/test-generate.ts "$1"
-```
-
 ## 自動実行フロー
 
 重要: コマンド実行後、ユーザーに確認を求めずに、以下の処理を**自動的に実行**してください。
