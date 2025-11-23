@@ -130,4 +130,68 @@ describe('GitHubIssues with Mock Factory', () => {
       });
     });
   });
+
+  describe('close', () => {
+    test('should close an issue successfully', async () => {
+      const issueFixture = createIssueFixture({
+        number: 123,
+        title: 'Test Issue',
+        state: 'closed',
+      });
+
+      mockClient.rest.issues.update = jest
+        .fn()
+        .mockResolvedValue(createMockOctokitResponse(issueFixture));
+
+      const result = await githubIssues.close('testowner', 'testrepo', 123);
+
+      expect(result.state).toBe('closed');
+      expect(result.number).toBe(123);
+      expect(mockClient.rest.issues.update).toHaveBeenCalledWith({
+        owner: 'testowner',
+        repo: 'testrepo',
+        issue_number: 123,
+        state: 'closed',
+        title: undefined,
+        body: undefined,
+        labels: undefined,
+        assignees: undefined,
+        milestone: undefined,
+      });
+    });
+
+    test('should handle 404 error when issue does not exist', async () => {
+      const error = new Error('Not Found');
+      mockClient.rest.issues.update = jest.fn().mockRejectedValue(error);
+
+      await expect(githubIssues.close('testowner', 'testrepo', 999)).rejects.toThrow('Not Found');
+    });
+
+    test('should handle 401 authentication error', async () => {
+      const error = new Error('Bad credentials');
+      mockClient.rest.issues.update = jest.fn().mockRejectedValue(error);
+
+      await expect(githubIssues.close('testowner', 'testrepo', 123)).rejects.toThrow(
+        'Bad credentials'
+      );
+    });
+
+    test('should handle 403 rate limit error', async () => {
+      const error = new Error('API rate limit exceeded');
+      mockClient.rest.issues.update = jest.fn().mockRejectedValue(error);
+
+      await expect(githubIssues.close('testowner', 'testrepo', 123)).rejects.toThrow(
+        'API rate limit exceeded'
+      );
+    });
+
+    test('should handle 500 server error', async () => {
+      const error = new Error('Internal server error');
+      mockClient.rest.issues.update = jest.fn().mockRejectedValue(error);
+
+      await expect(githubIssues.close('testowner', 'testrepo', 123)).rejects.toThrow(
+        'Internal server error'
+      );
+    });
+  });
 });
