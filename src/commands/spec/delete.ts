@@ -3,7 +3,7 @@
  */
 
 import '../../core/config/env.js';
-import { existsSync, unlinkSync } from 'node:fs';
+import { existsSync, unlinkSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDatabase, closeDatabase } from '../../core/database/connection.js';
 import { getEventBusAsync } from '../../core/workflow/event-bus.js';
@@ -13,6 +13,7 @@ import {
   formatKeyValue,
   formatInfo,
   formatError,
+  formatWarning,
 } from '../utils/output.js';
 import {
   createProjectNotInitializedError,
@@ -21,6 +22,8 @@ import {
 } from '../utils/error-handler.js';
 import { validateRequired } from '../utils/validation.js';
 import * as readline from 'node:readline/promises';
+import { GitHubClient } from '../../integrations/github/client.js';
+import { GitHubIssues } from '../../integrations/github/issues.js';
 
 /**
  * 仕様書削除オプション
@@ -29,6 +32,26 @@ export interface DeleteSpecOptions {
   color?: boolean;
   skipConfirmation?: boolean;
   closeGitHubIssue?: boolean;
+}
+
+/**
+ * GitHub設定を取得
+ */
+function getGitHubConfig(ccCraftKitDir: string): { owner: string; repo: string } | null {
+  const configPath = join(ccCraftKitDir, 'config.json');
+  if (!existsSync(configPath)) {
+    return null;
+  }
+
+  const config = JSON.parse(readFileSync(configPath, 'utf-8'));
+  if (!config.github || !config.github.owner || !config.github.repo) {
+    return null;
+  }
+
+  return {
+    owner: config.github.owner,
+    repo: config.github.repo,
+  };
 }
 
 /**
@@ -124,38 +147,95 @@ export async function deleteSpec(
   const specPath = join(specsDir, `${spec.id}.md`);
 
   try {
-    // トランザクション開始
-    // 1. データベースレコード削除
+    // 1. GitHub Issue をクローズ (最初に実行、失敗時に状態変更なし)
+    if (closeGitHubIssue && githubSync?.github_number) {
+      console.log(formatInfo(`Closing GitHub Issue #${githubSync.github_number}...`, color));
+
+      // GITHUB_TOKENチェック
+      const githubToken = process.env.GITHUB_TOKEN;
+      if (!githubToken || githubToken.trim() === '') {
+        throw new Error('GITHUB_TOKEN is not set. Please set it in your .env file.');
+      }
+
+      // GitHub設定チェック
+      const githubConfig = getGitHubConfig(ccCraftKitDir);
+      if (!githubConfig) {
+        throw new Error(
+          'GitHub is not configured. Please run /cft:github-init <owner> <repo> first.'
+        );
+      }
+
+      // GitHub APIクライアント作成
+      const client = new GitHubClient({ token: githubToken });
+      const issues = new GitHubIssues(client);
+
+      try {
+        await issues.close(githubConfig.owner, githubConfig.repo, githubSync.github_number);
+        console.log(
+          formatSuccess(`GitHub Issue #${githubSync.github_number} closed successfully!`, color)
+        );
+      } catch (githubError: unknown) {
+        // GitHub API エラーハンドリング
+        if (githubError instanceof Error) {
+          const errorMessage = githubError.message.toLowerCase();
+
+          // 404エラー（Issue が存在しない）の場合、警告表示後に削除続行
+          if (errorMessage.includes('not found') || errorMessage.includes('404')) {
+            console.log('');
+            console.log(
+              formatWarning(
+                `GitHub Issue #${githubSync.github_number} was not found (may be already deleted).`,
+                color
+              )
+            );
+            console.log(formatWarning('Continuing with spec deletion...', color));
+            console.log('');
+          } else if (
+            errorMessage.includes('unauthorized') ||
+            errorMessage.includes('401') ||
+            errorMessage.includes('bad credentials')
+          ) {
+            // 401エラー（認証失敗）の場合、エラーメッセージ表示して削除スキップ
+            throw new Error(
+              `GitHub authentication failed: ${githubError.message}\nPlease check your GITHUB_TOKEN in .env file.`
+            );
+          } else if (
+            errorMessage.includes('rate limit') ||
+            errorMessage.includes('403') ||
+            errorMessage.includes('forbidden')
+          ) {
+            // 403エラー（レート制限超過）の場合、エラーメッセージ表示して削除スキップ
+            throw new Error(
+              `GitHub API rate limit exceeded or access forbidden: ${githubError.message}\nPlease try again later.`
+            );
+          } else if (
+            errorMessage.includes('server error') ||
+            errorMessage.includes('500') ||
+            errorMessage.includes('internal server')
+          ) {
+            // 500エラー（GitHub API 障害）の場合、エラーメッセージ表示して削除スキップ
+            throw new Error(
+              `GitHub API is experiencing issues: ${githubError.message}\nPlease try again later.`
+            );
+          } else {
+            // その他のエラー
+            throw new Error(`Failed to close GitHub Issue: ${githubError.message}`);
+          }
+        } else {
+          throw new Error(`Failed to close GitHub Issue: ${String(githubError)}`);
+        }
+      }
+    }
+
+    // 2. データベースレコード削除（Issue クローズ成功後のみ実行）
     await db.deleteFrom('specs').where('id', '=', spec.id).execute();
 
-    // 2. 仕様書ファイル削除
+    // 3. 仕様書ファイル削除（Issue クローズ成功後のみ実行）
     if (existsSync(specPath)) {
       unlinkSync(specPath);
     }
 
-    // 3. GitHub Issue をクローズ (オプション)
-    if (closeGitHubIssue && githubSync) {
-      try {
-        // GitHub Issue クローズ処理 (将来実装)
-        console.log(
-          formatInfo(
-            `Note: GitHub Issue #${githubSync.github_number} was not closed automatically.`,
-            color
-          )
-        );
-        console.log(formatInfo('Please close it manually if needed.', color));
-      } catch (githubError) {
-        console.log(formatError('Failed to close GitHub Issue:', color));
-        console.log(
-          formatError(
-            githubError instanceof Error ? githubError.message : String(githubError),
-            color
-          )
-        );
-      }
-    }
-
-    // 4. spec.deleted イベント発火
+    // 4. spec.deleted イベント発火（すべて成功後のみ実行）
     const eventBus = await getEventBusAsync();
     await eventBus.emit(
       eventBus.createEvent('spec.deleted', spec.id, {
@@ -170,7 +250,7 @@ export async function deleteSpec(
     console.log(formatKeyValue('Deleted Spec ID', spec.id, color));
     console.log(formatKeyValue('Deleted Spec Name', spec.name, color));
   } catch (error) {
-    // エラー時のロールバックは自動的に行われる（トランザクション外のため手動対応不要）
+    // エラー時のロールバック（GitHub Issue クローズ失敗時、削除処理はスキップされる）
     console.error('');
     console.error(formatError('Failed to delete spec:', color));
     throw error;
