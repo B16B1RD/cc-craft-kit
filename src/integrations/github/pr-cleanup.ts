@@ -18,8 +18,8 @@ import {
 import { getEventBusAsync } from '../../core/workflow/event-bus.js';
 import { BranchCleanupError } from '../../core/errors/branch-cleanup-error.js';
 import { getGitHubConfig } from '../../core/config/github-config.js';
-import { existsSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 /**
  * PR クリーンアップ結果

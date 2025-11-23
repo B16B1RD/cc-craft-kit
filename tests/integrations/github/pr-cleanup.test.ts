@@ -34,10 +34,16 @@ jest.mock('node:fs', () => ({
   readFileSync: jest.fn(),
 }));
 
+// GitHub 設定のモック
+jest.mock('../../../src/core/config/github-config.js', () => ({
+  getGitHubConfig: jest.fn(),
+}));
+
 import { getGitHubClient, initGitHubClient } from '../../../src/integrations/github/client.js';
 import { execSync } from 'node:child_process';
 import { getEventBusAsync } from '../../../src/core/workflow/event-bus.js';
 import { existsSync, readFileSync } from 'node:fs';
+import { getGitHubConfig } from '../../../src/core/config/github-config.js';
 
 describe('pr-cleanup', () => {
   let db: Kysely<Database>;
@@ -53,6 +59,13 @@ describe('pr-cleanup', () => {
 
     // デフォルトでファイルシステムモックを設定
     (existsSync as jest.MockedFunction<typeof existsSync>).mockReturnValue(false);
+
+    // デフォルトで GitHub 設定をモック（空の設定）
+    (getGitHubConfig as jest.MockedFunction<typeof getGitHubConfig>).mockReturnValue({
+      owner: '',
+      repo: '',
+      protectedBranches: ['main', 'master', 'develop'],
+    });
   });
 
   afterEach(async () => {
@@ -144,6 +157,13 @@ describe('pr-cleanup', () => {
         process.env.GITHUB_OWNER = 'testowner';
         process.env.GITHUB_REPO = 'testrepo';
 
+        // GitHub 設定をモック
+        (getGitHubConfig as jest.MockedFunction<typeof getGitHubConfig>).mockReturnValue({
+          owner: 'testowner',
+          repo: 'testrepo',
+          protectedBranches: ['main', 'master', 'develop'],
+        });
+
         // initGitHubClient のモック
         (initGitHubClient as jest.MockedFunction<typeof initGitHubClient>).mockReturnValue(mockClient);
 
@@ -184,9 +204,12 @@ describe('pr-cleanup', () => {
 
     describe('設定読み込み', () => {
       test('should read config from env vars first', async () => {
-        // 環境変数を設定
-        process.env.GITHUB_OWNER = 'envowner';
-        process.env.GITHUB_REPO = 'envrepo';
+        // 環境変数をモック
+        (getGitHubConfig as jest.MockedFunction<typeof getGitHubConfig>).mockReturnValue({
+          owner: 'envowner',
+          repo: 'envrepo',
+          protectedBranches: ['main', 'master', 'develop'],
+        });
 
         // config.json も存在するが、環境変数が優先される
         (existsSync as jest.MockedFunction<typeof existsSync>).mockReturnValue(true);
@@ -223,12 +246,14 @@ describe('pr-cleanup', () => {
         );
       });
 
-      test('should fallback to config.json if env vars are missing', async () => {
-        // 環境変数を未設定
+      test('should fallback to config.json when env vars are empty', async () => {
+        // 環境変数を削除（.env の影響を回避）
+        const originalOwner = process.env.GITHUB_OWNER;
+        const originalRepo = process.env.GITHUB_REPO;
         delete process.env.GITHUB_OWNER;
         delete process.env.GITHUB_REPO;
 
-        // config.json を返す
+        // config.json から読み込む
         (existsSync as jest.MockedFunction<typeof existsSync>).mockReturnValue(true);
         (readFileSync as jest.MockedFunction<typeof readFileSync>).mockReturnValue(
           JSON.stringify({
@@ -261,12 +286,20 @@ describe('pr-cleanup', () => {
             repo: 'filerepo',
           })
         );
+
+        // 環境変数を元に戻す
+        if (originalOwner !== undefined) process.env.GITHUB_OWNER = originalOwner;
+        if (originalRepo !== undefined) process.env.GITHUB_REPO = originalRepo;
       });
 
       test('should fail if GitHub repository not configured', async () => {
-        // 環境変数を未設定
+        // 環境変数を削除
+        const originalOwner = process.env.GITHUB_OWNER;
+        const originalRepo = process.env.GITHUB_REPO;
+        const originalProtected = process.env.PROTECTED_BRANCHES;
         delete process.env.GITHUB_OWNER;
         delete process.env.GITHUB_REPO;
+        delete process.env.PROTECTED_BRANCHES;
 
         // config.json が存在しない
         (existsSync as jest.MockedFunction<typeof existsSync>).mockReturnValue(false);
@@ -275,14 +308,22 @@ describe('pr-cleanup', () => {
 
         expect(result.success).toBe(false);
         expect(result.error).toContain('GitHub repository not configured');
+
+        // 環境変数を元に戻す
+        if (originalOwner !== undefined) process.env.GITHUB_OWNER = originalOwner;
+        if (originalRepo !== undefined) process.env.GITHUB_REPO = originalRepo;
+        if (originalProtected !== undefined) process.env.PROTECTED_BRANCHES = originalProtected;
       });
     });
 
     describe('PR マージ状態確認', () => {
       beforeEach(() => {
-        // 環境変数を設定
-        process.env.GITHUB_OWNER = 'testowner';
-        process.env.GITHUB_REPO = 'testrepo';
+        // GitHub 設定をモック
+        (getGitHubConfig as jest.MockedFunction<typeof getGitHubConfig>).mockReturnValue({
+          owner: 'testowner',
+          repo: 'testrepo',
+          protectedBranches: ['main', 'master', 'develop'],
+        });
       });
 
       test('should succeed when PR is merged', async () => {
@@ -375,9 +416,12 @@ describe('pr-cleanup', () => {
 
     describe('ブランチ削除', () => {
       beforeEach(() => {
-        // 環境変数を設定
-        process.env.GITHUB_OWNER = 'testowner';
-        process.env.GITHUB_REPO = 'testrepo';
+        // GitHub 設定をモック
+        (getGitHubConfig as jest.MockedFunction<typeof getGitHubConfig>).mockReturnValue({
+          owner: 'testowner',
+          repo: 'testrepo',
+          protectedBranches: ['main', 'master', 'develop'],
+        });
 
         // PR マージ済みのモック
         mockClient.rest.pulls.get = jest.fn().mockResolvedValue(
@@ -447,9 +491,12 @@ describe('pr-cleanup', () => {
 
     describe('データベーストランザクション', () => {
       beforeEach(() => {
-        // 環境変数を設定
-        process.env.GITHUB_OWNER = 'testowner';
-        process.env.GITHUB_REPO = 'testrepo';
+        // GitHub 設定をモック
+        (getGitHubConfig as jest.MockedFunction<typeof getGitHubConfig>).mockReturnValue({
+          owner: 'testowner',
+          repo: 'testrepo',
+          protectedBranches: ['main', 'master', 'develop'],
+        });
 
         // PR マージ済みのモック
         mockClient.rest.pulls.get = jest.fn().mockResolvedValue(
@@ -515,9 +562,12 @@ describe('pr-cleanup', () => {
 
     describe('イベント発行', () => {
       beforeEach(() => {
-        // 環境変数を設定
-        process.env.GITHUB_OWNER = 'testowner';
-        process.env.GITHUB_REPO = 'testrepo';
+        // GitHub 設定をモック
+        (getGitHubConfig as jest.MockedFunction<typeof getGitHubConfig>).mockReturnValue({
+          owner: 'testowner',
+          repo: 'testrepo',
+          protectedBranches: ['main', 'master', 'develop'],
+        });
 
         // PR マージ済みのモック
         mockClient.rest.pulls.get = jest.fn().mockResolvedValue(
@@ -568,9 +618,12 @@ describe('pr-cleanup', () => {
 
     describe('エッジケース', () => {
       beforeEach(() => {
-        // 環境変数を設定
-        process.env.GITHUB_OWNER = 'testowner';
-        process.env.GITHUB_REPO = 'testrepo';
+        // GitHub 設定をモック
+        (getGitHubConfig as jest.MockedFunction<typeof getGitHubConfig>).mockReturnValue({
+          owner: 'testowner',
+          repo: 'testrepo',
+          protectedBranches: ['main', 'master', 'develop'],
+        });
       });
 
       test('should handle merged_at as null gracefully', async () => {
