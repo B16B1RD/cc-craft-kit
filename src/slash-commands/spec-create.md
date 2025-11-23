@@ -217,3 +217,48 @@ npx tsx .cc-craft-kit/commands/spec/create.ts "$1" "$2"
    - 仕様書の詳細確認: `/cft:spec-get <spec-id>`
    - デザインフェーズに移行: `/cft:spec-phase <spec-id> design`
    - (レビューをスキップした場合) 手動レビュー: `/cft:code-review .cc-craft-kit/specs/<spec-id>.md`
+
+---
+
+## フェーズ 5: ブランチ復帰 (v0.5.0 以降)
+
+**重要**: 自動完成フロー（フェーズ 1〜4）が完了したら、元のブランチに復帰します。
+
+### 5.1 元のブランチ名の取得
+
+フェーズ 0 の出力から元のブランチ名を抽出します。
+
+**バリデーション**:
+- フェーズ 0 の出力に `Original Branch:` が含まれない場合、警告を表示してスキップ
+- ブランチ名が空の場合、警告を表示してスキップ
+
+### 5.2 ブランチ復帰処理
+
+Bash ツールで元のブランチに復帰します。
+
+**コマンド例**:
+```bash
+# フェーズ 0 の出力から元のブランチ名を取得
+ORIGINAL_BRANCH=$(echo "$PHASE_0_OUTPUT" | grep -oP '(?<=Original Branch: ).*')
+
+if [ -z "$ORIGINAL_BRANCH" ]; then
+  echo "Warning: Could not detect original branch name. Skipping branch switch."
+else
+  echo "Switching back to original branch: $ORIGINAL_BRANCH"
+  git checkout "$ORIGINAL_BRANCH"
+
+  if [ $? -eq 0 ]; then
+    echo "✓ Switched back to branch: $ORIGINAL_BRANCH"
+  else
+    echo "Warning: Failed to switch back to $ORIGINAL_BRANCH. Please switch manually."
+  fi
+fi
+```
+
+**エラーハンドリング**:
+- ブランチ切り替え失敗時、警告メッセージを表示するが、処理は続行
+- 手動でブランチ復帰を案内するメッセージを表示
+
+**注意事項**:
+- 自動完成フローがスキップされた場合も、このブランチ復帰処理は実行されます
+- ブランチ復帰に失敗した場合、手動で `git checkout <original-branch>` を実行してください
