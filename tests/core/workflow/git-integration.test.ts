@@ -317,7 +317,7 @@ describe('Git Integration', () => {
 
   describe('getCommitTargets', () => {
     describe('正常系: 有効な spec-id の場合', () => {
-      it('仕様書ファイルパスを返す', () => {
+      it('全変更ファイルを返す', () => {
         // Arrange
         const specId = '8c798516-e1bf-43b1-9e70-3eb6ce54631b';
 
@@ -325,7 +325,7 @@ describe('Git Integration', () => {
         const result = getCommitTargets(specId);
 
         // Assert
-        expect(result).toEqual([`.cc-craft-kit/specs/${specId}.md`]);
+        expect(result).toEqual(['.']);
       });
 
       it('UUID が大文字でも正しく処理する', () => {
@@ -336,7 +336,7 @@ describe('Git Integration', () => {
         const result = getCommitTargets(specId);
 
         // Assert
-        expect(result).toEqual([`.cc-craft-kit/specs/${specId}.md`]);
+        expect(result).toEqual(['.']);
       });
 
       it('UUID が混在大文字小文字でも正しく処理する', () => {
@@ -347,7 +347,7 @@ describe('Git Integration', () => {
         const result = getCommitTargets(specId);
 
         // Assert
-        expect(result).toEqual([`.cc-craft-kit/specs/${specId}.md`]);
+        expect(result).toEqual(['.']);
       });
     });
 

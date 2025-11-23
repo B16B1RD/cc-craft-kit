@@ -169,8 +169,8 @@ export function getCommitTargets(specId: string): string[] {
     throw new Error(`Invalid spec ID format: ${specId}`);
   }
 
-  // 仕様書ファイルのみをコミット対象とする
-  return [`.cc-craft-kit/specs/${specId}.md`];
+  // 全変更ファイルをコミット対象とする
+  return ['.'];
 }
 
 /**
