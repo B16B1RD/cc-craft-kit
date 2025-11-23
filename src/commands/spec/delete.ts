@@ -18,6 +18,8 @@ import {
 import {
   createProjectNotInitializedError,
   createValidationError,
+  createGitHubAuthFailedError,
+  createGitHubNotConfiguredError,
   handleCLIError,
 } from '../utils/error-handler.js';
 import { validateRequired } from '../utils/validation.js';
@@ -43,15 +45,23 @@ function getGitHubConfig(ccCraftKitDir: string): { owner: string; repo: string }
     return null;
   }
 
-  const config = JSON.parse(readFileSync(configPath, 'utf-8'));
-  if (!config.github || !config.github.owner || !config.github.repo) {
+  try {
+    const config = JSON.parse(readFileSync(configPath, 'utf-8'));
+    if (!config.github || !config.github.owner || !config.github.repo) {
+      return null;
+    }
+
+    return {
+      owner: config.github.owner,
+      repo: config.github.repo,
+    };
+  } catch (error) {
+    console.warn('Warning: Failed to parse config.json. GitHub integration may not work.');
+    if (process.env.DEBUG) {
+      console.warn(error);
+    }
     return null;
   }
-
-  return {
-    owner: config.github.owner,
-    repo: config.github.repo,
-  };
 }
 
 /**
@@ -128,16 +138,14 @@ export async function deleteSpec(
 
     try {
       const answer = await rl.question('Are you sure you want to delete this spec? (y/N): ');
-      rl.close();
 
       if (answer.toLowerCase() !== 'y') {
         console.log('');
         console.log(formatInfo('Deletion cancelled.', color));
         return;
       }
-    } catch (error) {
+    } finally {
       rl.close();
-      throw error;
     }
   }
 
@@ -154,15 +162,13 @@ export async function deleteSpec(
       // GITHUB_TOKENチェック
       const githubToken = process.env.GITHUB_TOKEN;
       if (!githubToken || githubToken.trim() === '') {
-        throw new Error('GITHUB_TOKEN is not set. Please set it in your .env file.');
+        throw createGitHubAuthFailedError();
       }
 
       // GitHub設定チェック
       const githubConfig = getGitHubConfig(ccCraftKitDir);
       if (!githubConfig) {
-        throw new Error(
-          'GitHub is not configured. Please run /cft:github-init <owner> <repo> first.'
-        );
+        throw createGitHubNotConfiguredError();
       }
 
       // GitHub APIクライアント作成
