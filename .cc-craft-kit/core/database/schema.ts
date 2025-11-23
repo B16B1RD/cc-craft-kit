@@ -29,7 +29,7 @@ export interface SpecsTable {
   name: string;
   description: string | null;
   phase: SpecPhase;
-  branch_name: string; // 仕様書が作成されたブランチ名
+  branch_name: string | null; // 仕様書が作成されたブランチ名（PR マージ後はクリア）
   created_at: ColumnType<Date, string | undefined, never>;
   updated_at: ColumnType<Date, string | undefined, string>;
 }
@@ -90,6 +90,7 @@ export interface GitHubSyncTable {
   issue_url: string | null; // GitHub Issue URL
   pr_number: number | null; // GitHub PR番号
   pr_url: string | null; // GitHub PR URL
+  pr_merged_at: ColumnType<Date, string | undefined, string> | null; // PR マージ日時
   last_synced_at: ColumnType<Date, string | undefined, string>;
   updated_at: ColumnType<Date, string | undefined, string>; // 更新日時
   sync_status: 'success' | 'failed' | 'pending';

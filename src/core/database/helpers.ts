@@ -15,12 +15,15 @@ export interface SpecWithGitHub {
   name: string;
   description: string | null;
   phase: SpecPhase;
-  branch_name: string;
+  branch_name: string | null;
   created_at: Date;
   updated_at: Date;
   github_issue_number: number | null;
   github_node_id: string | null;
   github_sync_status: 'success' | 'failed' | 'pending' | null;
+  pr_number: number | null;
+  pr_url: string | null;
+  pr_merged_at: Date | null;
 }
 
 /**
@@ -52,6 +55,9 @@ export async function getSpecWithGitHubInfo(
       'github_sync.github_number as github_issue_number',
       'github_sync.github_node_id',
       'github_sync.sync_status as github_sync_status',
+      'github_sync.pr_number',
+      'github_sync.pr_url',
+      'github_sync.pr_merged_at',
     ])
     .where('specs.id', 'like', `${specId}%`)
     .executeTakeFirst();
@@ -69,6 +75,9 @@ export async function getSpecWithGitHubInfo(
     github_issue_number: result.github_issue_number,
     github_node_id: result.github_node_id,
     github_sync_status: result.github_sync_status,
+    pr_number: result.pr_number,
+    pr_url: result.pr_url,
+    pr_merged_at: result.pr_merged_at ? new Date(result.pr_merged_at) : null,
   };
 }
 
@@ -107,6 +116,9 @@ export async function getSpecsWithGitHubInfo(
       'github_sync.github_number as github_issue_number',
       'github_sync.github_node_id',
       'github_sync.sync_status as github_sync_status',
+      'github_sync.pr_number',
+      'github_sync.pr_url',
+      'github_sync.pr_merged_at',
     ]);
 
   if (options?.phase) {
@@ -146,5 +158,38 @@ export async function getSpecsWithGitHubInfo(
     github_issue_number: result.github_issue_number,
     github_node_id: result.github_node_id,
     github_sync_status: result.github_sync_status,
+    pr_number: result.pr_number,
+    pr_url: result.pr_url,
+    pr_merged_at: result.pr_merged_at ? new Date(result.pr_merged_at) : null,
   }));
+}
+
+/**
+ * 仕様書のブランチ名をクリア
+ *
+ * @param db - Kysely データベースインスタンス
+ * @param specId - 仕様書ID
+ */
+export async function clearSpecBranchName(db: Kysely<Database>, specId: string): Promise<void> {
+  await db.updateTable('specs').set({ branch_name: null }).where('id', '=', specId).execute();
+}
+
+/**
+ * PR マージ日時を記録
+ *
+ * @param db - Kysely データベースインスタンス
+ * @param specId - 仕様書ID
+ * @param mergedAt - マージ日時（ISO 8601 形式の文字列）
+ */
+export async function updatePrMergedStatus(
+  db: Kysely<Database>,
+  specId: string,
+  mergedAt: string
+): Promise<void> {
+  await db
+    .updateTable('github_sync')
+    .set({ pr_merged_at: mergedAt })
+    .where('entity_id', '=', specId)
+    .where('entity_type', '=', 'spec')
+    .execute();
 }
