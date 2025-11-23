@@ -162,15 +162,15 @@ function getIgnoredFiles(files: string[]): string[] {
  * @returns コミット対象ファイルパス配列
  * @throws specIdがUUID形式でない場合、エラーをスロー
  */
-function getCommitTargets(specId: string): string[] {
+export function getCommitTargets(specId: string): string[] {
   // specIdのバリデーション（UUID形式）
   const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidPattern.test(specId)) {
     throw new Error(`Invalid spec ID format: ${specId}`);
   }
 
-  // 全フェーズで全変更をコミット
-  return ['.'];
+  // 仕様書ファイルのみをコミット対象とする
+  return [`.cc-craft-kit/specs/${specId}.md`];
 }
 
 /**

@@ -6,7 +6,7 @@
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { execSync, spawnSync, SpawnSyncReturns } from 'node:child_process';
-import { checkGitStatus, hasUncommittedChanges } from '../../../src/core/workflow/git-integration.js';
+import { checkGitStatus, hasUncommittedChanges, getCommitTargets } from '../../../src/core/workflow/git-integration.js';
 
 // node:child_process モジュールをモック化
 jest.mock('node:child_process');
@@ -311,6 +311,77 @@ describe('Git Integration', () => {
 
         // Assert: エラーが発生しても false を返す
         expect(result).toBe(false);
+      });
+    });
+  });
+
+  describe('getCommitTargets', () => {
+    describe('正常系: 有効な spec-id の場合', () => {
+      it('仕様書ファイルパスを返す', () => {
+        // Arrange
+        const specId = '8c798516-e1bf-43b1-9e70-3eb6ce54631b';
+
+        // Act
+        const result = getCommitTargets(specId);
+
+        // Assert
+        expect(result).toEqual([`.cc-craft-kit/specs/${specId}.md`]);
+      });
+
+      it('UUID が大文字でも正しく処理する', () => {
+        // Arrange
+        const specId = '8C798516-E1BF-43B1-9E70-3EB6CE54631B';
+
+        // Act
+        const result = getCommitTargets(specId);
+
+        // Assert
+        expect(result).toEqual([`.cc-craft-kit/specs/${specId}.md`]);
+      });
+
+      it('UUID が混在大文字小文字でも正しく処理する', () => {
+        // Arrange
+        const specId = '8c798516-E1bF-43B1-9e70-3Eb6Ce54631B';
+
+        // Act
+        const result = getCommitTargets(specId);
+
+        // Assert
+        expect(result).toEqual([`.cc-craft-kit/specs/${specId}.md`]);
+      });
+    });
+
+    describe('異常系: 無効な spec-id の場合', () => {
+      it('UUID 形式でない場合、エラーをスローする', () => {
+        // Arrange
+        const invalidSpecId = 'invalid-id';
+
+        // Act & Assert
+        expect(() => getCommitTargets(invalidSpecId)).toThrow('Invalid spec ID format: invalid-id');
+      });
+
+      it('短い UUID の場合、エラーをスローする', () => {
+        // Arrange
+        const shortSpecId = '8c798516';
+
+        // Act & Assert
+        expect(() => getCommitTargets(shortSpecId)).toThrow(`Invalid spec ID format: ${shortSpecId}`);
+      });
+
+      it('空文字列の場合、エラーをスローする', () => {
+        // Arrange
+        const emptySpecId = '';
+
+        // Act & Assert
+        expect(() => getCommitTargets(emptySpecId)).toThrow('Invalid spec ID format: ');
+      });
+
+      it('ハイフンが不正な位置にある場合、エラーをスローする', () => {
+        // Arrange
+        const malformedSpecId = '8c798516-e1bf43b1-9e70-3eb6ce54631b';
+
+        // Act & Assert
+        expect(() => getCommitTargets(malformedSpecId)).toThrow(`Invalid spec ID format: ${malformedSpecId}`);
       });
     });
   });
