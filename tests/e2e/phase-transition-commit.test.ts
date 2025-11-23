@@ -274,16 +274,16 @@ describe('Phase Transition Auto-Commit E2E', () => {
   }
 
   describe('各フェーズ移行時の自動コミット検証', () => {
-    test('requirements → design: 仕様書ファイルのみコミット', async () => {
+    test('requirements → design: 全変更ファイルをコミット', async () => {
       // Act
       await transitionPhase('design');
 
       // Assert
       expectCommitMessageToBe(`feat: ${specName} の設計を完了`);
-      expectCommitTargetsToBe([`.cc-craft-kit/specs/${specId}.md`]);
+      expectCommitTargetsToBe(['.']);
     });
 
-    test('design → tasks: 仕様書ファイルのみコミット', async () => {
+    test('design → tasks: 全変更ファイルをコミット', async () => {
       // Arrange: design フェーズに移行
       await lifecycle.db
         .updateTable('specs')
@@ -297,10 +297,10 @@ describe('Phase Transition Auto-Commit E2E', () => {
 
       // Assert
       expectCommitMessageToBe(`feat: ${specName} のタスク分解を完了`);
-      expectCommitTargetsToBe([`.cc-craft-kit/specs/${specId}.md`]);
+      expectCommitTargetsToBe(['.']);
     });
 
-    test('tasks → implementation: 仕様書ファイルのみコミット', async () => {
+    test('tasks → implementation: 全変更ファイルをコミット', async () => {
       // Arrange: tasks フェーズに移行
       await lifecycle.db.updateTable('specs').set({ phase: 'tasks' }).where('id', '=', specId).execute();
       jest.clearAllMocks();
@@ -310,7 +310,7 @@ describe('Phase Transition Auto-Commit E2E', () => {
 
       // Assert
       expectCommitMessageToBe(`feat: ${specName} の実装を開始`);
-      expectCommitTargetsToBe([`.cc-craft-kit/specs/${specId}.md`]);
+      expectCommitTargetsToBe(['.']);
     });
 
     test('implementation → completed: 全変更ファイルをコミット', async () => {
@@ -332,12 +332,12 @@ describe('Phase Transition Auto-Commit E2E', () => {
   });
 
   describe('コミット対象ファイルの検証', () => {
-    test('completed以外: 仕様書ファイルのみコミット', async () => {
+    test('completed以外: 全変更ファイルをコミット', async () => {
       // Act
       await transitionPhase('design');
 
-      // Assert: .cc-craft-kit/specs/<id>.md のみがコミット対象
-      expectCommitTargetsToBe([`.cc-craft-kit/specs/${specId}.md`]);
+      // Assert: 全変更ファイルがコミット対象
+      expectCommitTargetsToBe(['.']);
     });
 
     test('completed: 全変更ファイルをコミット', async () => {

@@ -3,7 +3,6 @@
  */
 
 import { execSync, spawnSync } from 'node:child_process';
-import path from 'node:path';
 import { Kysely } from 'kysely';
 import { Database } from '../database/schema.js';
 import { EventBus, WorkflowEvent } from './event-bus.js';
@@ -158,66 +157,20 @@ function getIgnoredFiles(files: string[]): string[] {
 }
 
 /**
- * textlint 自動修正を実行
- * @param files 修正対象ファイルパス配列
- * @returns 成功時は true、エラー残存時は false
- */
-async function runTextlintFix(files: string[]): Promise<{
-  success: boolean;
-  error?: string;
-}> {
-  if (files.length === 0) {
-    return { success: true };
-  }
-
-  try {
-    // textlint --fix 実行
-    const result = spawnSync('npx', ['textlint', '--fix', ...files], {
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-
-    // textlint --fix は自動修正可能な場合でも終了コード 0 を返す
-    // 修正不可能なエラーが残っている場合は終了コード 1 を返す
-    if (result.status !== 0) {
-      // エラーが残っている場合
-      return {
-        success: false,
-        error: result.stdout || result.stderr || 'textlint errors remain',
-      };
-    }
-
-    return { success: true };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: `textlint --fix failed: ${errorMessage}` };
-  }
-}
-
-/**
  * コミット対象ファイルの決定
- * @param phase フェーズ
  * @param specId 仕様書ID（UUID形式）
  * @returns コミット対象ファイルパス配列
  * @throws specIdがUUID形式でない場合、エラーをスロー
  */
-function getCommitTargets(phase: Phase, specId: string): string[] {
+function getCommitTargets(specId: string): string[] {
   // specIdのバリデーション（UUID形式）
   const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidPattern.test(specId)) {
     throw new Error(`Invalid spec ID format: ${specId}`);
   }
 
-  if (phase === 'completed') {
-    // completedフェーズでは全変更をコミット
-    return ['.'];
-  }
-
-  // パストラバーサル対策
-  const safeSpecId = path.basename(specId);
-
-  // その他のフェーズでは仕様書ファイルのみ
-  return [`.cc-craft-kit/specs/${safeSpecId}.md`];
+  // 全フェーズで全変更をコミット
+  return ['.'];
 }
 
 /**
@@ -231,25 +184,6 @@ async function gitCommit(
   message: string
 ): Promise<{ success: boolean; skipped?: boolean; error?: string }> {
   try {
-    // textlint 自動修正を実行
-    // git add . の場合は、Markdownファイルのみを対象にする
-    const markdownFiles =
-      files.length === 1 && files[0] === '.'
-        ? [] // git add . の場合は textlint をスキップ（pre-commit フックで実行される）
-        : files.filter((file) => file.endsWith('.md'));
-
-    if (markdownFiles.length > 0) {
-      const textlintResult = await runTextlintFix(markdownFiles);
-
-      if (!textlintResult.success) {
-        // textlint エラーが残っている場合は、コミットを中止
-        return {
-          success: false,
-          error: `textlint validation failed:\n${textlintResult.error}\n\nPlease run "npm run textlint:fix" to fix the errors manually.`,
-        };
-      }
-    }
-
     // git add . の場合は特別処理
     if (files.length === 1 && files[0] === '.') {
       const addResult = spawnSync('git', ['add', '.'], {
@@ -349,7 +283,7 @@ async function handlePhaseChangeCommit(
     }
 
     // コミット対象ファイルの決定
-    const files = getCommitTargets(event.data.newPhase as Phase, spec.id);
+    const files = getCommitTargets(spec.id);
 
     // コミットメッセージ生成
     const message = generateCommitMessage(spec.name, event.data.newPhase as Phase);
@@ -432,7 +366,7 @@ async function handleSpecCreatedCommit(
     }
 
     // コミット対象ファイルの決定（requirements フェーズのみ）
-    const files = getCommitTargets('requirements', spec.id);
+    const files = getCommitTargets(spec.id);
 
     // コミットメッセージ生成
     const message = generateCommitMessage(spec.name, 'requirements');
