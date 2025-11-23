@@ -189,8 +189,9 @@ export async function checkDatabaseIntegrity(
 
   // 3-2. ブランチ整合性チェック
   for (const record of dbRecords) {
-    // branch_name が null または空文字列の場合は不正
-    if (!record.branch_name || record.branch_name.trim() === '') {
+    // branch_name が空文字列の場合は不正
+    // branch_name が null の場合は、PR マージ後にクリアされた可能性があるため、許可
+    if (record.branch_name !== null && record.branch_name.trim() === '') {
       invalidBranches.push({
         id: record.id,
         name: record.name,
@@ -205,7 +206,12 @@ export async function checkDatabaseIntegrity(
     const dbRecord = dbRecordMap.get(id);
 
     // データベースレコードが存在し、かつブランチが許可リストに含まれない場合はスキップ
-    if (dbRecord && !allowedBranches.includes(dbRecord.branch_name)) {
+    // branch_name が null の場合は、PR マージ後にクリアされた可能性があるため、スキップしない
+    if (
+      dbRecord &&
+      dbRecord.branch_name !== null &&
+      !allowedBranches.includes(dbRecord.branch_name)
+    ) {
       continue; // 別ブランチの仕様書なのでスキップ
     }
 
@@ -224,7 +230,8 @@ export async function checkDatabaseIntegrity(
     const filePath = join(specsDir, `${id}.md`);
 
     // 別ブランチの仕様書はファイルチェックをスキップ
-    if (!allowedBranches.includes(branch_name)) {
+    // branch_name が null の場合は、PR マージ後にクリアされた可能性があるため、スキップしない
+    if (branch_name !== null && !allowedBranches.includes(branch_name)) {
       continue; // 正常と判定
     }
 

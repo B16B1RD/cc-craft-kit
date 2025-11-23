@@ -9,6 +9,7 @@ export type WorkflowEventType =
   | 'spec.updated'
   | 'spec.deleted'
   | 'spec.phase_changed'
+  | 'spec.pr_merged'
   | 'task.created'
   | 'task.status_changed'
   | 'task.completed'
@@ -88,6 +89,15 @@ export interface PhaseChangedData {
 }
 
 export type PhaseChangedEvent = WorkflowEvent<PhaseChangedData>;
+
+/** PR マージイベント */
+export interface PrMergedData {
+  prNumber: number;
+  branchName: string;
+  mergedAt: string | null;
+}
+
+export type PrMergedEvent = WorkflowEvent<PrMergedData>;
 
 /**
  * イベントバス実装
