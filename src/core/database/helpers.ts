@@ -165,13 +165,21 @@ export async function getSpecsWithGitHubInfo(
 }
 
 /**
- * 仕様書のブランチ名をクリア
+ * 仕様書のブランチ名をベースブランチに更新
+ *
+ * PR マージ後、作業ブランチは削除されるため、仕様書ファイルは
+ * PR のベースブランチ（develop または main）に存在することになります。
  *
  * @param db - Kysely データベースインスタンス
  * @param specId - 仕様書ID
+ * @param baseBranch - PR のベースブランチ名
  */
-export async function clearSpecBranchName(db: Kysely<Database>, specId: string): Promise<void> {
-  await db.updateTable('specs').set({ branch_name: null }).where('id', '=', specId).execute();
+export async function updateSpecBranchToBaseBranch(
+  db: Kysely<Database>,
+  specId: string,
+  baseBranch: string
+): Promise<void> {
+  await db.updateTable('specs').set({ branch_name: baseBranch }).where('id', '=', specId).execute();
 }
 
 /**

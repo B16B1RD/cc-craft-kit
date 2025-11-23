@@ -7,7 +7,7 @@ import { Database } from '../../core/database/schema.js';
 import { getGitHubClient, GitHubClient } from './client.js';
 import {
   getSpecWithGitHubInfo,
-  clearSpecBranchName,
+  updateSpecBranchToBaseBranch,
   updatePrMergedStatus,
 } from '../../core/database/helpers.js';
 import {
@@ -170,8 +170,10 @@ export async function cleanupMergedPullRequest(
   // 6. データベース更新
   try {
     await db.transaction().execute(async (trx) => {
-      // specs.branch_name をクリア
-      await clearSpecBranchName(trx, spec.id);
+      // specs.branch_name を PR のベースブランチに更新
+      // PR マージ後、作業ブランチは削除されるため、仕様書ファイルはベースブランチに存在する
+      const baseBranch = pr.base.ref;
+      await updateSpecBranchToBaseBranch(trx, spec.id, baseBranch);
 
       // github_sync.pr_merged_at を記録
       await updatePrMergedStatus(trx, spec.id, pr.merged_at || new Date().toISOString());
