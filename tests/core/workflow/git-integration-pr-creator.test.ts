@@ -22,7 +22,6 @@ describe('Git Integration - PR Creator Guidance', () => {
       '   Run the pr-creator skill to automatically create a PR:',
       '   - Skill tool will execute the pr-creator skill',
       '   - PR title and body will be generated from the spec',
-      '   - textlint and markdownlint checks will be performed',
       '   - GitHub CLI will create the PR\n',
     ];
 
@@ -31,8 +30,7 @@ describe('Git Integration - PR Creator Guidance', () => {
     expect(guidanceLines[0]).toContain('pr-creator skill');
     expect(guidanceLines[1]).toContain('Skill tool');
     expect(guidanceLines[2]).toContain('PR title and body');
-    expect(guidanceLines[3]).toContain('textlint and markdownlint');
-    expect(guidanceLines[4]).toContain('GitHub CLI');
+    expect(guidanceLines[3]).toContain('GitHub CLI');
   });
 
   it('SKILL.md ファイルが存在する', () => {
@@ -67,8 +65,6 @@ describe('Git Integration - PR Creator Guidance', () => {
     expect(content).toContain('## トラブルシューティング');
 
     // 重要な機能の記載確認
-    expect(content).toContain('textlint');
-    expect(content).toContain('markdownlint');
     expect(content).toContain('gh pr create');
     expect(content).toContain('completed フェーズ');
   });

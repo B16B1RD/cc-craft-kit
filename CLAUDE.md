@@ -37,10 +37,6 @@ npm run lint
 
 npm run lint:fix
 
-# textlint自動修正
-
-npm run textlint:fix
-
 # ソースコード同期
 
 npm run sync:dogfood
