@@ -212,19 +212,8 @@ export async function createSpec(
       })
     );
 
-    // 4. 元のブランチに戻る
-    if (branchSwitched) {
-      try {
-        execFileSync('git', ['checkout', originalBranch], { stdio: 'inherit' });
-        clearBranchCache();
-        console.log(formatInfo(`Switched back to branch: ${originalBranch}`, options.color));
-      } catch (checkoutError) {
-        const errorMessage =
-          checkoutError instanceof Error ? checkoutError.message : String(checkoutError);
-        console.error(`Warning: Failed to switch back to ${originalBranch}: ${errorMessage}`);
-      }
-    }
-
+    // 4. 成功メッセージを表示
+    // 注意: ブランチ復帰処理は、スラッシュコマンド定義（spec-create.md）に移動しました
     console.log('');
     console.log(formatSuccess('Specification created successfully!', options.color));
     console.log('');
@@ -232,6 +221,8 @@ export async function createSpec(
     console.log(formatKeyValue('Name', name, options.color));
     console.log(formatKeyValue('Phase', 'requirements', options.color));
     console.log(formatKeyValue('File', specPath, options.color));
+    console.log(formatKeyValue('Branch', branchName, options.color));
+    console.log(formatKeyValue('Original Branch', originalBranch, options.color));
     console.log('');
     console.log('Next steps:');
     console.log('  1. Edit the spec file to define requirements');
