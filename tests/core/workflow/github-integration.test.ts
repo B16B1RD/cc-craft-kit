@@ -163,12 +163,17 @@ describe.skip('GitHub Integration Event Handlers', () => {
     originalEnv = { ...process.env };
 
     // テスト用ディレクトリ作成
-    testDir = join(process.cwd(), '.cc-craft-kit-test');
+    testDir = join(process.cwd(), 'test-workspace-github-integration');
     if (existsSync(testDir)) {
       rmSync(testDir, { recursive: true, force: true });
     }
     mkdirSync(testDir, { recursive: true });
-    mkdirSync(join(testDir, 'specs'), { recursive: true });
+
+    // 両方のディレクトリ構造をサポート
+    mkdirSync(join(testDir, 'specs'), { recursive: true }); // spec.created テスト用
+    const ccCraftKitDir = join(testDir, '.cc-craft-kit');
+    mkdirSync(ccCraftKitDir, { recursive: true });
+    mkdirSync(join(ccCraftKitDir, 'specs'), { recursive: true });
 
     // テスト用設定ファイル作成
     const config = {
@@ -181,7 +186,7 @@ describe.skip('GitHub Integration Event Handlers', () => {
         repo: 'test-repo',
       },
     };
-    writeFileSync(join(testDir, 'config.json'), JSON.stringify(config, null, 2));
+    writeFileSync(join(ccCraftKitDir, 'config.json'), JSON.stringify(config, null, 2));
 
     // テスト用データベース作成
     lifecycle = await setupDatabaseLifecycle();
@@ -568,6 +573,209 @@ describe.skip('GitHub Integration Event Handlers', () => {
 
       // Issueラベル更新が呼ばれていないことを確認
       expect(mockGitHubIssues.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('spec.deleted イベント - GitHub Projects ステータス更新', () => {
+    test('仕様書削除時にGitHub Projectsのステータスが"Done"に更新される', async () => {
+      mockGitHubProjects.updateProjectStatus.mockResolvedValue(undefined);
+      mockGitHubProjects.verifyProjectStatusUpdate.mockResolvedValue({
+        success: true,
+        attempts: 1,
+      });
+      mockResolveProjectId.mockResolvedValue(1);
+
+      // 仕様書をデータベースに追加
+      const specId = 'spec-test-deleted';
+      await lifecycle.db
+        .insertInto('specs')
+        .values({
+          id: specId,
+          name: 'Test Spec Deleted',
+          description: 'Test description',
+          phase: 'implementation',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成（project）
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'project',
+          entity_id: specId,
+          github_id: 'PVTI_project_item_id',
+          github_number: null,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
+        })
+        .execute();
+
+      // console.logをモック
+      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+
+      // イベント発行
+      const event = eventBus.createEvent('spec.deleted', specId, {
+        name: 'Test Spec Deleted',
+        phase: 'implementation',
+      });
+      await eventBus.emit(event);
+
+      // 少し待つ（非同期処理完了待ち）
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Project ステータス更新が呼ばれたことを確認
+      expect(mockGitHubProjects.updateProjectStatus).toHaveBeenCalledWith({
+        owner: 'test-owner',
+        projectNumber: 1,
+        itemId: 'PVTI_project_item_id',
+        status: 'Done',
+      });
+
+      // ステータス更新検証が呼ばれたことを確認
+      expect(mockGitHubProjects.verifyProjectStatusUpdate).toHaveBeenCalledWith({
+        owner: 'test-owner',
+        projectNumber: 1,
+        itemId: 'PVTI_project_item_id',
+        expectedStatus: 'Done',
+        maxRetries: 3,
+      });
+
+      consoleLogSpy.mockRestore();
+    });
+
+    test('GitHub Projectに追加されていない場合はスキップ', async () => {
+      mockGitHubProjects.updateProjectStatus.mockClear();
+      mockGitHubProjects.verifyProjectStatusUpdate.mockClear();
+
+      // 仕様書をデータベースに追加（Projectなし）
+      const specId = 'spec-test-no-project';
+      await lifecycle.db
+        .insertInto('specs')
+        .values({
+          id: specId,
+          name: 'Test Spec No Project',
+          description: 'Test description',
+          phase: 'implementation',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // イベント発行
+      const event = eventBus.createEvent('spec.deleted', specId, {
+        name: 'Test Spec No Project',
+        phase: 'implementation',
+      });
+      await eventBus.emit(event);
+
+      // 少し待つ（非同期処理完了待ち）
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Project ステータス更新が呼ばれていないことを確認
+      expect(mockGitHubProjects.updateProjectStatus).not.toHaveBeenCalled();
+      expect(mockGitHubProjects.verifyProjectStatusUpdate).not.toHaveBeenCalled();
+    });
+
+    test('Project番号が解決できない場合はスキップ', async () => {
+      mockGitHubProjects.updateProjectStatus.mockClear();
+      mockGitHubProjects.verifyProjectStatusUpdate.mockClear();
+      mockResolveProjectId.mockResolvedValue(null);
+
+      // 仕様書をデータベースに追加
+      const specId = 'spec-test-no-project-number';
+      await lifecycle.db
+        .insertInto('specs')
+        .values({
+          id: specId,
+          name: 'Test Spec No Project Number',
+          description: 'Test description',
+          phase: 'implementation',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成（project）
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'project',
+          entity_id: specId,
+          github_id: 'PVTI_project_item_id',
+          github_number: null,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
+        })
+        .execute();
+
+      // イベント発行
+      const event = eventBus.createEvent('spec.deleted', specId, {
+        name: 'Test Spec No Project Number',
+        phase: 'implementation',
+      });
+      await eventBus.emit(event);
+
+      // 少し待つ（非同期処理完了待ち）
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Project ステータス更新が呼ばれていないことを確認
+      expect(mockGitHubProjects.updateProjectStatus).not.toHaveBeenCalled();
+      expect(mockGitHubProjects.verifyProjectStatusUpdate).not.toHaveBeenCalled();
+    });
+
+    test('GitHub API エラー時も処理を続行', async () => {
+      mockGitHubProjects.updateProjectStatus.mockRejectedValue(
+        new Error('GitHub API error')
+      );
+      mockResolveProjectId.mockResolvedValue(1);
+
+      // 仕様書をデータベースに追加
+      const specId = 'spec-test-api-error';
+      await lifecycle.db
+        .insertInto('specs')
+        .values({
+          id: specId,
+          name: 'Test Spec API Error',
+          description: 'Test description',
+          phase: 'implementation',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成（project）
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'project',
+          entity_id: specId,
+          github_id: 'PVTI_project_item_id',
+          github_number: null,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
+        })
+        .execute();
+
+      // イベント発行（エラーがスローされないことを確認）
+      const event = eventBus.createEvent('spec.deleted', specId, {
+        name: 'Test Spec API Error',
+        phase: 'implementation',
+      });
+      await expect(eventBus.emit(event)).resolves.not.toThrow();
+
+      // 少し待つ（非同期処理完了待ち）
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Project ステータス更新が呼ばれたことを確認（エラーでも試行される）
+      expect(mockGitHubProjects.updateProjectStatus).toHaveBeenCalled();
     });
   });
 });
