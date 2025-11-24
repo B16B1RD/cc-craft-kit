@@ -5,8 +5,9 @@
 import { execFileSync } from 'node:child_process';
 import { createSpecBranch } from '../../../src/core/git/branch-creation.js';
 import { getCurrentBranch, clearBranchCache } from '../../../src/core/git/branch-cache.js';
+import { getGitHubConfig } from '../../../src/core/config/github-config.js';
 
-// execFileSync と getCurrentBranch をモック化
+// execFileSync, getCurrentBranch, getGitHubConfig をモック化
 jest.mock('node:child_process', () => ({
   execFileSync: jest.fn(),
 }));
@@ -16,12 +17,25 @@ jest.mock('../../../src/core/git/branch-cache.js', () => ({
   clearBranchCache: jest.fn(),
 }));
 
+jest.mock('../../../src/core/config/github-config.js', () => ({
+  getGitHubConfig: jest.fn(),
+}));
+
 describe('branch-creation', () => {
   const mockExecFileSync = jest.mocked(execFileSync);
   const mockGetCurrentBranch = jest.mocked(getCurrentBranch);
+  const mockGetGitHubConfig = jest.mocked(getGitHubConfig);
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // デフォルトの GitHubConfig をモック
+    mockGetGitHubConfig.mockReturnValue({
+      owner: null,
+      repo: null,
+      baseBranch: 'develop',
+      defaultBaseBranch: 'develop',
+      protectedBranches: ['main', 'develop'],
+    });
   });
 
   describe('createSpecBranch', () => {
@@ -80,7 +94,7 @@ describe('branch-creation', () => {
         expect(result.branchName).toBe(expectedBranch);
         expect(result.originalBranch).toBe('develop');
         expect(mockExecFileSync).toHaveBeenCalledWith(
-          'git', ['branch', expectedBranch],
+          'git', ['branch', expectedBranch, 'develop'],
           expect.any(Object)
         );
       });
@@ -97,7 +111,7 @@ describe('branch-creation', () => {
         expect(result.branchName).toBe(expectedBranch);
         expect(result.originalBranch).toBe('main');
         expect(mockExecFileSync).toHaveBeenCalledWith(
-          'git', ['branch', expectedBranch],
+          'git', ['branch', expectedBranch, 'develop'],
           expect.any(Object)
         );
       });
@@ -115,7 +129,7 @@ describe('branch-creation', () => {
         expect(result.branchName).toBe(expectedBranch);
         expect(result.originalBranch).toBe('develop');
         expect(mockExecFileSync).toHaveBeenCalledWith(
-          'git', ['branch', expectedBranch],
+          'git', ['branch', expectedBranch, 'develop'],
           expect.any(Object)
         );
       });
@@ -133,7 +147,7 @@ describe('branch-creation', () => {
         expect(result.branchName).toBe(expectedBranch);
         expect(result.originalBranch).toBe('main');
         expect(mockExecFileSync).toHaveBeenCalledWith(
-          'git', ['branch', expectedBranch],
+          'git', ['branch', expectedBranch, 'develop'],
           expect.any(Object)
         );
       });
@@ -169,7 +183,7 @@ describe('branch-creation', () => {
         expect(result.branchName).toBe(expectedBranch);
         expect(result.originalBranch).toBe('feature/test');
         expect(mockExecFileSync).toHaveBeenCalledWith(
-          'git', ['branch', expectedBranch],
+          'git', ['branch', expectedBranch, 'develop'],
           expect.any(Object)
         );
       });
@@ -186,7 +200,7 @@ describe('branch-creation', () => {
         expect(result.branchName).toBe(expectedBranch);
         expect(result.originalBranch).toBe('feature/test');
         expect(mockExecFileSync).toHaveBeenCalledWith(
-          'git', ['branch', expectedBranch],
+          'git', ['branch', expectedBranch, 'develop'],
           expect.any(Object)
         );
       });
@@ -207,7 +221,7 @@ describe('branch-creation', () => {
         expect(result.created).toBe(true);
         expect(result.branchName).toBe(`spec/${shortId}`);
         expect(mockExecFileSync).toHaveBeenCalledWith(
-          'git', ['branch', `spec/${shortId}`],
+          'git', ['branch', `spec/${shortId}`, 'develop'],
           expect.any(Object)
         );
       });
@@ -231,7 +245,7 @@ describe('branch-creation', () => {
         expect(result.created).toBe(true);
         expect(result.branchName).toBe(expectedBranch);
         expect(mockExecFileSync).toHaveBeenCalledWith(
-          'git', ['branch', expectedBranch],
+          'git', ['branch', expectedBranch, 'develop'],
           expect.any(Object)
         );
       });
@@ -392,6 +406,82 @@ describe('branch-creation', () => {
 
         expect(() => createSpecBranch(validUuid)).toThrow(
           `ブランチ作成に失敗しました: ${expectedBranch}`
+        );
+      });
+    });
+
+    describe('baseBranch からの派生', () => {
+      beforeEach(() => {
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse
+        mockGetCurrentBranch.mockReturnValue('feature/test');
+      });
+
+      test('should create branch from baseBranch (develop)', () => {
+        const expectedBranch = `spec/${shortId}`;
+        mockGetGitHubConfig.mockReturnValue({
+          owner: null,
+          repo: null,
+          baseBranch: 'develop',
+          defaultBaseBranch: 'develop',
+          protectedBranches: ['main', 'develop'],
+        });
+
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git branch
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse --verify
+
+        const result = createSpecBranch(validUuid);
+
+        expect(result.created).toBe(true);
+        expect(result.branchName).toBe(expectedBranch);
+        expect(mockExecFileSync).toHaveBeenCalledWith(
+          'git', ['branch', expectedBranch, 'develop'],
+          expect.any(Object)
+        );
+      });
+
+      test('should create branch from baseBranch (main)', () => {
+        const expectedBranch = `spec/${shortId}`;
+        mockGetGitHubConfig.mockReturnValue({
+          owner: null,
+          repo: null,
+          baseBranch: 'main',
+          defaultBaseBranch: 'develop',
+          protectedBranches: ['main', 'develop'],
+        });
+
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git branch
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse --verify
+
+        const result = createSpecBranch(validUuid);
+
+        expect(result.created).toBe(true);
+        expect(result.branchName).toBe(expectedBranch);
+        expect(mockExecFileSync).toHaveBeenCalledWith(
+          'git', ['branch', expectedBranch, 'main'],
+          expect.any(Object)
+        );
+      });
+
+      test('should create branch from custom baseBranch', () => {
+        const expectedBranch = `spec/${shortId}`;
+        mockGetGitHubConfig.mockReturnValue({
+          owner: null,
+          repo: null,
+          baseBranch: 'staging',
+          defaultBaseBranch: 'develop',
+          protectedBranches: ['main', 'develop'],
+        });
+
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git branch
+        mockExecFileSync.mockReturnValueOnce(undefined as never); // git rev-parse --verify
+
+        const result = createSpecBranch(validUuid);
+
+        expect(result.created).toBe(true);
+        expect(result.branchName).toBe(expectedBranch);
+        expect(mockExecFileSync).toHaveBeenCalledWith(
+          'git', ['branch', expectedBranch, 'staging'],
+          expect.any(Object)
         );
       });
     });
