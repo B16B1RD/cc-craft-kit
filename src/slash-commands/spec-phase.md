@@ -171,9 +171,29 @@ npx tsx .cc-craft-kit/commands/spec/phase.ts "$1" "$2"
 
 #### Step 5: PR 作成
 
-1. **PR 作成**: Bash ツールで `gh pr create` 実行
+1. **ベースブランチの決定**: Bash ツールで以下の処理を実行
+   ```bash
+   # 環境変数からベースブランチを取得（デフォルト: develop）
+   BASE_BRANCH=$(grep '^BASE_BRANCH=' .env | cut -d'=' -f2 | tr -d '"' | xargs)
+   BASE_BRANCH=${BASE_BRANCH:-develop}
+
+   # 現在のブランチ名を取得
+   CURRENT_BRANCH=$(git branch --show-current)
+
+   # hotfix判定: hotfix/ で始まる場合は main、それ以外は BASE_BRANCH
+   if [[ "$CURRENT_BRANCH" == hotfix/* ]]; then
+     TARGET_BASE="main"
+   else
+     TARGET_BASE="$BASE_BRANCH"
+   fi
+
+   echo "マージ先ブランチ: $TARGET_BASE"
+   ```
+
+2. **PR 作成**: Bash ツールで `gh pr create` 実行
    ```bash
    gh pr create \
+     --base "$TARGET_BASE" \
      --title "feat: <仕様書名> を実装完了" \
      --body "$(cat <<'EOF'
    ## Summary
