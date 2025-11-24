@@ -19,37 +19,6 @@ describe('getGitHubConfig', () => {
     process.env = originalEnv;
   });
 
-  describe('baseBranch', () => {
-    it('BASE_BRANCH 環境変数を正しく読み込む', () => {
-      process.env.BASE_BRANCH = 'main';
-      const config = getGitHubConfig();
-      expect(config.baseBranch).toBe('main');
-    });
-
-    it('BASE_BRANCH が未設定の場合、デフォルト値 develop を使用', () => {
-      delete process.env.BASE_BRANCH;
-      const config = getGitHubConfig();
-      expect(config.baseBranch).toBe('develop');
-    });
-
-    it('BASE_BRANCH が空文字列の場合、デフォルト値 develop を使用', () => {
-      process.env.BASE_BRANCH = '';
-      const config = getGitHubConfig();
-      expect(config.baseBranch).toBe('develop');
-    });
-
-    it('BASE_BRANCH に前後の空白がある場合、トリムされる', () => {
-      process.env.BASE_BRANCH = '  main  ';
-      const config = getGitHubConfig();
-      expect(config.baseBranch).toBe('main');
-    });
-
-    it('BASE_BRANCH が空白文字のみの場合、デフォルト値 develop を使用', () => {
-      process.env.BASE_BRANCH = '   ';
-      const config = getGitHubConfig();
-      expect(config.baseBranch).toBe('develop');
-    });
-  });
 
   describe('defaultBaseBranch', () => {
     it('GITHUB_DEFAULT_BASE_BRANCH 環境変数を正しく読み込む', () => {
@@ -130,7 +99,7 @@ describe('getGitHubConfig', () => {
       expect(config).toEqual({
         owner: 'test-owner',
         repo: 'test-repo',
-        baseBranch: 'main',
+        defaultBaseBranch: 'main',
         defaultBaseBranch: 'develop',
         protectedBranches: ['main', 'develop'],
       });
@@ -142,7 +111,7 @@ describe('getGitHubConfig', () => {
       expect(config).toEqual({
         owner: null,
         repo: null,
-        baseBranch: 'develop',
+        defaultBaseBranch: 'develop',
         defaultBaseBranch: 'develop',
         protectedBranches: ['main', 'develop'],
       });

@@ -106,15 +106,15 @@ async function handlePullRequestCreationOnCompleted(
 
     // ベースブランチ決定（hotfix の場合は main、それ以外は設定値）
     const config = getGitHubConfig();
-    const baseBranch = isHotfixBranch(currentBranch) ? 'main' : config.defaultBaseBranch;
+    const defaultBaseBranch = isHotfixBranch(currentBranch) ? 'main' : config.defaultBaseBranch;
 
-    console.log(`\nℹ Creating pull request from '${currentBranch}' to '${baseBranch}'...`);
+    console.log(`\nℹ Creating pull request from '${currentBranch}' to '${defaultBaseBranch}'...`);
 
     // PR作成
     const result = await createPullRequest(db, {
       specId: event.specId,
       branchName: currentBranch,
-      baseBranch,
+      defaultBaseBranch,
     });
 
     if (result.success && result.pullRequestUrl && result.pullRequestNumber) {
