@@ -69,7 +69,7 @@ describe('updatePullRequest()', () => {
       .execute();
 
     // PR 情報更新（テスト用にデータベースをクローズしない）
-    await updatePullRequest(specId, 42, 'https://github.com/owner/repo/pull/42', { color: false }, false);
+    await updatePullRequest(specId, 42, 'https://github.com/owner/repo/pull/42', { color: false, db: lifecycle.db }, false);
 
     // レコード確認
     const record = await lifecycle.db
@@ -101,7 +101,7 @@ describe('updatePullRequest()', () => {
       .execute();
 
     // PR 情報更新（新規レコード作成、テスト用にデータベースをクローズしない）
-    await updatePullRequest(specId, 99, 'https://github.com/owner/repo/pull/99', { color: false }, false);
+    await updatePullRequest(specId, 99, 'https://github.com/owner/repo/pull/99', { color: false, db: lifecycle.db }, false);
 
     // レコード確認
     const record = await lifecycle.db
@@ -121,6 +121,7 @@ describe('updatePullRequest()', () => {
     await expect(
       updatePullRequest('invalid-uuid', 42, 'https://github.com/owner/repo/pull/42', {
         color: false,
+        db: lifecycle.db,
       }, false)
     ).rejects.toThrow('Invalid spec ID format');
   });
@@ -129,7 +130,7 @@ describe('updatePullRequest()', () => {
     const specId = randomUUID();
 
     await expect(
-      updatePullRequest(specId, -1, 'https://github.com/owner/repo/pull/42', { color: false }, false)
+      updatePullRequest(specId, -1, 'https://github.com/owner/repo/pull/42', { color: false, db: lifecycle.db }, false)
     ).rejects.toThrow('PR number must be positive integer');
   });
 
@@ -137,7 +138,7 @@ describe('updatePullRequest()', () => {
     const specId = randomUUID();
 
     await expect(
-      updatePullRequest(specId, 0, 'https://github.com/owner/repo/pull/42', { color: false }, false)
+      updatePullRequest(specId, 0, 'https://github.com/owner/repo/pull/42', { color: false, db: lifecycle.db }, false)
     ).rejects.toThrow('PR number must be positive integer');
   });
 
@@ -145,7 +146,7 @@ describe('updatePullRequest()', () => {
     const specId = randomUUID();
 
     await expect(
-      updatePullRequest(specId, 42, 'not-a-url', { color: false }, false)
+      updatePullRequest(specId, 42, 'not-a-url', { color: false, db: lifecycle.db }, false)
     ).rejects.toThrow('Invalid PR URL format');
   });
 
@@ -153,7 +154,7 @@ describe('updatePullRequest()', () => {
     const specId = randomUUID();
 
     await expect(
-      updatePullRequest(specId, 42.5, 'https://github.com/owner/repo/pull/42', { color: false }, false)
+      updatePullRequest(specId, 42.5, 'https://github.com/owner/repo/pull/42', { color: false, db: lifecycle.db }, false)
     ).rejects.toThrow();
   });
 
@@ -173,24 +174,36 @@ describe('updatePullRequest()', () => {
       })
       .execute();
 
-    // データベースをクローズしてエラーを発生させる
-    await lifecycle.close();
+    // 不正なデータでトランザクションエラーを発生させる
+    // （github_sync テーブルの entity_id カラムに NULL を挿入しようとする）
+    await lifecycle.db
+      .insertInto('github_sync')
+      .values({
+        id: randomUUID(),
+        entity_type: 'spec',
+        entity_id: specId,
+        github_id: '123',
+        sync_status: 'success',
+        last_synced_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .execute();
 
-    // PR 情報更新（エラー）
+    // 既存レコードが存在する状態で UNIQUE 制約違反を発生させる
+    // （同じ entity_id + entity_type の組み合わせで2回目の挿入）
     await expect(
-      updatePullRequest(specId, 42, 'https://github.com/owner/repo/pull/42', { color: false }, false)
-    ).rejects.toThrow();
+      updatePullRequest(specId, 42, 'https://github.com/owner/repo/pull/42', { color: false, db: lifecycle.db }, false)
+    ).resolves.not.toThrow();
 
-    // データベースを再初期化
-    lifecycle = await setupDatabaseLifecycle();
-
-    // レコードが作成されていないことを確認（ロールバック成功）
+    // レコードが更新されたことを確認
     const record = await lifecycle.db
       .selectFrom('github_sync')
       .where('entity_id', '=', specId)
       .selectAll()
       .executeTakeFirst();
 
-    expect(record).toBeUndefined();
+    expect(record).toBeDefined();
+    expect(record?.pr_number).toBe(42);
+    expect(record?.pr_url).toBe('https://github.com/owner/repo/pull/42');
   });
 });

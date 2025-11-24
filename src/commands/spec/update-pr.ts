@@ -10,6 +10,8 @@ import { randomUUID } from 'node:crypto';
 import { getDatabase, closeDatabase } from '../../core/database/connection.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatError } from '../utils/output.js';
 import { handleCLIError } from '../utils/error-handler.js';
+import type { Kysely } from 'kysely';
+import type { Database } from '../../core/database/schema.js';
 
 /**
  * 引数スキーマ
@@ -25,6 +27,7 @@ const argsSchema = z.object({
  */
 export interface UpdatePullRequestOptions {
   color?: boolean;
+  db?: Kysely<Database>; // テスト用にデータベース接続を注入
 }
 
 /**
@@ -51,7 +54,7 @@ export async function updatePullRequest(
     console.log(formatKeyValue('PR URL', parsed.prUrl, options.color));
     console.log('');
 
-    const db = getDatabase();
+    const db = options.db || getDatabase();
 
     // トランザクション開始
     await db.transaction().execute(async (trx) => {
@@ -111,8 +114,8 @@ export async function updatePullRequest(
   } catch (error) {
     if (closeDbAfterUpdate) {
       await closeDatabase();
+      handleCLIError(error, options.color);
     }
-    handleCLIError(error, options.color);
     throw error;
   }
 }
