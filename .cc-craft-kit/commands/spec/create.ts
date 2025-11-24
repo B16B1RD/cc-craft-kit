@@ -234,19 +234,19 @@ export async function createSpec(
     console.error('');
     console.error(formatInfo('Rolling back due to error...', options.color));
 
-    // baseBranch に戻る（切り替えた場合のみ）
+    // defaultBaseBranch に戻る（切り替えた場合のみ）
     if (branchSwitched) {
       const config = getGitHubConfig();
-      const { baseBranch } = config;
+      const { defaultBaseBranch } = config;
 
       try {
-        execFileSync('git', ['checkout', baseBranch], { stdio: 'inherit' });
+        execFileSync('git', ['checkout', defaultBaseBranch], { stdio: 'inherit' });
         clearBranchCache();
-        console.error(`Switched back to branch: ${baseBranch}`);
+        console.error(`Switched back to branch: ${defaultBaseBranch}`);
       } catch (checkoutError) {
         const errorMessage =
           checkoutError instanceof Error ? checkoutError.message : String(checkoutError);
-        console.error(`Failed to switch back to ${baseBranch}: ${errorMessage}`);
+        console.error(`Failed to switch back to ${defaultBaseBranch}: ${errorMessage}`);
       }
     }
 

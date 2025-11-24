@@ -30,7 +30,7 @@ export function getGitHubConfig(): GitHubConfig {
   return {
     owner: process.env.GITHUB_OWNER?.trim() || null,
     repo: process.env.GITHUB_REPO?.trim() || null,
-    defaultBaseBranch: process.env.GITHUB_DEFAULT_BASE_BRANCH?.trim() || 'develop',
+    defaultBaseBranch: process.env.BASE_BRANCH?.trim() || 'develop',
     protectedBranches: process.env.PROTECTED_BRANCHES?.split(',')
       .map((b) => b.trim())
       .filter(Boolean) || ['main', 'develop'],

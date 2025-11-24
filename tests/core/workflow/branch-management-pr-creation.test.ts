@@ -69,7 +69,7 @@ describe('Branch Management - PR Creation', () => {
     // 環境変数をリセット
     process.env = { ...originalEnv };
     delete process.env.GITHUB_TOKEN;
-    delete process.env.GITHUB_DEFAULT_BASE_BRANCH;
+    delete process.env.BASE_BRANCH;
 
     // モック初期化
     mockExecSync.mockReset();
@@ -436,9 +436,9 @@ describe('Branch Management - PR Creation', () => {
       consoleLogSpy.mockRestore();
     });
 
-    test('GITHUB_DEFAULT_BASE_BRANCH が設定されている場合、それが使用される', async () => {
+    test('BASE_BRANCH が設定されている場合、それが使用される', async () => {
       // Given: 環境変数で base ブランチを指定
-      process.env.GITHUB_DEFAULT_BASE_BRANCH = 'staging';
+      process.env.BASE_BRANCH = 'staging';
       mockGetGitHubConfig.mockReturnValue({
         owner: 'test-owner',
         repo: 'test-repo',
