@@ -52,6 +52,33 @@ function isProtectedBranch(branchName: string): boolean {
 }
 
 /**
+ * ブランチ名のバリデーション（コマンドインジェクション対策）
+ */
+function validateBranchName(branchName: string): boolean {
+  const VALID_BRANCH_NAME_PATTERN = /^[a-zA-Z0-9/_-]+$/;
+  return VALID_BRANCH_NAME_PATTERN.test(branchName);
+}
+
+/**
+ * ブランチがリモートにプッシュされているかチェック
+ */
+async function checkRemoteBranchExists(branchName: string): Promise<boolean> {
+  // ブランチ名のバリデーション
+  if (!validateBranchName(branchName)) {
+    throw new Error(`Invalid branch name: ${branchName}`);
+  }
+
+  try {
+    execSync(`git ls-remote --heads origin ${branchName}`, {
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * PR作成失敗時のエラーメッセージを表示
  */
 function printPullRequestError(error?: string): void {
@@ -61,12 +88,22 @@ function printPullRequestError(error?: string): void {
     console.warn(`   Reason: ${error}`);
   }
 
+  // エラーケース別にメッセージを分岐
   if (error?.includes('not initialized')) {
-    console.warn('   Please run: /cft:github-init <owner> <repo>');
+    console.warn('\n   対応策: GitHub クライアントを初期化してください');
+    console.warn('   /cft:github-init <owner> <repo>');
   } else if (error?.includes('Repository owner or name not found')) {
-    console.warn('   Please set GITHUB_OWNER and GITHUB_REPO in .env');
+    console.warn('\n   対応策: .env ファイルに GITHUB_OWNER と GITHUB_REPO を設定してください');
+    console.warn('   例:');
+    console.warn('     GITHUB_OWNER=your-username');
+    console.warn('     GITHUB_REPO=your-repo-name');
+  } else if (error?.includes('push') || error?.includes('Push')) {
+    console.warn('\n   対応策: ブランチを手動でプッシュしてから、再度 PR 作成を試してください');
+    console.warn('   git push -u origin <branch-name>');
   } else {
-    console.warn('   Please create a PR manually');
+    console.warn('\n   対応策: 以下のコマンドで手動 PR 作成を試してください');
+    console.warn('   gh pr create --title "タイトル" --body "説明"');
+    console.warn('\n   または、GitHub Web UI から PR を作成してください');
   }
   console.warn('');
 }
@@ -107,6 +144,41 @@ async function handlePullRequestCreationOnCompleted(
     // ベースブランチ決定（hotfix の場合は main、それ以外は設定値）
     const config = getGitHubConfig();
     const defaultBaseBranch = isHotfixBranch(currentBranch) ? 'main' : config.defaultBaseBranch;
+
+    // ブランチがリモートにプッシュされているかチェック
+    const isRemoteBranchExists = await checkRemoteBranchExists(currentBranch);
+
+    if (!isRemoteBranchExists) {
+      // ブランチ名のバリデーション
+      if (!validateBranchName(currentBranch)) {
+        console.error(`\n❌ 不正なブランチ名です: ${currentBranch}`);
+        console.error(
+          `   ブランチ名は英数字、アンダースコア(_)、ハイフン(-)、スラッシュ(/)のみ使用できます\n`
+        );
+        return;
+      }
+
+      // 自動プッシュ
+      console.log(`\n⚠️  ブランチがリモートにプッシュされていません。自動プッシュを実行します...`);
+
+      try {
+        execSync(`git push -u origin ${currentBranch}`, {
+          stdio: 'inherit',
+          env: {
+            ...process.env,
+            GIT_ASKPASS: 'echo',
+            GIT_TERMINAL_PROMPT: '0',
+          },
+        });
+
+        console.log(`\n✓ ブランチをリモートにプッシュしました: ${currentBranch}`);
+      } catch {
+        console.error(`\n❌ ブランチのプッシュに失敗しました`);
+        console.error(`\n対応策: 以下のコマンドで手動プッシュしてください:`);
+        console.error(`  git push -u origin ${currentBranch}\n`);
+        return; // PR作成をスキップ
+      }
+    }
 
     console.log(`\nℹ Creating pull request from '${currentBranch}' to '${defaultBaseBranch}'...`);
 

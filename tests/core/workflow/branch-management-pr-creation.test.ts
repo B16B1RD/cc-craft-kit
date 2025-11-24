@@ -105,6 +105,9 @@ describe('Branch Management - PR Creation', () => {
         if (cmd === 'git rev-parse --abbrev-ref HEAD') {
           return 'feature/test' as never;
         }
+        if (typeof cmd === 'string' && cmd.includes('git ls-remote --heads origin')) {
+          return '' as never; // ブランチがリモートに存在する
+        }
         throw new Error('Unexpected command');
       });
 
@@ -174,6 +177,9 @@ describe('Branch Management - PR Creation', () => {
         }
         if (cmd === 'git rev-parse --abbrev-ref HEAD') {
           return 'feature/test' as never;
+        }
+        if (typeof cmd === 'string' && cmd.includes('git ls-remote --heads origin')) {
+          return '' as never; // ブランチがリモートに存在する
         }
         throw new Error('Unexpected command');
       });
