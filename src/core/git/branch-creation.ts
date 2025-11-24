@@ -6,6 +6,8 @@
 
 import { execFileSync } from 'node:child_process';
 import { getCurrentBranch } from './branch-cache.js';
+import { getGitHubConfig } from '../config/github-config.js';
+import { formatInfo, formatSuccess } from '../../commands/utils/output.js';
 
 /**
  * カスタムブランチ名をサニタイズ
@@ -109,10 +111,9 @@ export function createSpecBranch(specId: string, customBranchName?: string): Bra
     );
   }
 
-  // 3. 保護ブランチチェック
-  const protectedBranches = (process.env.PROTECTED_BRANCHES || 'main,develop')
-    .split(',')
-    .map((b) => b.trim());
+  // 3. 保護ブランチチェックと defaultBaseBranch の取得
+  const config = getGitHubConfig();
+  const { protectedBranches, defaultBaseBranch } = config;
 
   if (protectedBranches.includes(originalBranch)) {
     // 保護ブランチの場合、feature/ プレフィックス付きブランチを自動作成
@@ -126,9 +127,10 @@ export function createSpecBranch(specId: string, customBranchName?: string): Bra
     // ブランチ作成処理へ進む（return しない）
   }
 
-  // 4. ブランチ作成（切り替えなし）
+  // 4. ブランチ作成（defaultBaseBranch から派生）
+  console.log(formatInfo(`Creating branch from BASE_BRANCH (${defaultBaseBranch})...`));
   try {
-    execFileSync('git', ['branch', branchName], { stdio: 'pipe' });
+    execFileSync('git', ['branch', branchName, defaultBaseBranch], { stdio: 'pipe' });
   } catch (error) {
     throw new Error(
       `ブランチ作成に失敗しました。既に同名のブランチが存在する可能性があります: ${error instanceof Error ? error.message : String(error)}`
@@ -150,6 +152,7 @@ export function createSpecBranch(specId: string, customBranchName?: string): Bra
   }
 
   // 6. ブランチ作成成功（切り替えは行わない）
+  console.log(formatSuccess(`Created branch: ${branchName} (from ${defaultBaseBranch})`));
   return {
     created: true,
     branchName,

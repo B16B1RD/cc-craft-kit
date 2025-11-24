@@ -69,7 +69,7 @@ describe('Branch Management - PR Creation', () => {
     // 環境変数をリセット
     process.env = { ...originalEnv };
     delete process.env.GITHUB_TOKEN;
-    delete process.env.GITHUB_DEFAULT_BASE_BRANCH;
+    delete process.env.BASE_BRANCH;
 
     // モック初期化
     mockExecSync.mockReset();
@@ -152,7 +152,7 @@ describe('Branch Management - PR Creation', () => {
       expect(mockCreatePullRequest).toHaveBeenCalledWith(lifecycle.db, {
         specId,
         branchName: 'feature/test',
-        baseBranch: 'develop',
+        defaultBaseBranch: 'develop',
       });
 
       // Then: 警告メッセージが表示された
@@ -226,7 +226,7 @@ describe('Branch Management - PR Creation', () => {
       expect(mockCreatePullRequest).toHaveBeenCalledWith(lifecycle.db, {
         specId,
         branchName: 'feature/test',
-        baseBranch: 'develop', // デフォルト
+        defaultBaseBranch: 'develop', // デフォルト
       });
 
       // Then: エラーメッセージが表示された
@@ -323,7 +323,7 @@ describe('Branch Management - PR Creation', () => {
       expect(mockCreatePullRequest).toHaveBeenCalledWith(lifecycle.db, {
         specId,
         branchName: 'feature/test',
-        baseBranch: 'develop', // デフォルト
+        defaultBaseBranch: 'develop', // デフォルト
       });
 
       // Then: recordPullRequestToIssue が呼び出された
@@ -427,7 +427,7 @@ describe('Branch Management - PR Creation', () => {
       expect(mockCreatePullRequest).toHaveBeenCalledWith(lifecycle.db, {
         specId,
         branchName: 'hotfix/critical-bug',
-        baseBranch: 'main', // hotfix ブランチの場合は main
+        defaultBaseBranch: 'main', // hotfix ブランチの場合は main
       });
 
       // Then: 成功メッセージが表示された
@@ -436,9 +436,9 @@ describe('Branch Management - PR Creation', () => {
       consoleLogSpy.mockRestore();
     });
 
-    test('GITHUB_DEFAULT_BASE_BRANCH が設定されている場合、それが使用される', async () => {
+    test('BASE_BRANCH が設定されている場合、それが使用される', async () => {
       // Given: 環境変数で base ブランチを指定
-      process.env.GITHUB_DEFAULT_BASE_BRANCH = 'staging';
+      process.env.BASE_BRANCH = 'staging';
       mockGetGitHubConfig.mockReturnValue({
         owner: 'test-owner',
         repo: 'test-repo',
@@ -521,7 +521,7 @@ describe('Branch Management - PR Creation', () => {
       expect(mockCreatePullRequest).toHaveBeenCalledWith(lifecycle.db, {
         specId,
         branchName: 'feature/test',
-        baseBranch: 'staging', // 環境変数で指定した値
+        defaultBaseBranch: 'staging', // 環境変数で指定した値
       });
 
       // Then: 成功メッセージが表示された

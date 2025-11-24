@@ -20,6 +20,7 @@ import { getCurrentDateTimeForSpec } from '../../core/utils/date-format.js';
 import { fsyncFileAndDirectory } from '../../core/utils/fsync.js';
 import { getCurrentBranch, clearBranchCache } from '../../core/git/branch-cache.js';
 import { createSpecBranch } from '../../core/git/branch-creation.js';
+import { getGitHubConfig } from '../../core/config/github-config.js';
 
 /**
  * Requirements テンプレート
@@ -150,8 +151,6 @@ export async function createSpec(
       branchCreated = true;
       branchName = branchResult.branchName;
 
-      console.log(formatInfo(`Created branch: ${branchResult.branchName}`, options.color));
-
       // 作成したブランチへ切り替え
       try {
         execFileSync('git', ['checkout', branchName], { stdio: 'inherit' });
@@ -233,16 +232,19 @@ export async function createSpec(
     console.error('');
     console.error(formatInfo('Rolling back due to error...', options.color));
 
-    // 元のブランチに戻る（切り替えた場合のみ）
+    // defaultBaseBranch に戻る（切り替えた場合のみ）
     if (branchSwitched) {
+      const config = getGitHubConfig();
+      const { defaultBaseBranch } = config;
+
       try {
-        execFileSync('git', ['checkout', originalBranch], { stdio: 'inherit' });
+        execFileSync('git', ['checkout', defaultBaseBranch], { stdio: 'inherit' });
         clearBranchCache();
-        console.error(`Switched back to branch: ${originalBranch}`);
+        console.error(`Switched back to branch: ${defaultBaseBranch}`);
       } catch (checkoutError) {
         const errorMessage =
           checkoutError instanceof Error ? checkoutError.message : String(checkoutError);
-        console.error(`Failed to switch back to ${originalBranch}: ${errorMessage}`);
+        console.error(`Failed to switch back to ${defaultBaseBranch}: ${errorMessage}`);
       }
     }
 
