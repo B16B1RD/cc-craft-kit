@@ -133,9 +133,116 @@ npx tsx .cc-craft-kit/commands/spec/phase.ts "$1" "$2"
    - TodoWrite で completed に設定
    - 次のタスクへ自動的に移行
 
+### completed フェーズに移行した場合
+
+重要: コマンド実行後、ユーザーに確認を求めずに、以下の処理を**自動的に実行**してください。
+
+#### Step 1: 未コミット変更確認
+
+1. **未コミット変更検出**: Bash ツールで `git status --porcelain` 実行
+2. **警告表示**:
+   - 出力が空でない場合: 「未コミット変更があります。PR 作成前にコミットしてください」と警告表示
+   - 出力が空の場合: 次のステップへ進む
+
+#### Step 2: PR 作成準備
+
+1. **仕様書読み込み**: Read ツールで `.cc-craft-kit/specs/$1.md` を読み込む
+2. **PR タイトル生成**: 仕様書名から自動生成
+   - 形式: `feat: <仕様書名> を実装完了`
+3. **PR 本文生成**: 仕様書から抽出
+   - Summary: 「1. 背景と目的」「3. 受け入れ基準」を要約
+   - Test plan: 実装済みテスト概要を記載
+   - 署名: "🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>"
+
+#### Step 3: GitHub CLI 認証確認
+
+1. **認証状態確認**: Bash ツールで `gh auth status` 実行
+2. **エラーハンドリング**:
+   - 認証失敗時: `gh auth login` を実行するよう案内し、処理を中断
+   - 成功時: 次のステップへ進む
+
+#### Step 4: ブランチリモートプッシュ
+
+1. **現在のブランチ名取得**: Bash ツールで `git branch --show-current` 実行
+2. **リモート追跡確認**: Bash ツールで `git branch -vv | grep '*'` 実行
+3. **リモートプッシュ**:
+   - リモート追跡がない場合: `git push -u origin <現在のブランチ>` 実行
+   - リモート追跡がある場合: `git push` 実行（最新の変更をプッシュ）
+
+#### Step 5: PR 作成
+
+1. **PR 作成**: Bash ツールで `gh pr create` 実行
+   ```bash
+   gh pr create \
+     --title "feat: <仕様書名> を実装完了" \
+     --body "$(cat <<'EOF'
+   ## Summary
+
+   <「1. 背景と目的」と「3. 受け入れ基準」を要約>
+
+   ## Test plan
+
+   - [ ] 単体テスト実施
+   - [ ] 統合テスト実施
+   - [ ] コードレビュー完了
+
+   ---
+
+   🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+   Co-Authored-By: Claude <noreply@anthropic.com>
+   EOF
+   )"
+   ```
+
+2. **PR URL 取得**: コマンド出力から URL を取得
+   - 例: `https://github.com/owner/repo/pull/42`
+
+3. **PR 番号抽出**: URL から PR 番号を抽出
+   - 正規表現: `/pull/(\d+)$`
+
+#### Step 6: PR 情報記録
+
+1. **仕様書ファイル更新**: Edit ツールで仕様書の末尾に PR セクション追加
+   ```markdown
+   ## Pull Request
+
+   **PR 番号:** #42
+   **PR URL:** https://github.com/owner/repo/pull/42
+   **PR 作成日時:** 2025/11/24 23:30:00
+   ```
+
+2. **github_sync テーブル更新**: Bash ツールで `update-pr.ts` 実行
+   ```bash
+   npx tsx .cc-craft-kit/commands/spec/update-pr.ts \
+     <spec-id> \
+     42 \
+     "https://github.com/owner/repo/pull/42"
+   ```
+
+#### Step 7: 成功メッセージ表示
+
+```
+✓ Pull Request が正常に作成されました！
+
+PR 番号: #42
+PR URL: https://github.com/owner/repo/pull/42
+
+次のステップ:
+- PR をレビューしてください
+- マージ後、/cft:pr-cleanup <spec-id> でブランチ削除
+```
+
+#### エラーハンドリング
+
+- **GitHub CLI 未インストール**: `gh` コマンドが見つからない場合、インストール手順を案内
+- **GitHub CLI 認証失敗**: `gh auth login` を実行するよう案内
+- **ネットワークエラー**: エラーメッセージを表示し、手動でのリトライを案内
+- **未コミット変更**: PR 作成前にコミットするよう警告
+
 ### その他のフェーズ
 
-requirements, design, completed フェーズの場合は、従来通りガイダンスメッセージを表示してください。
+requirements, design, testing フェーズの場合は、従来通りガイダンスメッセージを表示してください。
 
 - 仕様書の詳細確認: `/cft:spec-get <spec-id>`
 - GitHub Issue 作成: `/cft:github-issue-create <spec-id>`
