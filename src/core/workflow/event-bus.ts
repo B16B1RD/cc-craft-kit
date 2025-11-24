@@ -247,8 +247,12 @@ export function getEventBus(): EventBus {
 /**
  * グローバルイベントバス取得（ハンドラー登録を待機）
  * イベント発火前にハンドラー登録を完了させたい場合に使用
+ *
+ * @param {number} timeoutMs - タイムアウト時間（ミリ秒）。デフォルトは10秒。
+ * @returns {Promise<EventBus>} EventBusインスタンス
+ * @throws {Error} ハンドラー登録がタイムアウトした場合
  */
-export async function getEventBusAsync(): Promise<EventBus> {
+export async function getEventBusAsync(timeoutMs: number = 10000): Promise<EventBus> {
   if (!eventBusInstance) {
     eventBusInstance = new EventBus();
   }
@@ -257,8 +261,14 @@ export async function getEventBusAsync(): Promise<EventBus> {
   if (!handlersRegistered && !registrationInProgress) {
     await registerHandlersAsync(eventBusInstance);
   } else if (registrationInProgress) {
-    // 登録中の場合は完了まで待機
+    // 登録中の場合は完了まで待機（タイムアウト付き）
+    const startTime = Date.now();
     while (registrationInProgress) {
+      if (Date.now() - startTime > timeoutMs) {
+        const errorMessage = `Handler registration timeout after ${timeoutMs}ms`;
+        console.error(`[EventBus] ${errorMessage}`);
+        throw new Error(errorMessage);
+      }
       await new Promise((resolve) => globalThis.setTimeout(resolve, 10));
     }
   }
