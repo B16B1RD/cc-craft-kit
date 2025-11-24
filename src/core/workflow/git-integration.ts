@@ -294,21 +294,26 @@ async function handlePhaseChangeCommit(
     if (result.success) {
       if (result.skipped) {
         // コミット対象なし（.gitignore で除外されている）
-        console.log('\nℹ Auto-commit skipped: No files to commit (ignored by .gitignore)');
+        console.info('[info] Auto-commit skipped: No files to commit (ignored by .gitignore)');
       } else {
-        console.log(`\n✓ Auto-committed: ${message}`);
+        console.info(`[info] ✓ Auto-committed: ${message}`);
       }
 
       // completedフェーズ移行時のPR作成案内
       if (event.data.newPhase === 'completed') {
-        console.log('\n📝 Next: Create Pull Request');
-        console.log('   Run the pr-creator skill to automatically create a PR:');
-        console.log('   - Skill tool will execute the pr-creator skill');
-        console.log('   - PR title and body will be generated from the spec');
-        console.log('   - textlint and markdownlint checks will be performed');
-        console.log('   - GitHub CLI will create the PR\n');
+        console.info('[info] 📝 Next: Create Pull Request');
+        console.info('[info]    Run the pr-creator skill to automatically create a PR:');
+        console.info('[info]    - Skill tool will execute the pr-creator skill');
+        console.info('[info]    - PR title and body will be generated from the spec');
+        console.info('[info]    - textlint and markdownlint checks will be performed');
+        console.info('[info]    - GitHub CLI will create the PR');
       }
     } else {
+      console.warn('[warn] Git auto-commit failed');
+      console.warn(`[warn] Error: ${result.error || 'Unknown error'}`);
+      console.warn('[warn] Phase transition succeeded, but changes were not committed');
+      console.warn('[warn] You can commit manually with: git add . && git commit');
+
       const errorHandler = getErrorHandler();
       await errorHandler.handle(new Error(result.error || 'Git commit failed'), {
         event: 'spec.phase_changed',
@@ -319,10 +324,15 @@ async function handlePhaseChangeCommit(
         commitMessage: message,
         files,
       });
-      console.log('You can commit manually with: git add . && git commit\n');
     }
   } catch (error) {
     // エラーが発生してもフェーズ変更は成功させる
+    console.warn('[warn] Unexpected error during git auto-commit');
+    if (error instanceof Error) {
+      console.warn(`[warn] Error: ${error.message}`);
+    }
+    console.warn('[warn] Phase transition succeeded, but changes were not committed');
+
     const errorHandler = getErrorHandler();
     const errorObj = error instanceof Error ? error : new Error(String(error));
     await errorHandler.handle(errorObj, {

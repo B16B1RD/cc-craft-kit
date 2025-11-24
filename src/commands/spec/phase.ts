@@ -6,8 +6,14 @@ import '../../core/config/env.js';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDatabase, closeDatabase } from '../../core/database/connection.js';
-import { getEventBusAsync } from '../../core/workflow/event-bus.js';
-import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
+import { getEventBusAsync, getEventBus, EventBus } from '../../core/workflow/event-bus.js';
+import {
+  formatSuccess,
+  formatHeading,
+  formatKeyValue,
+  formatInfo,
+  formatError,
+} from '../utils/output.js';
 import {
   createProjectNotInitializedError,
   createSpecNotFoundError,
@@ -165,7 +171,36 @@ export async function updateSpecPhase(
     }
 
     // 3. イベント発火（非同期ハンドラー登録を待機）
-    const eventBus = await getEventBusAsync();
+    let eventBus: EventBus;
+    try {
+      eventBus = await getEventBusAsync();
+    } catch {
+      // タイムアウトエラーをキャッチ
+      console.error('');
+      console.error(
+        formatError(
+          '⚠️  Handler registration timeout. Event handlers may not be fully registered.',
+          options.color
+        )
+      );
+      console.error(
+        formatInfo(
+          'This may be caused by slow system performance or network issues.',
+          options.color
+        )
+      );
+      console.error(
+        formatInfo(
+          'Phase transition will continue, but some handlers may not execute.',
+          options.color
+        )
+      );
+      console.error('');
+
+      // タイムアウトしても EventBus インスタンスは取得可能
+      eventBus = getEventBus();
+    }
+
     await eventBus.emit(
       eventBus.createEvent('spec.phase_changed', spec.id, {
         oldPhase,
@@ -175,10 +210,25 @@ export async function updateSpecPhase(
   } catch (error) {
     // エラー時のロールバック処理
     console.error('');
-    console.error(formatInfo('Rolling back due to error...', options.color));
+    console.error(formatError('❌ Phase transition failed. Rolling back...', options.color));
+    console.error('');
+
+    // エラーの詳細をログ出力
+    if (error instanceof Error) {
+      console.error(formatError(`Error: ${error.message}`, options.color));
+      if (error.stack) {
+        console.error('');
+        console.error('Stack trace:');
+        console.error(error.stack);
+      }
+    } else {
+      console.error(formatError(`Unknown error: ${String(error)}`, options.color));
+    }
+    console.error('');
 
     // DBレコードを元のフェーズに戻す
     try {
+      console.error(formatInfo('Rolling back database changes...', options.color));
       await db
         .updateTable('specs')
         .set({
@@ -186,8 +236,17 @@ export async function updateSpecPhase(
         })
         .where('id', '=', spec.id)
         .execute();
+      console.error(formatSuccess('✓ Database rollback successful', options.color));
     } catch (dbError) {
-      console.error('Failed to rollback database record:', dbError);
+      console.error(formatError('✗ Failed to rollback database record', options.color));
+      console.error(dbError);
+      console.error('');
+      console.error(
+        formatError(
+          'Warning: Database is now in an inconsistent state. Manual intervention required.',
+          options.color
+        )
+      );
     }
 
     // エラーを再スロー
