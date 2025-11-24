@@ -574,6 +574,143 @@ describe.skip('GitHub Integration Event Handlers', () => {
       // Issueラベル更新が呼ばれていないことを確認
       expect(mockGitHubIssues.update).not.toHaveBeenCalled();
     });
+
+    test('フェーズ変更時に仕様書ファイルから Issue 本文が更新される', async () => {
+      mockGitHubIssues.update.mockResolvedValue({});
+
+      // 仕様書をデータベースに追加
+      const specId = 'spec-test-body-update';
+      await lifecycle.db
+        .insertInto('specs')
+        .values({
+          id: specId,
+          name: 'Test Spec Body Update',
+          description: 'Test description',
+          phase: 'design',
+          branch_name: 'feature/test-body',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'spec',
+          entity_id: specId,
+          github_id: '101',
+          github_number: 101,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
+        })
+        .execute();
+
+      // 仕様書ファイルを作成
+      const ccCraftKitDir = join(process.cwd(), '.cc-craft-kit');
+      const specsDir = join(ccCraftKitDir, 'specs');
+      if (!existsSync(specsDir)) {
+        mkdirSync(specsDir, { recursive: true });
+      }
+      const specPath = join(specsDir, `${specId}.md`);
+      const specContent = '# Test Spec\n\nThis is the updated spec content.';
+      writeFileSync(specPath, specContent, 'utf-8');
+
+      // console.logをモック
+      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+
+      // イベント発行
+      const event = eventBus.createEvent('spec.phase_changed', specId, {
+        oldPhase: 'requirements',
+        newPhase: 'design',
+      });
+      await eventBus.emit(event);
+
+      // 少し待つ（非同期処理完了待ち）
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Issueラベル・本文更新が呼ばれたことを確認
+      expect(mockGitHubIssues.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          owner: 'test-owner',
+          repo: 'test-repo',
+          issueNumber: 101,
+          title: '[design] Test Spec Body Update',
+          labels: ['phase:design'],
+          body: specContent,
+        })
+      );
+
+      // クリーンアップ
+      rmSync(specPath);
+      consoleLogSpy.mockRestore();
+    });
+
+    test('仕様書ファイルが存在しない場合は本文なしで更新される', async () => {
+      mockGitHubIssues.update.mockResolvedValue({});
+
+      // 仕様書をデータベースに追加
+      const specId = 'spec-test-no-file';
+      await lifecycle.db
+        .insertInto('specs')
+        .values({
+          id: specId,
+          name: 'Test Spec No File',
+          description: 'Test description',
+          phase: 'design',
+          branch_name: 'feature/test-no-file',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'spec',
+          entity_id: specId,
+          github_id: '102',
+          github_number: 102,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
+        })
+        .execute();
+
+      // console.logをモック
+      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+
+      // イベント発行
+      const event = eventBus.createEvent('spec.phase_changed', specId, {
+        oldPhase: 'requirements',
+        newPhase: 'design',
+      });
+      await eventBus.emit(event);
+
+      // 少し待つ（非同期処理完了待ち）
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Issueラベル更新が呼ばれたことを確認（body は含まれない）
+      expect(mockGitHubIssues.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          owner: 'test-owner',
+          repo: 'test-repo',
+          issueNumber: 102,
+          title: '[design] Test Spec No File',
+          labels: ['phase:design'],
+        })
+      );
+
+      // body プロパティが存在しないことを確認
+      const callArgs = mockGitHubIssues.update.mock.calls[0][0];
+      expect(callArgs).not.toHaveProperty('body');
+
+      consoleLogSpy.mockRestore();
+    });
   });
 
   describe('spec.deleted イベント - GitHub Projects ステータス更新', () => {
