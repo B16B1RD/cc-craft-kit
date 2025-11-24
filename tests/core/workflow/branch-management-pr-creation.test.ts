@@ -152,7 +152,7 @@ describe('Branch Management - PR Creation', () => {
       expect(mockCreatePullRequest).toHaveBeenCalledWith(lifecycle.db, {
         specId,
         branchName: 'feature/test',
-        baseBranch: 'develop',
+        defaultBaseBranch: 'develop',
       });
 
       // Then: 警告メッセージが表示された
@@ -226,7 +226,7 @@ describe('Branch Management - PR Creation', () => {
       expect(mockCreatePullRequest).toHaveBeenCalledWith(lifecycle.db, {
         specId,
         branchName: 'feature/test',
-        baseBranch: 'develop', // デフォルト
+        defaultBaseBranch: 'develop', // デフォルト
       });
 
       // Then: エラーメッセージが表示された
@@ -323,7 +323,7 @@ describe('Branch Management - PR Creation', () => {
       expect(mockCreatePullRequest).toHaveBeenCalledWith(lifecycle.db, {
         specId,
         branchName: 'feature/test',
-        baseBranch: 'develop', // デフォルト
+        defaultBaseBranch: 'develop', // デフォルト
       });
 
       // Then: recordPullRequestToIssue が呼び出された
@@ -427,7 +427,7 @@ describe('Branch Management - PR Creation', () => {
       expect(mockCreatePullRequest).toHaveBeenCalledWith(lifecycle.db, {
         specId,
         branchName: 'hotfix/critical-bug',
-        baseBranch: 'main', // hotfix ブランチの場合は main
+        defaultBaseBranch: 'main', // hotfix ブランチの場合は main
       });
 
       // Then: 成功メッセージが表示された
@@ -521,7 +521,7 @@ describe('Branch Management - PR Creation', () => {
       expect(mockCreatePullRequest).toHaveBeenCalledWith(lifecycle.db, {
         specId,
         branchName: 'feature/test',
-        baseBranch: 'staging', // 環境変数で指定した値
+        defaultBaseBranch: 'staging', // 環境変数で指定した値
       });
 
       // Then: 成功メッセージが表示された

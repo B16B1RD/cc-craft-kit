@@ -12,9 +12,7 @@ export interface GitHubConfig {
   owner: string | null;
   /** リポジトリ名 */
   repo: string | null;
-  /** ブランチ作成時の派生元ブランチ */
-  baseBranch: string;
-  /** デフォルトのベースブランチ（PR作成時のマージ先） */
+  /** デフォルトのベースブランチ(PR作成時のマージ先) */
   defaultBaseBranch: string;
   /** 保護ブランチのリスト */
   protectedBranches: string[];
@@ -32,7 +30,6 @@ export function getGitHubConfig(): GitHubConfig {
   return {
     owner: process.env.GITHUB_OWNER?.trim() || null,
     repo: process.env.GITHUB_REPO?.trim() || null,
-    baseBranch: process.env.BASE_BRANCH?.trim() || 'develop',
     defaultBaseBranch: process.env.GITHUB_DEFAULT_BASE_BRANCH?.trim() || 'develop',
     protectedBranches: process.env.PROTECTED_BRANCHES?.split(',')
       .map((b) => b.trim())

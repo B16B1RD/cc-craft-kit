@@ -110,9 +110,9 @@ export function createSpecBranch(specId: string, customBranchName?: string): Bra
     );
   }
 
-  // 3. 保護ブランチチェックと baseBranch の取得
+  // 3. 保護ブランチチェックと defaultBaseBranch の取得
   const config = getGitHubConfig();
-  const { protectedBranches, baseBranch } = config;
+  const { protectedBranches, defaultBaseBranch } = config;
 
   if (protectedBranches.includes(originalBranch)) {
     // 保護ブランチの場合、feature/ プレフィックス付きブランチを自動作成
@@ -126,9 +126,9 @@ export function createSpecBranch(specId: string, customBranchName?: string): Bra
     // ブランチ作成処理へ進む（return しない）
   }
 
-  // 4. ブランチ作成（baseBranch から派生）
+  // 4. ブランチ作成（defaultBaseBranch から派生）
   try {
-    execFileSync('git', ['branch', branchName, baseBranch], { stdio: 'pipe' });
+    execFileSync('git', ['branch', branchName, defaultBaseBranch], { stdio: 'pipe' });
   } catch (error) {
     throw new Error(
       `ブランチ作成に失敗しました。既に同名のブランチが存在する可能性があります: ${error instanceof Error ? error.message : String(error)}`

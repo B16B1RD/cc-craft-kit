@@ -20,7 +20,7 @@ export interface CreatePullRequestOptions {
   /** ブランチ名 */
   branchName: string;
   /** ベースブランチ（デフォルト: develop） */
-  baseBranch?: string;
+  defaultBaseBranch?: string;
   /** オーナー名（デフォルト: 環境変数） */
   owner?: string;
   /** リポジトリ名（デフォルト: 現在のリポジトリ） */
@@ -163,7 +163,7 @@ export async function createPullRequest(
     }
 
     // ベースブランチ決定
-    const baseBranch = options.baseBranch || config.defaultBaseBranch;
+    const defaultBaseBranch = options.defaultBaseBranch || config.defaultBaseBranch;
 
     // PR本文生成
     const body = await generatePullRequestBody(db, options.specId);
@@ -174,7 +174,7 @@ export async function createPullRequest(
       repo,
       title: spec.name,
       head: options.branchName,
-      base: baseBranch,
+      base: defaultBaseBranch,
       body,
     });
 
@@ -193,7 +193,7 @@ export async function createPullRequest(
       event: 'github.pr_create_failed',
       specId: options.specId,
       branchName: options.branchName,
-      baseBranch: options.baseBranch || 'develop',
+      defaultBaseBranch: options.defaultBaseBranch || 'develop',
     });
 
     return {
