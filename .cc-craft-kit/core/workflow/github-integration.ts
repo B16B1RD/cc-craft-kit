@@ -189,13 +189,25 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
         const issues = new GitHubIssues(client);
         const projects = new GitHubProjects(client);
 
-        // Issue タイトル・ラベル更新（本文は履歴保持のため更新しない）
+        // Issue タイトル・ラベル更新 + 仕様書ファイルから本文を更新
+        const specPath = join(ccCraftKitDir, 'specs', `${spec.id}.md`);
+        let body: string | undefined;
+
+        if (existsSync(specPath)) {
+          try {
+            body = readFileSync(specPath, 'utf-8');
+          } catch (error) {
+            console.error(`Failed to read spec file: ${specPath}`, error);
+          }
+        }
+
         await issues.update({
           owner: githubConfig.owner,
           repo: githubConfig.repo,
           issueNumber: spec.github_issue_number,
           title: `[${event.data.newPhase}] ${spec.name}`,
           labels: [`phase:${event.data.newPhase}`],
+          ...(body && { body }),
         });
 
         // フェーズ移行をコメントで記録
