@@ -161,7 +161,8 @@ describe('Branch Management - PR Creation', () => {
       // Then: 警告メッセージが表示された
       expect(consoleWarnSpy).toHaveBeenCalledWith('\n⚠️  Failed to create pull request');
       expect(consoleWarnSpy).toHaveBeenCalledWith('   Reason: GitHub client not initialized');
-      expect(consoleWarnSpy).toHaveBeenCalledWith('   Please run: /cft:github-init <owner> <repo>');
+      expect(consoleWarnSpy).toHaveBeenCalledWith('\n   対応策: GitHub クライアントを初期化してください');
+      expect(consoleWarnSpy).toHaveBeenCalledWith('   /cft:github-init <owner> <repo>');
       expect(consoleWarnSpy).toHaveBeenCalledWith('');
 
       consoleWarnSpy.mockRestore();
@@ -239,8 +240,11 @@ describe('Branch Management - PR Creation', () => {
       expect(consoleWarnSpy).toHaveBeenCalledWith('\n⚠️  Failed to create pull request');
       expect(consoleWarnSpy).toHaveBeenCalledWith('   Reason: Repository owner or name not found');
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        '   Please set GITHUB_OWNER and GITHUB_REPO in .env'
+        '\n   対応策: .env ファイルに GITHUB_OWNER と GITHUB_REPO を設定してください'
       );
+      expect(consoleWarnSpy).toHaveBeenCalledWith('   例:');
+      expect(consoleWarnSpy).toHaveBeenCalledWith('     GITHUB_OWNER=your-username');
+      expect(consoleWarnSpy).toHaveBeenCalledWith('     GITHUB_REPO=your-repo-name');
       expect(consoleWarnSpy).toHaveBeenCalledWith('');
 
       consoleWarnSpy.mockRestore();
