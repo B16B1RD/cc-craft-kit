@@ -147,12 +147,47 @@ export async function cleanupMergedPullRequest(
     };
   }
 
-  if (!spec.pr_number) {
-    return {
-      success: false,
-      error:
-        'PR が作成されていません。先に /cft:spec-phase <spec-id> completed を実行してください。',
-    };
+  // PR 番号の取得（フォールバック処理含む）
+  let prNumber = spec.pr_number;
+
+  if (!prNumber) {
+    // フォールバック: GitHub API でブランチ名から PR を検索
+    if (!spec.branch_name) {
+      return {
+        success: false,
+        error:
+          'PR が作成されていません。先に /cft:spec-phase <spec-id> completed を実行してください。',
+      };
+    }
+
+    try {
+      const { data: prs } = await client.rest.pulls.list({
+        owner,
+        repo,
+        state: 'all',
+        head: `${owner}:${spec.branch_name}`,
+        per_page: 1,
+      });
+
+      if (prs.length > 0) {
+        prNumber = prs[0].number;
+        console.warn(
+          `⚠️  警告: github_sync テーブルに PR 情報が記録されていません。GitHub API から PR #${prNumber} を検出しました。`
+        );
+      } else {
+        return {
+          success: false,
+          error:
+            'PR が作成されていません。先に /cft:spec-phase <spec-id> completed を実行してください。',
+        };
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        success: false,
+        error: `GitHub API でブランチ名から PR を検索中にエラーが発生しました: ${errorMessage}`,
+      };
+    }
   }
 
   // 2. PR マージ状態を確認
@@ -161,21 +196,21 @@ export async function cleanupMergedPullRequest(
     const { data } = await client.rest.pulls.get({
       owner,
       repo,
-      pull_number: spec.pr_number,
+      pull_number: prNumber,
     });
     pr = data;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      error: `Failed to fetch PR #${spec.pr_number} from ${owner}/${repo}: ${errorMessage}. Check your GitHub token and repository settings.`,
+      error: `Failed to fetch PR #${prNumber} from ${owner}/${repo}: ${errorMessage}. Check your GitHub token and repository settings.`,
     };
   }
 
   if (!pr.merged) {
     return {
       success: false,
-      error: `PR #${spec.pr_number} is not merged yet. Merge the PR on GitHub first, then run this command again.`,
+      error: `PR #${prNumber} is not merged yet. Merge the PR on GitHub first, then run this command again.`,
     };
   }
 
@@ -250,7 +285,7 @@ export async function cleanupMergedPullRequest(
       timestamp: new Date().toISOString(),
       specId: spec.id,
       data: {
-        prNumber: spec.pr_number,
+        prNumber,
         branchName,
         mergedAt: pr.merged_at,
       },
@@ -264,7 +299,7 @@ export async function cleanupMergedPullRequest(
 
   return {
     success: true,
-    prNumber: spec.pr_number,
+    prNumber,
     branchName,
     mergedAt: pr.merged_at,
   };

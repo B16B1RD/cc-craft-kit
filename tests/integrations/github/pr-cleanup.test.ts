@@ -375,8 +375,8 @@ describe('pr-cleanup', () => {
         expect(result.error).toContain('Not found');
       });
 
-      test('should fail when spec has no PR number', async () => {
-        // PR 番号がない仕様書を作成
+      test('should fallback to GitHub API when spec has no PR number in database', async () => {
+        // PR 番号がデータベースに記録されていない仕様書を作成
         await db
           .insertInto('specs')
           .values({
@@ -400,7 +400,75 @@ describe('pr-cleanup', () => {
           })
           .execute();
 
+        // フォールバック: GitHub API でブランチ名から PR を検索
+        mockClient.rest.pulls.list = jest.fn().mockResolvedValue(
+          createMockOctokitResponse([
+            {
+              number: 456,
+              head: { ref: 'feature/no-pr' },
+              base: { ref: 'develop' },
+            },
+          ])
+        );
+
+        // PR マージ済みのモック
+        mockClient.rest.pulls.get = jest.fn().mockResolvedValue(
+          createMockOctokitResponse({
+            number: 456,
+            merged: true,
+            merged_at: '2025-01-20T10:00:00Z',
+            base: { ref: 'develop' },
+          })
+        );
+
+        // Git コマンドのモック
+        (execSync as jest.MockedFunction<typeof execSync>).mockReturnValue(Buffer.from('success'));
+
+        // console.warn のスパイ
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
         const result = await cleanupMergedPullRequest(db, 'test-spec-no-pr');
+
+        expect(result.success).toBe(true);
+        expect(result.prNumber).toBe(456);
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('github_sync テーブルに PR 情報が記録されていません')
+        );
+
+        warnSpy.mockRestore();
+      });
+
+      test('should fail when spec has no PR number and GitHub API returns no PR', async () => {
+        // PR 番号がデータベースに記録されていない仕様書を作成
+        await db
+          .insertInto('specs')
+          .values({
+            id: 'test-spec-really-no-pr',
+            name: 'テスト仕様書(本当に PR なし)',
+            phase: 'implementation',
+            branch_name: 'feature/really-no-pr',
+          })
+          .execute();
+
+        await db
+          .insertInto('github_sync')
+          .values({
+            entity_type: 'spec',
+            entity_id: 'test-spec-really-no-pr',
+            github_id: '999',
+            github_number: null,
+            pr_number: null,
+            sync_status: 'success',
+            last_synced_at: new Date().toISOString(),
+          })
+          .execute();
+
+        // フォールバック: GitHub API でブランチ名から PR を検索するが、見つからない
+        mockClient.rest.pulls.list = jest.fn().mockResolvedValue(
+          createMockOctokitResponse([])
+        );
+
+        const result = await cleanupMergedPullRequest(db, 'test-spec-really-no-pr');
 
         expect(result.success).toBe(false);
         expect(result.error).toContain('PR が作成されていません');
