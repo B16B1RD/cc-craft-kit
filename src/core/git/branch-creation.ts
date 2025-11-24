@@ -7,6 +7,7 @@
 import { execFileSync } from 'node:child_process';
 import { getCurrentBranch } from './branch-cache.js';
 import { getGitHubConfig } from '../config/github-config.js';
+import { formatInfo, formatSuccess } from '../../commands/utils/output.js';
 
 /**
  * カスタムブランチ名をサニタイズ
@@ -127,6 +128,7 @@ export function createSpecBranch(specId: string, customBranchName?: string): Bra
   }
 
   // 4. ブランチ作成（defaultBaseBranch から派生）
+  console.log(formatInfo(`Creating branch from BASE_BRANCH (${defaultBaseBranch})...`));
   try {
     execFileSync('git', ['branch', branchName, defaultBaseBranch], { stdio: 'pipe' });
   } catch (error) {
@@ -150,6 +152,7 @@ export function createSpecBranch(specId: string, customBranchName?: string): Bra
   }
 
   // 6. ブランチ作成成功（切り替えは行わない）
+  console.log(formatSuccess(`Created branch: ${branchName} (from ${defaultBaseBranch})`));
   return {
     created: true,
     branchName,

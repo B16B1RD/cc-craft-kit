@@ -75,6 +75,20 @@ echo "GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx" > .env
 
 注意: Fine-grained Personal Access Token は個人アカウントの Projects v2 には対応していません。Organization の Projects を使用する場合のみ Fine-grained PAT が利用可能です。
 
+### ブランチ作成の動作
+
+cc-craft-kit では、仕様書作成時に自動的にブランチが作成されます。ブランチは **BASE_BRANCH 環境変数（デフォルト: `develop`）** から派生します。
+
+```bash
+# BASE_BRANCH を設定（オプション、デフォルトは develop）
+echo "BASE_BRANCH=develop" >> .env
+```
+
+**動作:**
+- ブランチ作成時に「Creating branch from BASE_BRANCH (develop)...」と表示されます
+- ブランチは BASE_BRANCH から派生します（カレントブランチからは派生しません）
+- 保護ブランチ（main、develop など）から仕様書を作成すると、`feature/spec-<id>` ブランチが自動作成されます
+
 ### プロジェクト初期化
 
 Claude Code のチャットで以下のスラッシュコマンドを実行します。

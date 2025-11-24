@@ -151,8 +151,6 @@ export async function createSpec(
       branchCreated = true;
       branchName = branchResult.branchName;
 
-      console.log(formatInfo(`Created branch: ${branchResult.branchName}`, options.color));
-
       // 作成したブランチへ切り替え
       try {
         execFileSync('git', ['checkout', branchName], { stdio: 'inherit' });
