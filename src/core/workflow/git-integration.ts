@@ -3,7 +3,6 @@
  */
 
 import { execSync, spawnSync } from 'node:child_process';
-import path from 'node:path';
 import { Kysely } from 'kysely';
 import { Database } from '../database/schema.js';
 import { EventBus, WorkflowEvent } from './event-bus.js';
@@ -159,28 +158,19 @@ function getIgnoredFiles(files: string[]): string[] {
 
 /**
  * コミット対象ファイルの決定
- * @param phase フェーズ
  * @param specId 仕様書ID（UUID形式）
  * @returns コミット対象ファイルパス配列
  * @throws specIdがUUID形式でない場合、エラーをスロー
  */
-function getCommitTargets(phase: Phase, specId: string): string[] {
+export function getCommitTargets(specId: string): string[] {
   // specIdのバリデーション（UUID形式）
   const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidPattern.test(specId)) {
     throw new Error(`Invalid spec ID format: ${specId}`);
   }
 
-  if (phase === 'completed') {
-    // completedフェーズでは全変更をコミット
-    return ['.'];
-  }
-
-  // パストラバーサル対策
-  const safeSpecId = path.basename(specId);
-
-  // その他のフェーズでは仕様書ファイルのみ
-  return [`.cc-craft-kit/specs/${safeSpecId}.md`];
+  // 全変更ファイルをコミット対象とする
+  return ['.'];
 }
 
 /**
@@ -293,7 +283,7 @@ async function handlePhaseChangeCommit(
     }
 
     // コミット対象ファイルの決定
-    const files = getCommitTargets(event.data.newPhase as Phase, spec.id);
+    const files = getCommitTargets(spec.id);
 
     // コミットメッセージ生成
     const message = generateCommitMessage(spec.name, event.data.newPhase as Phase);
@@ -376,7 +366,7 @@ async function handleSpecCreatedCommit(
     }
 
     // コミット対象ファイルの決定（requirements フェーズのみ）
-    const files = getCommitTargets('requirements', spec.id);
+    const files = getCommitTargets(spec.id);
 
     // コミットメッセージ生成
     const message = generateCommitMessage(spec.name, 'requirements');

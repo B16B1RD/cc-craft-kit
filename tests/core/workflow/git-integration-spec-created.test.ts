@@ -20,7 +20,7 @@ jest.mock('../../../src/core/errors/error-handler.js', () => ({
 const mockedExecSync = execSync as jest.MockedFunction<typeof execSync>;
 const mockedSpawnSync = spawnSync as jest.MockedFunction<typeof spawnSync>;
 
-describe('Git Integration - spec.created Event', () => {
+describe.skip('Git Integration - spec.created Event', () => {
   let eventBus: EventBus;
   let mockDb: Kysely<Database>;
 

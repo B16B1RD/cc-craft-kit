@@ -70,7 +70,8 @@ export class IntegrityChecker {
         return true; // データベースレコードがない（理論的にはあり得ない）
       }
       // 別ブランチの仕様書は「dbOnly」に含めない（正常と判定）
-      return allowedBranches.includes(dbRecord.branch_name);
+      // branch_name が null の場合は、PR マージ後にクリアされた可能性があるため、許可
+      return dbRecord.branch_name === null || allowedBranches.includes(dbRecord.branch_name);
     });
 
     // 5. 共通IDでメタデータの一致確認

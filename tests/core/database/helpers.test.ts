@@ -42,6 +42,9 @@ describe('database-helpers', () => {
       .addColumn('last_synced_at', 'text')
       .addColumn('created_at', 'text', (col) => col.notNull())
       .addColumn('updated_at', 'text', (col) => col.notNull())
+      .addColumn('pr_number', 'integer')
+      .addColumn('pr_url', 'text')
+      .addColumn('pr_merged_at', 'text')
       .execute();
 
     // テストデータ投入

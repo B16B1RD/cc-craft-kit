@@ -6,7 +6,7 @@ import '../../core/config/env.js';
 import { randomUUID } from 'node:crypto';
 import { existsSync, writeFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { getDatabase, closeDatabase } from '../../core/database/connection.js';
 import { getEventBusAsync } from '../../core/workflow/event-bus.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
@@ -132,10 +132,13 @@ export async function createSpec(
 
   const specPath = join(specsDir, `${id}.md`);
 
+  // 元のブランチを保存
+  const originalBranch = getCurrentBranch();
+
   // ブランチ作成結果
   let branchCreated = false;
   let branchName: string | null = null;
-  let originalBranch: string | null = null;
+  let branchSwitched = false;
 
   try {
     // 0. ブランチ作成（仕様書作成時に自動作成）
@@ -146,19 +149,24 @@ export async function createSpec(
     if (branchResult.created && branchResult.branchName) {
       branchCreated = true;
       branchName = branchResult.branchName;
-      originalBranch = branchResult.originalBranch;
 
-      // ブランチキャッシュをクリア（次回の getCurrentBranch() で最新を取得）
-      clearBranchCache();
+      console.log(formatInfo(`Created branch: ${branchResult.branchName}`, options.color));
 
-      console.log(
-        formatInfo(
-          `Created branch: ${branchResult.branchName}, switched back to ${branchResult.originalBranch}`,
-          options.color
-        )
-      );
+      // 作成したブランチへ切り替え
+      try {
+        execFileSync('git', ['checkout', branchName], { stdio: 'inherit' });
+        branchSwitched = true;
+
+        // ブランチキャッシュをクリア（次回の getCurrentBranch() で最新を取得）
+        clearBranchCache();
+
+        console.log(formatInfo(`Switched to branch: ${branchName}`, options.color));
+      } catch (checkoutError) {
+        const errorMessage =
+          checkoutError instanceof Error ? checkoutError.message : String(checkoutError);
+        throw new Error(`ブランチの切り替えに失敗しました: ${branchName}\n${errorMessage}`);
+      }
     } else {
-      originalBranch = branchResult.originalBranch;
       console.log(
         formatInfo(branchResult.reason || 'ブランチ作成をスキップしました。', options.color)
       );
@@ -194,6 +202,7 @@ export async function createSpec(
     fsyncFileAndDirectory(specPath);
 
     // 3. spec.created イベント発火（非同期ハンドラー登録を待機）
+    // Git 自動コミットが完了するまで待機
     const eventBus = await getEventBusAsync();
     await eventBus.emit(
       eventBus.createEvent('spec.created', id, {
@@ -203,6 +212,8 @@ export async function createSpec(
       })
     );
 
+    // 4. 成功メッセージを表示
+    // 注意: ブランチ復帰処理は、スラッシュコマンド定義（spec-create.md）に移動しました
     console.log('');
     console.log(formatSuccess('Specification created successfully!', options.color));
     console.log('');
@@ -210,6 +221,8 @@ export async function createSpec(
     console.log(formatKeyValue('Name', name, options.color));
     console.log(formatKeyValue('Phase', 'requirements', options.color));
     console.log(formatKeyValue('File', specPath, options.color));
+    console.log(formatKeyValue('Branch', branchName, options.color));
+    console.log(formatKeyValue('Original Branch', originalBranch, options.color));
     console.log('');
     console.log('Next steps:');
     console.log('  1. Edit the spec file to define requirements');
@@ -220,14 +233,28 @@ export async function createSpec(
     console.error('');
     console.error(formatInfo('Rolling back due to error...', options.color));
 
-    // ブランチ削除（作成された場合のみ）
-    if (branchCreated && originalBranch && branchName) {
+    // 元のブランチに戻る（切り替えた場合のみ）
+    if (branchSwitched) {
       try {
-        execSync(`git checkout ${originalBranch}`, { stdio: 'ignore' });
-        execSync(`git branch -D ${branchName}`, { stdio: 'ignore' });
+        execFileSync('git', ['checkout', originalBranch], { stdio: 'inherit' });
+        clearBranchCache();
+        console.error(`Switched back to branch: ${originalBranch}`);
+      } catch (checkoutError) {
+        const errorMessage =
+          checkoutError instanceof Error ? checkoutError.message : String(checkoutError);
+        console.error(`Failed to switch back to ${originalBranch}: ${errorMessage}`);
+      }
+    }
+
+    // ブランチ削除（作成された場合のみ）
+    if (branchCreated && branchName) {
+      try {
+        execFileSync('git', ['branch', '-D', branchName], { stdio: 'ignore' });
         console.error(`Deleted branch: ${branchName}`);
       } catch (branchError) {
-        console.error('Failed to rollback branch:', branchError);
+        const errorMessage =
+          branchError instanceof Error ? branchError.message : String(branchError);
+        console.error(`Failed to rollback branch: ${errorMessage}`);
       }
     }
 

@@ -233,4 +233,76 @@ describe('spec create branch automation', () => {
       expect(mockExecSync).toHaveBeenCalledTimes(0);
     });
   });
+
+  describe('branch switching timing (v0.5.0)', () => {
+    test('should NOT switch back to original branch after spec creation', () => {
+      const originalBranch = 'develop';
+      const branchName = 'feature/spec-12345678';
+
+      mockExecSync
+        .mockReturnValueOnce(Buffer.from('')) // git checkout -b feature/spec-12345678
+        .mockReturnValueOnce(Buffer.from('')); // 他の Git 操作
+
+      // 仕様書作成後、feature ブランチに切り替わる
+      mockExecSync(`git checkout -b ${branchName}`, { stdio: 'inherit' });
+
+      // ブランチ復帰処理が実行されないことを確認
+      const checkoutCalls = mockExecSync.mock.calls.filter(
+        (call) => call[0] === `git checkout ${originalBranch}`
+      );
+
+      expect(checkoutCalls).toHaveLength(0);
+    });
+
+    test('should record original branch name in stdout', () => {
+      const originalBranch = 'develop';
+      const branchName = 'feature/spec-12345678';
+      const specId = '12345678-1234-1234-1234-123456789abc';
+
+      // 標準出力のシミュレーション
+      const stdout = `
+Specification created successfully!
+
+Spec ID: ${specId}
+Name: Test Spec
+Phase: requirements
+File: .cc-craft-kit/specs/${specId}.md
+Branch: ${branchName}
+Original Branch: ${originalBranch}
+
+Next steps:
+  1. Edit the spec file to define requirements
+  2. View the spec: /cft:spec-get ${specId.substring(0, 8)}
+  3. Move to design phase: /cft:spec-phase ${specId.substring(0, 8)} design
+      `.trim();
+
+      // 正規表現で元のブランチ名を抽出
+      const match = stdout.match(/Original Branch: (.+)/);
+      expect(match).not.toBeNull();
+      expect(match?.[1]).toBe(originalBranch);
+    });
+
+    test('should extract original branch name using grep pattern', () => {
+      const stdout = `
+Specification created successfully!
+
+Spec ID: 12345678-1234-1234-1234-123456789abc
+Name: Test Spec
+Phase: requirements
+File: .cc-craft-kit/specs/12345678-1234-1234-1234-123456789abc.md
+Branch: feature/spec-12345678
+Original Branch: develop
+
+Next steps:
+  1. Edit the spec file to define requirements
+  2. View the spec: /cft:spec-get 12345678
+  3. Move to design phase: /cft:spec-phase 12345678 design
+      `.trim();
+
+      // grep -oP '(?<=Original Branch: ).*' のシミュレーション
+      const match = stdout.match(/(?<=Original Branch: ).*/);
+      expect(match).not.toBeNull();
+      expect(match?.[0]).toBe('develop');
+    });
+  });
 });

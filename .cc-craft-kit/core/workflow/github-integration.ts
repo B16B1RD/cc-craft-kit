@@ -694,6 +694,108 @@ ${data.content}
     }
   });
 
+  // spec.deleted → GitHub Projects ステータス更新
+  eventBus.on('spec.deleted', async (event: WorkflowEvent) => {
+    try {
+      const githubToken = process.env.GITHUB_TOKEN;
+      if (!githubToken) {
+        return;
+      }
+
+      const ccCraftKitDir = join(process.cwd(), '.cc-craft-kit');
+      const githubConfig = getGitHubConfig(ccCraftKitDir);
+
+      if (!githubConfig) {
+        return;
+      }
+
+      // GitHub Projects 同期情報を取得
+      const projectSync = await db
+        .selectFrom('github_sync')
+        .select(['github_id'])
+        .where('entity_id', '=', event.specId)
+        .where('entity_type', '=', 'project')
+        .executeTakeFirst();
+
+      if (!projectSync) {
+        // Project に追加されていない場合はスキップ
+        return;
+      }
+
+      try {
+        // GitHub API クライアント作成
+        const client = new GitHubClient({ token: githubToken });
+        const projects = new GitHubProjects(client);
+
+        // Project 番号を解決
+        const projectNumber = await resolveProjectId(ccCraftKitDir, githubToken);
+
+        if (!projectNumber) {
+          await logError(
+            'warn',
+            'GitHub Project number not found',
+            new Error('Project number not configured'),
+            {
+              event: 'spec.deleted',
+              specId: event.specId,
+              action: 'update_project_status',
+            }
+          );
+          return;
+        }
+
+        // Project ステータスを "Done" に更新
+        await projects.updateProjectStatus({
+          owner: githubConfig.owner,
+          projectNumber,
+          itemId: projectSync.github_id,
+          status: 'Done',
+        });
+
+        // ステータス更新を検証＋リトライ
+        try {
+          const verification = await projects.verifyProjectStatusUpdate({
+            owner: githubConfig.owner,
+            projectNumber,
+            itemId: projectSync.github_id,
+            expectedStatus: 'Done',
+            maxRetries: 3,
+          });
+
+          if (verification.success) {
+            console.log(
+              `✓ GitHub Project status updated to "Done" (verified after ${verification.attempts} attempts)`
+            );
+          } else {
+            console.warn(
+              `⚠ GitHub Project status update could not be verified (tried ${verification.attempts} times)`
+            );
+          }
+        } catch (verifyError) {
+          // 検証失敗は警告のみで処理続行
+          console.warn(`⚠ GitHub Project status verification failed: ${verifyError}`);
+        }
+      } catch (projectError) {
+        // Project ステータス更新失敗は警告のみで処理続行
+        await logError(
+          'warn',
+          'Failed to update GitHub Project status on spec deletion',
+          projectError,
+          {
+            event: 'spec.deleted',
+            specId: event.specId,
+            action: 'update_project_status',
+          }
+        );
+      }
+    } catch (error) {
+      await logError('error', 'Failed to handle spec.deleted event', error, {
+        event: 'spec.deleted',
+        specId: event.specId,
+      });
+    }
+  });
+
   // task.completed → Sub Issue ステータス更新
   eventBus.on<{ taskId: string }>(
     'task.completed',

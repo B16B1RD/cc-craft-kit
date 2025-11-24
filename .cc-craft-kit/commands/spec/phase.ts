@@ -17,6 +17,21 @@ import { validateSpecId, validatePhase, Phase } from '../utils/validation.js';
 import { ensureGitHubIssue } from '../../integrations/github/ensure-issue.js';
 import { getCurrentDateTimeForSpec } from '../../core/utils/date-format.js';
 import { fsyncFileAndDirectory } from '../../core/utils/fsync.js';
+import { switchBranch, BranchSwitchError } from '../../core/git/branch-switching.js';
+import {
+  validatePhaseTransition,
+  displayValidationResult,
+} from '../../core/workflow/phase-transition-validator.js';
+
+/**
+ * 仕様書フェーズ更新オプション
+ */
+export interface UpdateSpecPhaseOptions {
+  color?: boolean;
+  force?: boolean;
+  dryRun?: boolean;
+  retry?: boolean;
+}
 
 /**
  * 仕様書フェーズ更新
@@ -24,7 +39,7 @@ import { fsyncFileAndDirectory } from '../../core/utils/fsync.js';
 export async function updateSpecPhase(
   specId: string,
   newPhase: string,
-  options: { color: boolean } = { color: true }
+  options: UpdateSpecPhaseOptions = { color: true }
 ): Promise<void> {
   const cwd = process.cwd();
   const ccCraftKitDir = join(cwd, '.cc-craft-kit');
@@ -65,12 +80,60 @@ export async function updateSpecPhase(
   // GitHub Issue 自動リカバリー（フェーズ更新前に実行）
   await ensureGitHubIssue(db, spec.id);
 
+  // ブランチ切り替え（仕様書の branch_name が設定されている場合のみ）
+  if (spec.branch_name) {
+    try {
+      const result = switchBranch(spec.branch_name);
+
+      if (result.switched) {
+        console.log('');
+        console.log(formatSuccess(`✓ Switched to branch: ${result.targetBranch}`, options.color));
+        console.log('');
+      }
+    } catch (error) {
+      if (error instanceof BranchSwitchError) {
+        console.error('');
+        console.error(`❌ ${error.message}`);
+        console.error('');
+        throw error;
+      }
+      throw error;
+    }
+  }
+
+  // フェーズ遷移前バリデーション
+  const oldPhase = spec.phase as Phase;
+  const validationResult = await validatePhaseTransition(spec.id, oldPhase, validatedPhase, {
+    force: options.force,
+    dryRun: options.dryRun,
+  });
+
+  // バリデーション結果を表示
+  displayValidationResult(validationResult);
+
+  // dryRun モードの場合はここで終了
+  if (options.dryRun) {
+    console.log('');
+    console.log(formatInfo('Dry-run mode: No changes were made.', options.color));
+    console.log('');
+    return;
+  }
+
+  // バリデーション失敗時の処理
+  if (!validationResult.isValid) {
+    if (validationResult.needsCompletion && !options.retry) {
+      // 自動補完が必要な場合
+      console.error('');
+      console.error('❌ フェーズ遷移前のバリデーションに失敗しました。');
+      console.error('');
+      throw new Error('Phase transition validation failed. Please complete the missing sections.');
+    }
+  }
+
   // データベース更新
   console.log(formatInfo('Updating database...', options.color));
   const now = new Date().toISOString();
   const formattedDateTime = getCurrentDateTimeForSpec();
-
-  const oldPhase = spec.phase;
 
   try {
     // 1. データベース更新
@@ -180,16 +243,44 @@ export async function updateSpecPhase(
 
 // CLI エントリポイント
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const specId = process.argv[2];
-  const phase = process.argv[3];
+  const args = process.argv.slice(2);
+
+  // オプションフラグをパース
+  const options: UpdateSpecPhaseOptions = {
+    color: true,
+    force: false,
+    dryRun: false,
+    retry: false,
+  };
+
+  const positionalArgs: string[] = [];
+
+  for (const arg of args) {
+    if (arg === '--force') {
+      options.force = true;
+    } else if (arg === '--dry-run') {
+      options.dryRun = true;
+    } else if (arg === '--retry') {
+      options.retry = true;
+    } else if (!arg.startsWith('--')) {
+      positionalArgs.push(arg);
+    }
+  }
+
+  const [specId, phase] = positionalArgs;
 
   if (!specId || !phase) {
     console.error('Error: spec-id and phase are required');
-    console.error('Usage: npx tsx phase.ts <spec-id> <phase>');
+    console.error('Usage: npx tsx phase.ts <spec-id> <phase> [options]');
+    console.error('');
+    console.error('Options:');
+    console.error('  --force     Skip validation and force phase transition');
+    console.error('  --dry-run   Validate without making changes');
+    console.error('  --retry     Retry auto-completion (not yet implemented)');
     process.exit(1);
   }
 
-  updateSpecPhase(specId, phase)
+  updateSpecPhase(specId, phase, options)
     .catch((error) => handleCLIError(error))
     .finally(() => closeDatabase());
 }
