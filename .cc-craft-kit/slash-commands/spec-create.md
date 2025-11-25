@@ -110,8 +110,8 @@ Write ツールで仕様書ファイルを作成します。
 
 **仕様書 ID:** $SPEC_ID
 **フェーズ:** requirements
-**作成日時:** (現在の日時を YYYY-MM-DD HH:mm 形式で挿入)
-**更新日時:** (現在の日時を YYYY-MM-DD HH:mm 形式で挿入)
+**作成日時:** (現在の日時を YYYY/MM/DD HH:mm:ss 形式で挿入)
+**更新日時:** (現在の日時を YYYY/MM/DD HH:mm:ss 形式で挿入)
 
 ---
 
