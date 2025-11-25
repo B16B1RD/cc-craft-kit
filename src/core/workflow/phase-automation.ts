@@ -90,16 +90,26 @@ export class PhaseAutomationHandler {
    * design フェーズの自動処理
    *
    * - 要件定義セクションを解析
-   * - 設計セクション（7. 設計）を自動生成（Claude が実行）
+   * - 設計セクション（7. 設計詳細）を自動生成（Claude が実行）
+   * - タスクリスト（8. 実装タスクリスト）を自動生成（Claude が実行）
+   * - GitHub Issue が存在する場合、Sub Issue を自動作成
    * - 不足情報がある場合は、Claude が AskUserQuestion で問い合わせる
    * - 品質要件チェックを実行
+   *
+   * Note: design フェーズで詳細設計とタスク分割を同時に実行します。
+   * tasks フェーズは非推奨となり、直接 implementation フェーズへ移行することを推奨します。
    */
   private async handleDesignPhase(specId: string): Promise<void> {
-    // Note: 設計セクションの自動生成は Claude Code 側で実行される
+    // Note: 設計セクション・タスクリストの自動生成は Claude Code 側で実行される
     // この関数では、設計フェーズに移行したことをユーザーに通知するのみ
 
     console.log(`✓ 設計フェーズに移行しました`);
-    console.log(`\n次のステップ: Claude が設計セクションを自動生成します（CLAUDE.md の指示通り）`);
+    console.log(`\n次のステップ:`);
+    console.log(`  1. Claude が設計詳細セクション（7. 設計詳細）を自動生成します`);
+    console.log(`  2. Claude が実装タスクリスト（8. 実装タスクリスト）を自動生成します`);
+    console.log(`  3. GitHub Issue が存在する場合、Sub Issue が自動作成されます`);
+    console.log(`\n設計完了後の推奨コマンド:`);
+    console.log(`  /cft:spec-phase ${specId.substring(0, 8)} impl`);
 
     // 品質チェック実行
     await this.runQualityCheck('design', specId);
@@ -108,9 +118,13 @@ export class PhaseAutomationHandler {
   /**
    * tasks フェーズの自動処理
    *
+   * @deprecated tasks フェーズは非推奨です。
+   * design フェーズでタスク分割が自動実行されるため、
+   * design → implementation への直接遷移を推奨します。
+   *
    * - 受け入れ基準（3. 受け入れ基準）を解析
    * - Claude が TodoWrite で実装タスクリストを生成
-   * - Claude が仕様書ファイルに「## 9. 実装タスクリスト」セクションを追加
+   * - Claude が仕様書ファイルに「## 8. 実装タスクリスト」セクションを追加
    * - /cft:spec-update で GitHub Issue に更新を通知
    * - 品質要件チェックを実行
    */
@@ -118,7 +132,10 @@ export class PhaseAutomationHandler {
     // Note: タスクリストの生成は Claude Code 側で実行される
     // この関数では、タスク分解フェーズに移行したことをユーザーに通知するのみ
 
-    console.log(`✓ タスク分解フェーズに移行しました`);
+    console.warn(`⚠️  tasks フェーズは非推奨です`);
+    console.log(`   design フェーズでタスク分割が自動実行されるようになりました。`);
+    console.log(`   推奨: /cft:spec-phase ${specId.substring(0, 8)} impl で直接実装フェーズへ移行`);
+    console.log(`\n✓ タスク分解フェーズに移行しました（後方互換性のため継続サポート）`);
     console.log(
       `\n次のステップ: Claude が実装タスクリストを自動生成します（CLAUDE.md の指示通り）`
     );

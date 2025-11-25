@@ -11,40 +11,65 @@ export interface TaskInfo {
 }
 
 /**
- * 仕様書ファイルから「8. 実装タスクリスト」を解析
+ * 仕様書内容から「8. 実装タスクリスト」を解析
  *
- * @param specFilePath 仕様書ファイルパス
+ * 対応フォーマット:
+ * - [ ] タスク内容（シンプルな形式）
+ * - [ ] **タスク X**: タスク内容（番号付き形式）
+ * - [ ] `ファイル名` の変更内容（バッククォート形式）
+ *
+ * @param content 仕様書の内容（文字列）
  * @returns タスク配列
  */
-export async function parseTaskListFromSpec(specFilePath: string): Promise<TaskInfo[]> {
-  const content = await readFile(specFilePath, 'utf-8');
-
+export function parseTaskListFromContent(content: string): TaskInfo[] {
   // 「## 8. 実装タスクリスト」セクションを抽出
-  const taskSectionMatch = content.match(/##\s*8\.\s*実装タスクリスト[\s\S]*$/i);
+  const taskSectionMatch = content.match(
+    /##\s*8\.\s*実装タスクリスト[\s\S]*?(?=\n##\s|\n---\s|$)/i
+  );
 
   if (!taskSectionMatch) {
-    return []; // タスクリストセクションがない場合は空配列
+    return [];
   }
 
   const taskSection = taskSectionMatch[0];
-
-  // Markdown チェックリスト（「- [ ] **タスク X**: ...」）を解析
-  const taskRegex = /-\s*\[\s*\]\s*\*\*タスク\s+\d+\*\*:\s*(.+?)(?=\n|$)/gi;
   const tasks: TaskInfo[] = [];
+  const lines = taskSection.split('\n');
 
-  let match: RegExpExecArray | null;
-  while ((match = taskRegex.exec(taskSection)) !== null) {
-    const title = match[1].trim();
+  for (const line of lines) {
+    // チェックボックス行を検出
+    const checkboxMatch = line.match(/^\s*-\s*\[\s*\]\s*(.+)$/);
+    if (!checkboxMatch) {
+      continue;
+    }
 
-    // タスク ID を生成（UUID）
+    const rawTitle = checkboxMatch[1].trim();
+
+    // 空のタイトルはスキップ
+    if (!rawTitle) {
+      continue;
+    }
+
+    // UUID を生成
     const taskId = randomUUID();
 
     tasks.push({
       id: taskId,
-      title,
-      description: undefined, // 詳細は後続行にある可能性があるが、簡略化のため省略
+      title: rawTitle,
+      description: undefined,
     });
   }
 
   return tasks;
+}
+
+/**
+ * 仕様書ファイルから「8. 実装タスクリスト」を解析
+ *
+ * @param specFilePath 仕様書ファイルパス
+ * @returns タスク配列
+ * @deprecated parseTaskListFromContent を使用してください
+ */
+export async function parseTaskListFromSpec(specFilePath: string): Promise<TaskInfo[]> {
+  const content = await readFile(specFilePath, 'utf-8');
+  return parseTaskListFromContent(content);
 }
