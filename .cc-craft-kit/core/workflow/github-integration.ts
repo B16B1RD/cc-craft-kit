@@ -427,8 +427,9 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
 
         // ========== ここまで新規追加 ==========
 
-        // tasks フェーズ移行時に Sub Issue を自動作成
-        if (event.data.newPhase === 'tasks') {
+        // design フェーズ移行時に Sub Issue を自動作成
+        // 注意: tasks フェーズは非推奨。design フェーズでタスク分割と Sub Issue 作成を同時実行
+        if (event.data.newPhase === 'design' || event.data.newPhase === 'tasks') {
           try {
             const specPath = join(ccCraftKitDir, 'specs', `${spec.id}.md`);
             if (!existsSync(specPath)) {
@@ -451,7 +452,14 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
             const taskList = await parseTaskListFromSpec(specPath);
 
             if (taskList.length === 0) {
-              console.log('No tasks found in spec file, skipping Sub Issue creation');
+              // design フェーズではタスクリストがなくても正常（まだ生成されていない場合がある）
+              if (event.data.newPhase === 'design') {
+                console.log(
+                  'No tasks found yet, Sub Issue creation will be handled by spec-phase.md'
+                );
+              } else {
+                console.log('No tasks found in spec file, skipping Sub Issue creation');
+              }
               return;
             }
 

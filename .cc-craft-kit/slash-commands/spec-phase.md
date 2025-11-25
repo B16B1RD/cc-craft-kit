@@ -14,13 +14,16 @@ argument-hint: "<spec-id> <phase>"
 
 ### フェーズ名マッピング
 
-| 入力 | 正規化後 |
-|------|----------|
-| req, reqs | requirements |
-| des | design |
-| task | tasks |
-| impl, imp | implementation |
-| comp, done | completed |
+| 入力 | 正規化後 | 備考 |
+|------|----------|------|
+| req, reqs | requirements | |
+| des | design | |
+| task | tasks | ⚠️ 非推奨 |
+| impl, imp | implementation | |
+| comp, done | completed | |
+
+> **注意**: 4 フェーズモデル（requirements → design → implementation → completed）を推奨します。
+> tasks フェーズは非推奨であり、design フェーズでタスク分割が自動実行されます。
 
 ---
 
@@ -80,7 +83,27 @@ Read ツールで仕様書ファイル (`SPEC_PATH`) を読み込み、以下を
    - 補完後、このコマンドを再実行（`/cft:spec-phase $1 design`）
    - **処理を中断**
 
-#### design → tasks の場合
+#### design → tasks の場合（非推奨）
+
+> ⚠️ **非推奨警告**: tasks フェーズは非推奨です。
+> design フェーズでタスク分割が自動的に実行されるため、直接 implementation フェーズへ移行してください。
+> `/cft:spec-phase $SPEC_ID impl`
+
+以下の警告メッセージを表示してから処理を継続:
+
+```
+⚠️ 警告: tasks フェーズは非推奨です
+
+design フェーズでタスク分割が自動的に実行されるようになりました。
+推奨される次のステップ:
+- 実装開始: /cft:spec-phase $SPEC_ID impl
+
+tasks フェーズへの移行を続行しますか？
+```
+
+AskUserQuestion ツールで確認:
+- 続行する場合: 従来通りの処理を実行
+- 中断する場合: 処理を中止し、implementation フェーズへの移行を案内
 
 1. 以下のセクションが存在すること:
    - `## 7. 設計詳細`
@@ -163,6 +186,9 @@ Skill ツールで `pr-creator` スキルを実行:
 
 #### design フェーズに移行した場合
 
+> **注意**: design フェーズでは詳細設計とタスク分割を同時に実行します。
+> tasks フェーズは非推奨となり、design → implementation への直接遷移を推奨します。
+
 1. **コードベース解析**:
    - Task ツールで Explore サブエージェントを実行（thoroughness: "medium"）
    - プロンプト:
@@ -244,13 +270,43 @@ Skill ツールで `pr-creator` スキルを実行:
    [以下同様]
    ```
 
-4. **設計追加の自動コミット**:
+4. **タスクリスト生成**（design フェーズで統合実行）:
+   - 仕様書の「## 3. 受け入れ基準」と「## 7. 設計詳細」セクションを解析
+   - TodoWrite ツールでタスクリストを生成（各受け入れ基準・設計項目を実装可能な単位に分解）
+   - Edit ツールで仕様書の末尾に「## 8. 実装タスクリスト」セクションを追加
+     - 各タスクをマークダウンのチェックボックス形式で記載
+     - Phase 単位でグループ化（設計詳細の移行計画に対応）
+
+   ```markdown
+   ## 8. 実装タスクリスト
+
+   ### Phase 1: [フェーズ名]
+
+   - [ ] [タスク 1: 具体的な実装内容]
+   - [ ] [タスク 2: 具体的な実装内容]
+
+   ### Phase 2: [フェーズ名]
+
+   - [ ] [タスク 3: 具体的な実装内容]
+   - [ ] [タスク 4: 具体的な実装内容]
+   ```
+
+5. **Sub Issue 自動作成**（GitHub Issue が存在する場合）:
+   - `GITHUB_ISSUE_NUMBER` が null でない場合のみ実行
+   - Bash ツールで以下を実行:
+   ```bash
+   npx tsx .cc-craft-kit/commands/github/create-sub-issues.ts "$SPEC_ID"
+   ```
+   - 出力を確認し、作成された Sub Issue の一覧を表示
+   - エラー時は警告を表示し、手動での Sub Issue 作成を案内（処理は継続）
+
+6. **設計追加の自動コミット**:
    - Bash ツールで以下を実行:
    ```bash
    git add "$SPEC_PATH" && git commit -m "feat: $SPEC_NAME の設計を完了"
    ```
 
-5. **ガイダンスメッセージ表示**:
+7. **ガイダンスメッセージ表示**:
    ```
    ✓ 設計フェーズを完了しました
 
@@ -263,10 +319,17 @@ Skill ツールで `pr-creator` スキルを実行:
    - 7.3 機能マッピング
    - 7.4 テスト戦略
    - 7.5 移行計画
+   - 8. 実装タスクリスト
+
+   [GitHub Issue が存在する場合]
+   Sub Issue:
+   - #XX: [タスク名]
+   - #YY: [タスク名]
+   ...
 
    次のステップ:
    - 設計内容を確認: /cft:spec-get $SPEC_ID
-   - タスク分解へ移行: /cft:spec-phase $SPEC_ID tasks
+   - 実装開始: /cft:spec-phase $SPEC_ID impl
    ```
 
 #### その他のフェーズ（requirements, testing）
@@ -351,13 +414,14 @@ git status --porcelain
 ```
 ❌ 無効なフェーズ名: $2
 
-有効なフェーズ:
+有効なフェーズ（4 フェーズモデル）:
 - requirements (req, reqs)
 - design (des)
-- tasks (task)
 - implementation (impl, imp)
-- testing (test)
 - completed (comp, done)
+
+非推奨フェーズ:
+- tasks (task) ⚠️ design フェーズでタスク分割が自動実行されます
 ```
 
 ### Git 操作失敗時
