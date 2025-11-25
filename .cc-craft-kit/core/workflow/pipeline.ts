@@ -141,7 +141,7 @@ export class StoryToDonePipeline {
     await this.db
       .updateTable('specs')
       .set({
-        phase: newPhase as 'requirements' | 'design' | 'implementation' | 'testing' | 'completed',
+        phase: newPhase as 'requirements' | 'design' | 'tasks' | 'implementation' | 'completed',
         updated_at: new Date().toISOString(),
       })
       .where('id', '=', specId)

@@ -175,7 +175,6 @@ export class QualityMapper {
       'design',
       'tasks',
       'implementation',
-      'testing',
       'completed',
     ];
 

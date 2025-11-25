@@ -10,7 +10,6 @@ export type SpecPhase =
   | 'design'
   | 'tasks'
   | 'implementation'
-  | 'testing'
   | 'completed';
 
 // タスクステータス

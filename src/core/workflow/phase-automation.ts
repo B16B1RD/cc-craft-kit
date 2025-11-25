@@ -44,9 +44,6 @@ export class PhaseAutomationHandler {
         case 'implementation':
           await this.handleImplementationPhase(specId);
           break;
-        case 'testing':
-          await this.handleTestingPhase(specId);
-          break;
         case 'completed':
           await this.handleCompletedPhase(specId);
           break;
@@ -150,21 +147,6 @@ export class PhaseAutomationHandler {
 
     // 品質チェック実行
     await this.runQualityCheck('implementation', specId);
-  }
-
-  /**
-   * testing フェーズの自動処理
-   *
-   * - Claude が test-generator サブエージェントでテスト生成
-   * - テスト実行とカバレッジ確認
-   * - 品質要件チェックを実行
-   */
-  private async handleTestingPhase(specId: string): Promise<void> {
-    console.log(`✓ テストフェーズに移行しました`);
-    console.log(`\n次のステップ: Claude がテスト生成と実行を開始します（CLAUDE.md の指示通り）`);
-
-    // 品質チェック実行
-    await this.runQualityCheck('testing', specId);
   }
 
   /**
