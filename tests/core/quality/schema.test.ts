@@ -106,7 +106,7 @@ describe('品質要件スキーマ', () => {
       };
 
       expect(() => validateQualityRequirementsConfig(config)).toThrow(
-        'Quality requirement at index 0: trigger_phase must be one of requirements, design, tasks, implementation, testing, completed'
+        'Quality requirement at index 0: trigger_phase must be one of requirements, design, tasks, implementation, completed'
       );
     });
 

@@ -230,11 +230,6 @@ describe('BranchGuard', () => {
       expect(suggestions).toContain('feature/<機能名>');
     });
 
-    it('should suggest test branch for testing phase', () => {
-      const suggestions = suggestWorkingBranch('testing');
-      expect(suggestions).toContain('test/<テスト内容>');
-    });
-
     it('should suggest common branches for no phase', () => {
       const suggestions = suggestWorkingBranch();
       expect(suggestions).toContain('feature/<機能名>');

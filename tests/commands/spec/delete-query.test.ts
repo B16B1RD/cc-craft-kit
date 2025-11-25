@@ -118,7 +118,7 @@ describe('queryDeleteTarget', () => {
           id: specId,
           name: 'GitHub未連携テスト',
           description: null,
-          phase: 'testing',
+          phase: 'implementation',
           branch_name: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),

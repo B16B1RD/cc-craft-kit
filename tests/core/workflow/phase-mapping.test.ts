@@ -26,10 +26,6 @@ describe('normalizePhase', () => {
       expect(normalizePhase('implementation')).toBe('implementation');
     });
 
-    test('should return testing as-is', () => {
-      expect(normalizePhase('testing')).toBe('testing');
-    });
-
     test('should return completed as-is', () => {
       expect(normalizePhase('completed')).toBe('completed');
     });
@@ -64,12 +60,6 @@ describe('normalizePhase', () => {
 
     test('should expand imp to implementation (backward compatibility)', () => {
       expect(normalizePhase('imp')).toBe('implementation');
-    });
-  });
-
-  describe('省略形の入力 (testing)', () => {
-    test('should expand test to testing', () => {
-      expect(normalizePhase('test')).toBe('testing');
     });
   });
 
@@ -158,12 +148,6 @@ describe('getPhaseAliasesHelp', () => {
     expect(help).toContain('imp');
   });
 
-  test('should include testing aliases', () => {
-    const help = getPhaseAliasesHelp();
-    expect(help).toContain('→ testing');
-    expect(help).toContain('test');
-  });
-
   test('should include completed aliases', () => {
     const help = getPhaseAliasesHelp();
     expect(help).toContain('→ completed');
@@ -187,7 +171,6 @@ describe('PHASE_ALIASES', () => {
       'task',
       'impl',
       'imp',
-      'test',
       'comp',
       'done',
     ];
@@ -203,7 +186,6 @@ describe('PHASE_ALIASES', () => {
       'design',
       'tasks',
       'implementation',
-      'testing',
       'completed',
     ];
 
