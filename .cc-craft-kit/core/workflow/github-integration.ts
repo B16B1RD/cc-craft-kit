@@ -17,6 +17,11 @@ import { SubIssueManager } from '../../integrations/github/sub-issues.js';
 import { parseTaskListFromSpec } from '../utils/task-parser.js';
 import { getErrorHandler } from '../errors/error-handler.js';
 import { getSpecWithGitHubInfo } from '../database/helpers.js';
+import {
+  detectChanges,
+  buildChangelogComment,
+  formatChangeSummary,
+} from '../../integrations/github/changelog-writer.js';
 
 /**
  * エラーをログに記録
@@ -615,7 +620,7 @@ ${data.content}
     }
   });
 
-  // spec.updated → GitHub Issue 本文更新 + コメント追加
+  // spec.updated → GitHub Issue 本文更新 + 変更履歴コメント追加
   eventBus.on('spec.updated', async (event: WorkflowEvent) => {
     try {
       const githubToken = process.env.GITHUB_TOKEN;
@@ -659,6 +664,22 @@ ${data.content}
       const client = new GitHubClient({ token: githubToken });
       const issues = new GitHubIssues(client);
 
+      // 既存の Issue 本文を取得して変更を検出
+      let oldContent = '';
+      try {
+        const existingIssue = await issues.get(
+          githubConfig.owner,
+          githubConfig.repo,
+          spec.github_issue_number
+        );
+        oldContent = existingIssue.body || '';
+      } catch {
+        // Issue 取得に失敗した場合は変更検出をスキップ
+      }
+
+      // 変更を検出
+      const changes = detectChanges(oldContent, specContent);
+
       // Issue 本文を仕様書の最新内容で更新
       try {
         await issues.update({
@@ -675,28 +696,29 @@ ${data.content}
         });
       }
 
-      // 仕様書更新をコメントで記録
-      const updateComment = `## 📝 仕様書更新
+      // 変更履歴をコメントで記録（変更がある場合のみ）
+      if (changes.length > 0) {
+        const changelogComment = buildChangelogComment(changes, spec.id);
+        const changeSummary = formatChangeSummary(changes);
 
-仕様書が更新されました。Issue 本文を最新の内容で更新しました。
+        try {
+          await issues.addComment(
+            githubConfig.owner,
+            githubConfig.repo,
+            spec.github_issue_number,
+            changelogComment
+          );
 
-**更新日時:** ${new Date().toLocaleString('ja-JP')}
-**最新の仕様書:** [\`.cc-craft-kit/specs/${spec.id}.md\`](../../.cc-craft-kit/specs/${spec.id}.md)
-`;
-
-      try {
-        await issues.addComment(
-          githubConfig.owner,
-          githubConfig.repo,
-          spec.github_issue_number,
-          updateComment
-        );
-      } catch (commentError) {
-        await logError('warn', 'Failed to add spec update comment to GitHub Issue', commentError, {
-          event: 'spec.updated',
-          specId: event.specId,
-          action: 'add_comment',
-        });
+          if (process.env.DEBUG === '1') {
+            console.log(`✓ Changelog comment added: ${changeSummary}`);
+          }
+        } catch (commentError) {
+          await logError('warn', 'Failed to add changelog comment to GitHub Issue', commentError, {
+            event: 'spec.updated',
+            specId: event.specId,
+            action: 'add_changelog_comment',
+          });
+        }
       }
     } catch (error) {
       await logError('error', 'Failed to handle spec.updated event', error, {

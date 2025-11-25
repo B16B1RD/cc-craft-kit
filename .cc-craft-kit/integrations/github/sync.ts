@@ -1,8 +1,11 @@
 import { Kysely } from 'kysely';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { Database } from '../../core/database/schema.js';
 import { GitHubIssues, CreateIssueParams, UpdateIssueParams } from './issues.js';
 import { GitHubProjects } from './projects.js';
 import { getSpecWithGitHubInfo } from '../../core/database/helpers.js';
+import { CheckboxSyncService, formatCheckboxChangeSummary } from './checkbox-sync.js';
 
 /**
  * 仕様書とIssueの同期パラメータ
@@ -70,26 +73,15 @@ export class GitHubSyncService {
 
     // 既存のIssue確認
     if (spec.github_issue_number) {
-      // 既存のIssue本文を取得して、テンプレートのままかチェック
-      const existingIssue = await this.issues.get(
-        params.owner,
-        params.repo,
-        spec.github_issue_number
-      );
-      const isTemplate =
-        existingIssue.body?.includes('(背景を記述してください)') ||
-        existingIssue.body?.includes('(必須要件1)') ||
-        existingIssue.body?.includes('(機能要件1)');
-
-      // Issue更新
+      // Issue更新（常に仕様書ファイルの内容で本文を上書き）
+      // Source of Truth は仕様書ファイルであり、Issue は可視化ビューとして機能する
       const updateParams: UpdateIssueParams = {
         owner: params.owner,
         repo: params.repo,
         issueNumber: spec.github_issue_number,
         title: `[${spec.phase}] ${spec.name}`,
+        body: await this.buildIssueBody(spec),
         labels: [this.getPhaseLabel(spec.phase)],
-        // テンプレートのままの場合は本文を更新、それ以外は履歴保持のため更新しない
-        ...(isTemplate ? { body: await this.buildIssueBody(spec) } : {}),
       };
 
       await this.issues.update(updateParams);
@@ -191,6 +183,25 @@ export class GitHubSyncService {
       })
       .where('id', '=', spec.id)
       .execute();
+
+    // チェックボックス同期（Issue → 仕様書）
+    if (issue.body) {
+      const specPath = join(process.cwd(), '.cc-craft-kit', 'specs', `${spec.id}.md`);
+
+      if (existsSync(specPath)) {
+        try {
+          const checkboxSync = new CheckboxSyncService(this.db);
+          const result = await checkboxSync.syncToSpec(spec.id, specPath, issue.body);
+
+          if (result.success && result.changes.length > 0) {
+            const summary = formatCheckboxChangeSummary(result.changes);
+            console.log(`✓ Checkbox sync (Issue → Spec): ${summary}`);
+          }
+        } catch (error) {
+          console.error('Warning: Failed to sync checkboxes from Issue:', error);
+        }
+      }
+    }
 
     // 同期ログ記録
     await this.recordSyncLog({
