@@ -261,20 +261,20 @@ git checkout "$ORIGINAL_BRANCH"
 全ての処理が完了したら、以下の形式で結果を表示してください。
 
 ```
-✓ Specification created successfully!
+✓ 仕様書を作成しました
 
-Spec ID: $SPEC_ID
-Name: $1
-Phase: requirements
-File: $SPEC_PATH
-Branch: $BRANCH_NAME
-Original Branch: $ORIGINAL_BRANCH
+仕様書 ID: $SPEC_ID
+名前: $1
+フェーズ: requirements
+ファイル: $SPEC_PATH
+ブランチ: $BRANCH_NAME
+元のブランチ: $ORIGINAL_BRANCH
 
-Next steps:
-  1. Edit the spec file to define requirements
-  2. View the spec: /cft:spec-get <短縮ID>
-  3. Move to design phase: /cft:spec-phase <短縮ID> design
-  4. Switch to branch: git checkout $BRANCH_NAME
+次のステップ:
+  1. 仕様書を編集して要件を定義する
+  2. 仕様書を表示: /cft:spec-get <短縮ID>
+  3. 設計フェーズに移行: /cft:spec-phase <短縮ID> design
+  4. ブランチに切り替え: git checkout $BRANCH_NAME
 ```
 
 ---
