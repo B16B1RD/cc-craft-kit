@@ -264,3 +264,29 @@ interface StatusInfo {
 | 責務の混在 | 5つ | 1つ（データ取得のみ） |
 | テスト容易性 | 低 | 高（JSON モック可能） |
 | プロンプト活用度 | 低 | 高（自動実行フロー） |
+
+---
+
+## 8. 実装タスクリスト
+
+### Phase 1: スクリプト分離
+
+- [ ] `src/commands/status/info.ts` を新規作成（JSON 出力のみ）
+- [ ] `StatusInfo` インターフェースの実装
+- [ ] DB クエリ実装（specs + github_sync JOIN）
+- [ ] フェーズ別集計ロジック実装
+- [ ] ログ取得クエリ実装
+- [ ] 単体テスト作成（`tests/commands/status/info.test.ts`）
+
+### Phase 2: プロンプト拡充
+
+- [ ] `src/slash-commands/status.md` を大幅リファクタリング
+- [ ] 自動実行フロー定義
+- [ ] 表示フォーマット実装
+- [ ] 次のアクション提案ロジック実装
+
+### Phase 3: 統合・検証
+
+- [ ] `npm run sync:dogfood` で同期
+- [ ] `/cft:status` コマンド動作確認
+- [ ] 旧スクリプト `src/commands/status.ts` の削除（オプション）
