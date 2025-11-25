@@ -1,8 +1,11 @@
 import { Kysely } from 'kysely';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { Database } from '../../core/database/schema.js';
 import { GitHubIssues, CreateIssueParams, UpdateIssueParams } from './issues.js';
 import { GitHubProjects } from './projects.js';
 import { getSpecWithGitHubInfo } from '../../core/database/helpers.js';
+import { CheckboxSyncService, formatCheckboxChangeSummary } from './checkbox-sync.js';
 
 /**
  * 仕様書とIssueの同期パラメータ
@@ -180,6 +183,25 @@ export class GitHubSyncService {
       })
       .where('id', '=', spec.id)
       .execute();
+
+    // チェックボックス同期（Issue → 仕様書）
+    if (issue.body) {
+      const specPath = join(process.cwd(), '.cc-craft-kit', 'specs', `${spec.id}.md`);
+
+      if (existsSync(specPath)) {
+        try {
+          const checkboxSync = new CheckboxSyncService(this.db);
+          const result = await checkboxSync.syncToSpec(spec.id, specPath, issue.body);
+
+          if (result.success && result.changes.length > 0) {
+            const summary = formatCheckboxChangeSummary(result.changes);
+            console.log(`✓ Checkbox sync (Issue → Spec): ${summary}`);
+          }
+        } catch (error) {
+          console.error('Warning: Failed to sync checkboxes from Issue:', error);
+        }
+      }
+    }
 
     // 同期ログ記録
     await this.recordSyncLog({

@@ -95,6 +95,8 @@ export interface GitHubSyncTable {
   updated_at: ColumnType<Date, string | undefined, string>; // 更新日時
   sync_status: 'success' | 'failed' | 'pending';
   error_message: string | null;
+  checkbox_hash: string | null; // チェックボックス状態のハッシュ（競合検出用）
+  last_body_hash: string | null; // 最後に同期した Issue 本文のハッシュ
 }
 
 export type GitHubSync = Selectable<GitHubSyncTable>;
