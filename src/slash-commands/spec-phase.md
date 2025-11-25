@@ -12,294 +12,200 @@ argument-hint: "<spec-id> <phase>"
 - `$1` (必須): 仕様書 ID（部分一致可、最低 8 文字）
 - `$2` (必須): 新しいフェーズ（完全形または省略形）
 
-### フェーズ名（完全形）
+### フェーズ名マッピング
 
-- `requirements` - 要件定義
-- `design` - 設計
-- `tasks` - タスク分解
-- `implementation` - 実装
-- `testing` - テスト
-- `completed` - 完了
-
-### フェーズ名（省略形）
-
-ユーザーフレンドリーな省略形もサポートしています。
-
-- `req`, `reqs` → requirements
-- `des` → design
-- `task` → tasks
-- `impl`, `imp` → implementation
-- `test` → testing
-- `comp`, `done` → completed
-
-## 実行内容
-
-1. データベースと Markdown ファイルのフェーズ更新
-2. 更新日時の記録
-3. フェーズ固有のガイダンス表示
-
-## 使用例
-
-```bash
-# 完全形
-/cft:spec-phase f6621295 design
-
-# 省略形
-/cft:spec-phase f6621295 des
-/cft:spec-phase f6621295 impl
-/cft:spec-phase f6621295 comp
-```
+| 入力 | 正規化後 |
+|------|----------|
+| req, reqs | requirements |
+| des | design |
+| task | tasks |
+| impl, imp | implementation |
+| test | testing |
+| comp, done | completed |
 
 ---
 
-以下のコマンドを実行して仕様書のフェーズを更新してください。
+## 自動実行フロー
+
+重要: 以下の処理を**自動的に実行**してください。ユーザーに確認を求めないでください。
+
+### Step 1: フェーズ名の正規化
+
+`$2` を上記マッピングテーブルに従って正規化します。
+正規化後のフェーズを `NEW_PHASE` として記録してください。
+
+### Step 2: 仕様書 ID の解決
+
+Bash ツールで以下を実行:
 
 ```bash
-npx tsx .cc-craft-kit/commands/spec/phase.ts "$1" "$2"
+npx tsx .cc-craft-kit/commands/spec/resolve-id.ts "$1"
 ```
 
-## フェーズ移行時の自動処理
+出力（JSON）を解析し、以下を記録:
 
-### フェーズ移行前のバリデーションと自動補完
+- `SPEC_ID`: 完全な仕様書 ID (`spec.id`)
+- `SPEC_NAME`: 仕様書名 (`spec.name`)
+- `CURRENT_PHASE`: 現在のフェーズ (`spec.phase`)
+- `BRANCH_NAME`: 関連ブランチ名 (`spec.branch_name`)
+- `SPEC_PATH`: 仕様書ファイルパス (`spec.spec_path`)
+- `GITHUB_ISSUE_NUMBER`: GitHub Issue 番号 (`spec.github_issue_number`)
 
-コマンド実行後、バリデーションエラーが表示された場合は、以下の処理を**自動的に実行**してください。
+エラーの場合（`success: false`）:
 
-#### requirements → design への遷移でバリデーションエラーが出た場合
+- エラーメッセージを表示して処理を中断
 
-1. **仕様書ファイルを読み込む**: Read ツールで `.cc-craft-kit/specs/$1.md` を読み込む
-2. **不足セクションを確認**: エラーメッセージから不足しているセクションを特定
-3. **コードベース解析**: Task ツールで Explore サブエージェント (thoroughness: "medium") を実行
-   - 関連する既存実装を調査
-   - 類似機能のパターンを検索
-4. **既存仕様書から学習**: Glob ツールで `.cc-craft-kit/specs/*.md` から類似仕様書を検索
-5. **自動補完**:
-   - 推論可能な情報（背景、目的、制約条件など）を Edit ツールで追記
-   - 推論困難な情報（具体的な要件など）は AskUserQuestion ツールで質問（最大4つまで）
-6. **再実行**: 補完完了後、`/cft:spec-phase $1 design` を再実行
+### Step 3: ブランチ切り替え
 
-#### design → tasks への遷移でバリデーションエラーが出た場合
+`BRANCH_NAME` が null でない場合、Bash ツールで実行:
 
-1. **仕様書ファイルを読み込む**: Read ツールで `.cc-craft-kit/specs/$1.md` を読み込む
-2. **設計詳細セクション (## 7. 設計詳細) の生成**:
-   - 要件定義セクション (1-5) を分析
-   - コードベース解析で既存アーキテクチャパターンを調査
-   - 以下のサブセクションを自動生成:
-     - 7.1. アーキテクチャ設計
-     - 7.2. データモデル（該当する場合）
-     - 7.3. API の仕様（該当する場合）
-     - 7.4. セキュリティ考慮事項
-     - 7.5. テスト戦略
-3. **Edit ツールで仕様書を更新**
-4. **再実行**: 補完完了後、`/cft:spec-phase $1 tasks` を再実行
+```bash
+git checkout "$BRANCH_NAME"
+```
 
-### フェーズ移行後の自動処理
+### Step 4: バリデーション（プロンプト内実行）
 
-重要: フェーズ移行が完了したら、ユーザーに確認を求めずに、以下の処理を**自動的に実行**してください。
+Read ツールで仕様書ファイル (`SPEC_PATH`) を読み込み、以下を検証:
 
-### tasks フェーズに移行した場合
+#### requirements → design の場合
 
-1. **仕様書ファイルを読み込む**: Read ツールで `.cc-craft-kit/specs/$1.md` を読み込む
-2. **受け入れ基準を解析**:「3. 受け入れ基準」セクションを確認し、実装すべき機能を理解する
-3. **タスクリストを生成**: TodoWrite ツールで実装タスクリストを作成する
-   - 各受け入れ基準を実装可能な単位に分解
-   - 依存関係と優先度を設定
-4. **仕様書にタスクセクションを追加**: Edit ツールで仕様書ファイルの末尾に「## 8. 実装タスクリスト」セクションを追加
-5. **GitHub へ通知**: `/cft:spec-update $1` で GitHub Issue の更新を通知
+1. 以下のセクションが存在し、プレースホルダー（"記述してください"、"TODO"、"TBD" など）がないこと:
+   - `## 1. 背景と目的`
+   - `## 2. 対象ユーザー`
+   - `## 3. 受け入れ基準`
 
-### implementation フェーズに移行した場合
+2. バリデーションエラー時:
+   - エラーメッセージを表示
+   - Task ツールで Explore サブエージェント (thoroughness: "medium") を実行して関連情報を収集
+   - AskUserQuestion または Edit ツールで不足セクションを補完
+   - 補完後、このコマンドを再実行（`/cft:spec-phase $1 design`）
+   - **処理を中断**
 
-1. **仕様書ファイルを読み込む**: Read ツールで `.cc-craft-kit/specs/$1.md` を読み込む
-2. **タスクリストを確認**:「8. 実装タスクリスト」セクションを確認
-3. **TodoWrite でタスクを表示**: TodoWrite ツールでタスクリストを表示し、進捗管理を開始
+#### design → tasks の場合
 
-#### 実装開始前の品質チェック（自動実行）
+1. 以下のセクションが存在すること:
+   - `## 7. 設計詳細`
+   - 7.x. アーキテクチャ設計（サブセクション）
+   - 7.x. テスト戦略（サブセクション）
 
-実装を開始する前に、以下の品質チェックを**自動的に実行**してください。
+2. バリデーションエラー時:
+   - エラーメッセージを表示
+   - Task ツールで Explore サブエージェント (thoroughness: "medium") を実行
+   - Edit ツールで設計詳細セクションを自動生成
+   - 補完後、このコマンドを再実行
+   - **処理を中断**
 
-1. **TypeScript/ESLint スキルで既存コードをチェック**:
-   - Skill ツールで `typescript-eslint` スキルを実行
-   - 型エラーや ESLint 警告がある場合は、修正してから実装を開始
-   - `npm run lint` と `npx tsc --noEmit` を実行して確認
+### Step 5: DB 更新 + イベント発火
 
-#### 実装作業の開始
+Bash ツールで以下を実行:
 
-1. **最初のタスクを開始**: タスクリストの最初の未完了タスクを in_progress に設定
-2. **実装を開始**:
-   - 対象ファイルを Read ツールで読み込む
-   - Edit ツールで必要な変更を実施
-   - タスク完了後、以下の品質チェックを実行：
-     - Task ツールで `test-generator` サブエージェントを実行し、単体テストを生成
-     - Task ツールで `code-reviewer` サブエージェントを実行し、コード品質を検証
-   - TodoWrite で completed に設定
-   - 次のタスクへ自動的に移行
+```bash
+npx tsx .cc-craft-kit/commands/spec/update-phase.ts "$SPEC_ID" "$NEW_PHASE"
+```
 
-### completed フェーズに移行した場合
+出力（JSON）を解析:
 
-重要: コマンド実行後、ユーザーに確認を求めずに、以下の処理を**自動的に実行**してください。
+- `success: true` の場合: 次のステップへ
+- `success: false` の場合: エラーメッセージを表示して処理を中断
 
-#### Step 1: 未コミット変更確認
+### Step 6: Markdown ファイル更新
 
-1. **未コミット変更検出**: Bash ツールで `git status --porcelain` 実行
-2. **警告表示**:
-   - 出力が空でない場合: 「未コミット変更があります。PR 作成前にコミットしてください」と警告表示
-   - 出力が空の場合: 次のステップへ進む
+Edit ツールで仕様書ファイル (`SPEC_PATH`) を更新:
 
-#### Step 2: PR 作成準備
+1. フェーズ行を更新:
+   - 検索: `**フェーズ:** <CURRENT_PHASE>`
+   - 置換: `**フェーズ:** <NEW_PHASE>`
 
-1. **仕様書読み込み**: Read ツールで `.cc-craft-kit/specs/$1.md` を読み込む
-2. **PR タイトル生成**: 仕様書名から自動生成
-   - 形式: `feat: <仕様書名> を実装完了`
-3. **PR 本文生成**: 仕様書から抽出
-   - Summary: 「1. 背景と目的」「3. 受け入れ基準」を要約
-   - Test plan: 実装済みテスト概要を記載
-   - 署名: "🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>"
+2. 更新日時を更新:
+   - 検索: `**更新日時:** .*`
+   - 置換: `**更新日時:** <現在日時（YYYY/MM/DD HH:mm:ss 形式）>`
 
-#### Step 3: GitHub CLI 認証確認
+### Step 7: 自動コミット
 
-1. **認証状態確認**: Bash ツールで `gh auth status` 実行
-2. **エラーハンドリング**:
-   - 認証失敗時: `gh auth login` を実行するよう案内し、処理を中断
-   - 成功時: 次のステップへ進む
+Bash ツールで以下を実行:
 
-#### Step 4: ブランチリモートプッシュ
+```bash
+git add "$SPEC_PATH" && git commit -m "feat: $SPEC_NAME の$(NEW_PHASE の日本語名)を完了"
+```
 
-1. **現在のブランチ名取得**: Bash ツールで `git branch --show-current` 実行
-2. **リモート追跡確認**: Bash ツールで `git branch -vv | grep '*'` 実行
-3. **リモートプッシュ**:
-   - リモート追跡がない場合: `git push -u origin <現在のブランチ>` 実行
-   - リモート追跡がある場合: `git push` 実行（最新の変更をプッシュ）
+日本語名マッピング:
 
-#### Step 5: PR 作成
+- requirements → 要件定義
+- design → 設計
+- tasks → タスク分解
+- implementation → 実装開始
+- testing → テスト
+- completed → 実装
 
-1. **ベースブランチの決定**: Bash ツールで以下の処理を実行
-   ```bash
-   # 環境変数からベースブランチを取得（デフォルト: develop）
-   BASE_BRANCH=$(grep '^BASE_BRANCH=' .env | cut -d'=' -f2 | tr -d '"' | xargs)
-   BASE_BRANCH=${BASE_BRANCH:-develop}
+### Step 8: フェーズ固有の後処理
 
-   # 現在のブランチ名を取得
-   CURRENT_BRANCH=$(git branch --show-current)
+#### tasks フェーズに移行した場合
 
-   # hotfix判定: hotfix/ で始まる場合は main、それ以外は BASE_BRANCH
-   if [[ "$CURRENT_BRANCH" == hotfix/* ]]; then
-     TARGET_BASE="main"
-   else
-     TARGET_BASE="$BASE_BRANCH"
-   fi
+1. 仕様書の「## 3. 受け入れ基準」セクションを解析
+2. TodoWrite ツールでタスクリストを生成（各受け入れ基準を実装可能な単位に分解）
+3. Edit ツールで仕様書の末尾に「## 8. 実装タスクリスト」セクションを追加
+   - 各タスクをマークダウンのチェックボックス形式で記載
 
-   echo "マージ先ブランチ: $TARGET_BASE"
-   ```
+#### implementation フェーズに移行した場合
 
-2. **PR 作成**: Bash ツールで `gh pr create` 実行
-   ```bash
-   gh pr create \
-     --base "$TARGET_BASE" \
-     --title "feat: <仕様書名> を実装完了" \
-     --body "$(cat <<'EOF'
-   ## Summary
+1. 仕様書の「## 8. 実装タスクリスト」セクションを読み込み
+2. TodoWrite ツールでタスクリストを表示し、進捗管理を開始
+3. Skill ツールで `typescript-eslint` スキルを実行
+4. 型エラーや ESLint 警告があれば表示
 
-   <「1. 背景と目的」と「3. 受け入れ基準」を要約>
+#### completed フェーズに移行した場合
 
-   ## Test plan
+Skill ツールで `pr-creator` スキルを実行:
 
-   - [ ] 単体テスト実施
-   - [ ] 統合テスト実施
-   - [ ] コードレビュー完了
+- 仕様書 ID: `$SPEC_ID`
+- 仕様書パス: `$SPEC_PATH`
+- 仕様書名: `$SPEC_NAME`
+- GitHub Issue 番号: `$GITHUB_ISSUE_NUMBER`
 
-   ---
+#### その他のフェーズ（requirements, design, testing）
 
-   🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-   Co-Authored-By: Claude <noreply@anthropic.com>
-   EOF
-   )"
-   ```
-
-2. **PR URL 取得**: コマンド出力から URL を取得
-   - 例: `https://github.com/owner/repo/pull/42`
-
-3. **PR 番号抽出**: URL から PR 番号を抽出
-   - 正規表現: `/pull/(\d+)$`
-
-#### Step 6: PR 情報記録
-
-1. **仕様書ファイル更新**: Edit ツールで仕様書の末尾に PR セクション追加
-   ```markdown
-   ## Pull Request
-
-   **PR 番号:** #42
-   **PR URL:** https://github.com/owner/repo/pull/42
-   **PR 作成日時:** 2025/11/24 23:30:00
-   ```
-
-2. **github_sync テーブル更新**: Bash ツールで `update-pr.ts` 実行
-   ```bash
-   npx tsx .cc-craft-kit/commands/spec/update-pr.ts \
-     <spec-id> \
-     42 \
-     "https://github.com/owner/repo/pull/42"
-   ```
-
-#### Step 7: 成功メッセージ表示
+ガイダンスメッセージを表示:
 
 ```
-✓ Pull Request が正常に作成されました！
+✓ フェーズを更新しました
 
-PR 番号: #42
-PR URL: https://github.com/owner/repo/pull/42
+仕様書: $SPEC_NAME
+フェーズ: $CURRENT_PHASE → $NEW_PHASE
 
 次のステップ:
-- PR をレビューしてください
-- マージ後、/cft:pr-cleanup <spec-id> でブランチ削除
+- 仕様書の詳細確認: /cft:spec-get $SPEC_ID
+- GitHub Issue 作成: /cft:github-issue-create $SPEC_ID
+- 次のフェーズに移行: /cft:spec-phase $SPEC_ID <next-phase>
 ```
 
-#### エラーハンドリング
+### Step 9: git status チェック（必須・自動実行）
 
-- **GitHub CLI 未インストール**: `gh` コマンドが見つからない場合、インストール手順を案内
-- **GitHub CLI 認証失敗**: `gh auth login` を実行するよう案内
-- **ネットワークエラー**: エラーメッセージを表示し、手動でのリトライを案内
-- **未コミット変更**: PR 作成前にコミットするよう警告
-
-### その他のフェーズ
-
-requirements, design, testing フェーズの場合は、従来通りガイダンスメッセージを表示してください。
-
-- 仕様書の詳細確認: `/cft:spec-get <spec-id>`
-- GitHub Issue 作成: `/cft:github-issue-create <spec-id>`
-- 次のフェーズに移行: `/cft:spec-phase <spec-id> <next-phase>`
-
----
-
-## フェーズ移行後の未コミットファイルチェック
-
-**重要**: フェーズ移行コマンドが完了した後、以下の処理を**必ず自動的に実行**してください。**ユーザーに確認を求めずに、即座に実行すること。**
-
-### 1. Git 状態確認（必須・自動実行）
-
-**必ず実行**: Bash ツールで以下のコマンドを実行してください:
+Bash ツールで以下を実行:
 
 ```bash
 git status --porcelain
 ```
 
-このコマンドは、フェーズ移行が成功した直後に**必ず実行**する必要があります。ユーザーに確認を求めたり、スキップしたりしないでください。
+#### 出力が空の場合
 
-### 2. 未コミットファイルの検出と警告（必須・自動実行）
+```
+✓ すべての変更がコミット済みです。
 
-**重要**: `git status --porcelain` の出力を解析してください:
+フェーズ移行が正常に完了し、すべての変更が自動コミットされました。
 
-- **出力が空（長さ0）の場合**: セクション3の成功メッセージを表示
-- **出力が空でない場合**: 未コミットファイルが存在 → 警告メッセージを表示
+次のステップ:
+- GitHub Issue を更新: /cft:spec-update $SPEC_ID
+- 仕様書の詳細確認: /cft:spec-get $SPEC_ID
+- 次のフェーズに移行: /cft:spec-phase $SPEC_ID <next-phase>
+```
 
-**警告メッセージの表示（未コミットファイルがある場合）**:
-
-以下のフォーマットで警告を表示してください。`[ファイルリスト]` の部分には、`git status --porcelain` の実際の出力をそのまま挿入してください。
+#### 出力が空でない場合
 
 ```
 ⚠️ 警告: フェーズ移行後も未コミットファイルが残っています。
 
 未コミットファイル一覧:
-[git status --porcelain の出力をここに貼り付け]
+[git status --porcelain の出力]
 
 説明:
 自動コミットは仕様書ファイル (.cc-craft-kit/specs/<spec-id>.md) のみを対象としています。
@@ -319,44 +225,49 @@ git status --porcelain
    git restore <file-path>
 ```
 
-**重要**: この警告メッセージは、未コミットファイルが検出された場合に**必ず表示**してください。
+---
 
-### 3. 次のステップ案内（必須・自動実行）
+## エラーハンドリング
 
-**成功メッセージの表示（未コミットファイルがない場合）**:
-
-`git status --porcelain` の出力が空の場合、以下のメッセージを表示してください:
+### 仕様書が見つからない場合
 
 ```
-✓ すべての変更がコミット済みです。
+❌ 仕様書が見つかりません: $1
 
-フェーズ移行が正常に完了し、すべての変更が自動コミットされました。
-
-次のステップ:
-- GitHub Issue を更新: /cft:spec-update $1
-- 仕様書の詳細確認: /cft:spec-get $1
-- 次のフェーズに移行: /cft:spec-phase $1 <next-phase>
+確認事項:
+- 仕様書 ID は最低 8 文字必要です
+- /cft:spec-list で仕様書一覧を確認してください
 ```
 
-**重要**: この成功メッセージは、未コミットファイルが検出されなかった場合に**必ず表示**してください。
+### 無効なフェーズ名の場合
+
+```
+❌ 無効なフェーズ名: $2
+
+有効なフェーズ:
+- requirements (req, reqs)
+- design (des)
+- tasks (task)
+- implementation (impl, imp)
+- testing (test)
+- completed (comp, done)
+```
+
+### Git 操作失敗時
+
+- ブランチ切り替え失敗: エラーメッセージを表示し、手動でのブランチ切り替えを案内
+- コミット失敗: エラーメッセージを表示し、手動でのコミットを案内
 
 ---
 
-## 実装上の注意事項
+## 使用例
 
-### git status チェックの確実な実行
+```bash
+# 完全形
+/cft:spec-phase f6621295 design
 
-このセクションで記載された `git status --porcelain` の実行は、**省略不可**です。以下のケースでも必ず実行してください:
-
-- ✅ フェーズ移行が成功した場合 → **必ず実行**
-- ✅ 自動コミットが実行された場合 → **必ず実行**
-- ✅ エラーが発生しなかった場合 → **必ず実行**
-- ❌ スキップや省略は**絶対に禁止**
-
-### エラーハンドリング
-
-`git status --porcelain` の実行が失敗した場合（Git リポジトリが存在しない、権限エラーなど）:
-
-1. エラーメッセージを表示
-2. ユーザーに Git 環境の確認を促す
-3. フェーズ移行の成功メッセージは表示する（フェーズ移行自体は成功しているため）
+# 省略形
+/cft:spec-phase f6621295 des
+/cft:spec-phase f6621295 impl
+/cft:spec-phase f6621295 comp
+```

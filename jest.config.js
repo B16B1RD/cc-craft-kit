@@ -22,6 +22,8 @@ export default {
     '/tests/scripts/migrate-structure\\.test\\.ts$',
     '/tests/scripts/sync-dogfood\\.test\\.ts$',
     '/tests/commands/spec/phase\\.test\\.ts$', // import.meta issue
+    '/tests/commands/spec/resolve-id\\.test\\.ts$', // import.meta issue
+    '/tests/commands/spec/update-phase\\.test\\.ts$', // import.meta issue
   ],
   maxWorkers: 1, // テストを順次実行してDB競合を回避
   transform: {
