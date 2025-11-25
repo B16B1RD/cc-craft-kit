@@ -196,23 +196,66 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
 
         // Issue タイトル・ラベル更新 + 仕様書ファイルから本文を更新
         const specPath = join(ccCraftKitDir, 'specs', `${spec.id}.md`);
-        let body: string | undefined;
+        let newSpecContent = '';
 
         if (existsSync(specPath)) {
           try {
-            body = readFileSync(specPath, 'utf-8');
+            newSpecContent = readFileSync(specPath, 'utf-8');
+            if (process.env.DEBUG === '1') {
+              console.log(`[DEBUG] Read spec file: ${specPath} (${newSpecContent.length} bytes)`);
+            }
           } catch (error) {
-            console.error(`Failed to read spec file: ${specPath}`, error);
+            await logError('warn', `Failed to read spec file: ${specPath}`, error, {
+              event: 'spec.phase_changed',
+              specId: event.specId,
+              action: 'read_spec_file',
+            });
+          }
+        } else {
+          if (process.env.DEBUG === '1') {
+            console.log(`[DEBUG] Spec file not found: ${specPath}`);
           }
         }
 
+        // 既存の Issue 内容を取得して変更を検出
+        let oldContent = '';
+        try {
+          const existingIssue = await issues.get(
+            githubConfig.owner,
+            githubConfig.repo,
+            spec.github_issue_number
+          );
+          oldContent = existingIssue.body || '';
+          if (process.env.DEBUG === '1') {
+            console.log(`[DEBUG] Fetched existing issue body (${oldContent.length} bytes)`);
+          }
+        } catch (fetchError) {
+          await logError(
+            'warn',
+            'Failed to fetch existing Issue for change detection',
+            fetchError,
+            {
+              event: 'spec.phase_changed',
+              specId: event.specId,
+              action: 'fetch_existing_issue',
+            }
+          );
+        }
+
+        // 変更を検出
+        const changes = detectChanges(oldContent, newSpecContent);
+        if (process.env.DEBUG === '1') {
+          console.log(`[DEBUG] Detected ${changes.length} changes`);
+        }
+
+        // Issue を更新（本文を必ず含める）
         await issues.update({
           owner: githubConfig.owner,
           repo: githubConfig.repo,
           issueNumber: spec.github_issue_number,
           title: `[${event.data.newPhase}] ${spec.name}`,
           labels: [`phase:${event.data.newPhase}`],
-          ...(body && { body }),
+          body: newSpecContent || oldContent, // 新しい内容がなければ既存を維持
         });
 
         // フェーズ移行をコメントで記録
@@ -246,6 +289,41 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
               action: 'add_comment',
             }
           );
+        }
+
+        // 変更履歴コメントを追加（変更がある場合のみ）
+        if (changes.length > 0) {
+          const changelogComment = buildChangelogComment(changes, spec.id);
+          const changeSummary = formatChangeSummary(changes);
+
+          try {
+            await issues.addComment(
+              githubConfig.owner,
+              githubConfig.repo,
+              spec.github_issue_number,
+              changelogComment
+            );
+
+            if (process.env.DEBUG === '1') {
+              console.log(`[DEBUG] Changelog comment added: ${changeSummary}`);
+            }
+          } catch (changelogError) {
+            await logError(
+              'warn',
+              'Failed to add changelog comment to GitHub Issue',
+              changelogError,
+              {
+                event: 'spec.phase_changed',
+                specId: event.specId,
+                action: 'add_changelog_comment',
+                changesCount: changes.length,
+              }
+            );
+          }
+        } else {
+          if (process.env.DEBUG === '1') {
+            console.log('[DEBUG] No changes detected, skipping changelog comment');
+          }
         }
 
         // ========== ここから新規追加: Project ステータス更新 ==========
