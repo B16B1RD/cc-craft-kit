@@ -104,7 +104,6 @@ async function main() {
               | 'design'
               | 'tasks'
               | 'implementation'
-              | 'testing'
               | 'completed',
             updated_at: parseDateTime(metadata.updatedAt),
           })
@@ -126,7 +125,6 @@ async function main() {
               | 'design'
               | 'tasks'
               | 'implementation'
-              | 'testing'
               | 'completed',
             branch_name: 'develop', // TODO: 既存ファイルのブランチ名を推定するロジックを追加
             created_at: parseDateTime(metadata.createdAt),

@@ -137,7 +137,6 @@ export class SpecFileParser {
       'design',
       'tasks',
       'implementation',
-      'testing',
       'completed',
     ];
 
