@@ -271,22 +271,22 @@ interface StatusInfo {
 
 ### Phase 1: スクリプト分離
 
-- [ ] `src/commands/status/info.ts` を新規作成（JSON 出力のみ）
-- [ ] `StatusInfo` インターフェースの実装
-- [ ] DB クエリ実装（specs + github_sync JOIN）
-- [ ] フェーズ別集計ロジック実装
-- [ ] ログ取得クエリ実装
-- [ ] 単体テスト作成（`tests/commands/status/info.test.ts`）
+- [x] `src/commands/status/info.ts` を新規作成（JSON 出力のみ）
+- [x] `StatusInfo` インターフェースの実装
+- [x] DB クエリ実装（specs + github_sync JOIN）
+- [x] フェーズ別集計ロジック実装
+- [x] ログ取得クエリ実装
+- [x] 単体テスト作成（`tests/commands/status/info.test.ts`）
 
 ### Phase 2: プロンプト拡充
 
-- [ ] `src/slash-commands/status.md` を大幅リファクタリング
-- [ ] 自動実行フロー定義
-- [ ] 表示フォーマット実装
-- [ ] 次のアクション提案ロジック実装
+- [x] `src/slash-commands/status.md` を大幅リファクタリング
+- [x] 自動実行フロー定義
+- [x] 表示フォーマット実装
+- [x] 次のアクション提案ロジック実装
 
 ### Phase 3: 統合・検証
 
-- [ ] `npm run sync:dogfood` で同期
+- [x] `npm run sync:dogfood` で同期
 - [ ] `/cft:status` コマンド動作確認
 - [ ] 旧スクリプト `src/commands/status.ts` の削除（オプション）
