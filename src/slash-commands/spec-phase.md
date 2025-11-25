@@ -18,7 +18,6 @@ argument-hint: "<spec-id> <phase>"
 - `design` - 設計
 - `tasks` - タスク分解
 - `implementation` - 実装
-- `testing` - テスト
 - `completed` - 完了
 
 ### フェーズ名（省略形）
@@ -29,7 +28,6 @@ argument-hint: "<spec-id> <phase>"
 - `des` → design
 - `task` → tasks
 - `impl`, `imp` → implementation
-- `test` → testing
 - `comp`, `done` → completed
 
 ## 実行内容
