@@ -10,6 +10,7 @@ import { setupDatabaseLifecycle, DatabaseLifecycle } from '../../helpers/db-life
 // モックインスタンスを定義（const ではなく let を使用）
 let mockGitHubIssues: {
   create: jest.Mock;
+  get: jest.Mock;
   update: jest.Mock;
   addComment: jest.Mock;
   close: jest.Mock;
@@ -34,6 +35,7 @@ let mockParseTaskListFromSpec: jest.Mock;
 // モックファクトリー関数を定義
 const createMockGitHubIssues = () => ({
   create: jest.fn(),
+  get: jest.fn(),
   update: jest.fn(),
   addComment: jest.fn(),
   close: jest.fn(),
@@ -60,6 +62,7 @@ jest.mock('../../../src/integrations/github/client.js', () => ({
 // グローバルスコープでモックオブジェクトを定義
 const sharedMockGitHubIssues = {
   create: jest.fn(),
+  get: jest.fn(),
   update: jest.fn(),
   addComment: jest.fn(),
   close: jest.fn(),
@@ -576,7 +579,11 @@ describe.skip('GitHub Integration Event Handlers', () => {
     });
 
     test('フェーズ変更時に仕様書ファイルから Issue 本文が更新される', async () => {
+      // 既存の Issue 本文をモック
+      const oldContent = '# Test Spec\n\nOld content.';
+      mockGitHubIssues.get.mockResolvedValue({ body: oldContent });
       mockGitHubIssues.update.mockResolvedValue({});
+      mockGitHubIssues.addComment.mockResolvedValue({});
 
       // 仕様書をデータベースに追加
       const specId = 'spec-test-body-update';
@@ -643,12 +650,179 @@ describe.skip('GitHub Integration Event Handlers', () => {
         })
       );
 
+      // addComment が呼ばれたことを確認（フェーズ移行コメント + 変更履歴コメント）
+      // 変更があるので、2回呼ばれるはず
+      expect(mockGitHubIssues.addComment).toHaveBeenCalled();
+
       // クリーンアップ
       rmSync(specPath);
       consoleLogSpy.mockRestore();
     });
 
-    test('仕様書ファイルが存在しない場合は本文なしで更新される', async () => {
+    test('フェーズ変更時に変更履歴コメントが追加される', async () => {
+      // 既存の Issue 本文をモック（変更あり）
+      const oldContent = '# Test Spec\n\n## 1. 背景と目的\n\nOld background.';
+      const newContent = '# Test Spec\n\n## 1. 背景と目的\n\nNew background with changes.';
+      mockGitHubIssues.get.mockResolvedValue({ body: oldContent });
+      mockGitHubIssues.update.mockResolvedValue({});
+      mockGitHubIssues.addComment.mockResolvedValue({});
+
+      // 仕様書をデータベースに追加
+      const specId = 'spec-test-changelog';
+      await lifecycle.db
+        .insertInto('specs')
+        .values({
+          id: specId,
+          name: 'Test Spec Changelog',
+          description: 'Test description',
+          phase: 'design',
+          branch_name: 'feature/test-changelog',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'spec',
+          entity_id: specId,
+          github_id: '103',
+          github_number: 103,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
+        })
+        .execute();
+
+      // 仕様書ファイルを作成
+      const ccCraftKitDir = join(process.cwd(), '.cc-craft-kit');
+      const specsDir = join(ccCraftKitDir, 'specs');
+      if (!existsSync(specsDir)) {
+        mkdirSync(specsDir, { recursive: true });
+      }
+      const specPath = join(specsDir, `${specId}.md`);
+      writeFileSync(specPath, newContent, 'utf-8');
+
+      // console.logをモック
+      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+
+      // イベント発行
+      const event = eventBus.createEvent('spec.phase_changed', specId, {
+        oldPhase: 'requirements',
+        newPhase: 'design',
+      });
+      await eventBus.emit(event);
+
+      // 少し待つ（非同期処理完了待ち）
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // addComment が2回呼ばれたことを確認（フェーズ移行 + 変更履歴）
+      expect(mockGitHubIssues.addComment).toHaveBeenCalledTimes(2);
+
+      // 1回目: フェーズ移行コメント
+      expect(mockGitHubIssues.addComment).toHaveBeenNthCalledWith(
+        1,
+        'test-owner',
+        'test-repo',
+        103,
+        expect.stringContaining('🔄 フェーズ移行')
+      );
+
+      // 2回目: 変更履歴コメント
+      expect(mockGitHubIssues.addComment).toHaveBeenNthCalledWith(
+        2,
+        'test-owner',
+        'test-repo',
+        103,
+        expect.stringContaining('📝 仕様書更新')
+      );
+
+      // クリーンアップ
+      rmSync(specPath);
+      consoleLogSpy.mockRestore();
+    });
+
+    test('変更がない場合は変更履歴コメントが追加されない', async () => {
+      // 既存の Issue 本文と同じ内容をモック
+      const sameContent = '# Test Spec\n\nSame content.';
+      mockGitHubIssues.get.mockResolvedValue({ body: sameContent });
+      mockGitHubIssues.update.mockResolvedValue({});
+      mockGitHubIssues.addComment.mockResolvedValue({});
+
+      // 仕様書をデータベースに追加
+      const specId = 'spec-test-no-changelog';
+      await lifecycle.db
+        .insertInto('specs')
+        .values({
+          id: specId,
+          name: 'Test Spec No Changelog',
+          description: 'Test description',
+          phase: 'design',
+          branch_name: 'feature/test-no-changelog',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'spec',
+          entity_id: specId,
+          github_id: '104',
+          github_number: 104,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
+        })
+        .execute();
+
+      // 仕様書ファイルを作成（同じ内容）
+      const ccCraftKitDir = join(process.cwd(), '.cc-craft-kit');
+      const specsDir = join(ccCraftKitDir, 'specs');
+      if (!existsSync(specsDir)) {
+        mkdirSync(specsDir, { recursive: true });
+      }
+      const specPath = join(specsDir, `${specId}.md`);
+      writeFileSync(specPath, sameContent, 'utf-8');
+
+      // console.logをモック
+      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+
+      // イベント発行
+      const event = eventBus.createEvent('spec.phase_changed', specId, {
+        oldPhase: 'requirements',
+        newPhase: 'design',
+      });
+      await eventBus.emit(event);
+
+      // 少し待つ（非同期処理完了待ち）
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // addComment が1回のみ呼ばれたことを確認（フェーズ移行コメントのみ）
+      expect(mockGitHubIssues.addComment).toHaveBeenCalledTimes(1);
+
+      // フェーズ移行コメントのみ
+      expect(mockGitHubIssues.addComment).toHaveBeenCalledWith(
+        'test-owner',
+        'test-repo',
+        104,
+        expect.stringContaining('🔄 フェーズ移行')
+      );
+
+      // クリーンアップ
+      rmSync(specPath);
+      consoleLogSpy.mockRestore();
+    });
+
+    test('仕様書ファイルが存在しない場合は既存の Issue 本文を維持する', async () => {
+      const existingBody = '# Existing Spec Content\n\nOriginal content.';
+      mockGitHubIssues.get.mockResolvedValue({ body: existingBody });
       mockGitHubIssues.update.mockResolvedValue({});
 
       // 仕様書をデータベースに追加
@@ -694,7 +868,7 @@ describe.skip('GitHub Integration Event Handlers', () => {
       // 少し待つ（非同期処理完了待ち）
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Issueラベル更新が呼ばれたことを確認（body は含まれない）
+      // Issueラベル更新が呼ばれたことを確認（body は既存の内容を維持）
       expect(mockGitHubIssues.update).toHaveBeenCalledWith(
         expect.objectContaining({
           owner: 'test-owner',
@@ -702,12 +876,9 @@ describe.skip('GitHub Integration Event Handlers', () => {
           issueNumber: 102,
           title: '[design] Test Spec No File',
           labels: ['phase:design'],
+          body: existingBody,
         })
       );
-
-      // body プロパティが存在しないことを確認
-      const callArgs = mockGitHubIssues.update.mock.calls[0][0];
-      expect(callArgs).not.toHaveProperty('body');
 
       consoleLogSpy.mockRestore();
     });
