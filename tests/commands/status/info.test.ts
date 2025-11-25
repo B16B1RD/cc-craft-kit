@@ -27,7 +27,6 @@ describe('getStatusFromDb', () => {
       expect(result.specs.byPhase.design).toBe(0);
       expect(result.specs.byPhase.tasks).toBe(0);
       expect(result.specs.byPhase.implementation).toBe(0);
-      expect(result.specs.byPhase.testing).toBe(0);
       expect(result.specs.byPhase.completed).toBe(0);
       expect(result.specs.recent).toHaveLength(0);
       expect(result.specs.withoutIssue).toHaveLength(0);
@@ -72,7 +71,6 @@ describe('getStatusFromDb', () => {
       expect(result.specs.byPhase.design).toBe(2);
       expect(result.specs.byPhase.tasks).toBe(1);
       expect(result.specs.byPhase.implementation).toBe(1);
-      expect(result.specs.byPhase.testing).toBe(0);
       expect(result.specs.byPhase.completed).toBe(1);
     });
 

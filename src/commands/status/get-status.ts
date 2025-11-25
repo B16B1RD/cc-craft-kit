@@ -62,14 +62,7 @@ export async function getStatusFromDb(
   });
 
   // フェーズ別集計
-  const phases: SpecPhase[] = [
-    'requirements',
-    'design',
-    'tasks',
-    'implementation',
-    'testing',
-    'completed',
-  ];
+  const phases: SpecPhase[] = ['requirements', 'design', 'tasks', 'implementation', 'completed'];
   const byPhase: Record<SpecPhase, number> = {} as Record<SpecPhase, number>;
   for (const phase of phases) {
     byPhase[phase] = allSpecs.filter((s) => s.phase === phase).length;

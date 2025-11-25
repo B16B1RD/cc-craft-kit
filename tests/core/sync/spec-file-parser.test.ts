@@ -44,7 +44,7 @@ describe('SpecFileParser', () => {
       });
 
       it('すべてのフェーズを正しく認識できる', async () => {
-        const phases = ['requirements', 'design', 'tasks', 'implementation', 'testing', 'completed'];
+        const phases = ['requirements', 'design', 'tasks', 'implementation', 'completed'];
 
         for (const phase of phases) {
           const filePath = `/path/to/12345678-1234-4abc-8def-123456789012.md`;
@@ -205,7 +205,6 @@ describe('SpecFileParser', () => {
         { phase: 'design', expected: 'design' },
         { phase: 'tasks', expected: 'tasks' },
         { phase: 'implementation', expected: 'implementation' },
-        { phase: 'testing', expected: 'testing' },
         { phase: 'completed', expected: 'completed' },
       ];
 

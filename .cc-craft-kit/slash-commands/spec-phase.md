@@ -20,7 +20,6 @@ argument-hint: "<spec-id> <phase>"
 | des | design |
 | task | tasks |
 | impl, imp | implementation |
-| test | testing |
 | comp, done | completed |
 
 ---

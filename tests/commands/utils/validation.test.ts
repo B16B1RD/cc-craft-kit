@@ -70,10 +70,6 @@ describe('validatePhase', () => {
     expect(validatePhase('implementation')).toBe('implementation');
   });
 
-  test('should accept valid phase (testing)', () => {
-    expect(validatePhase('testing')).toBe('testing');
-  });
-
   test('should accept valid phase (completed)', () => {
     expect(validatePhase('completed')).toBe('completed');
   });

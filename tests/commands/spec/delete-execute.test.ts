@@ -177,7 +177,7 @@ describe('executeDelete', () => {
           id: specId,
           name: 'GitHub Issue なしテスト',
           description: null,
-          phase: 'testing',
+          phase: 'implementation',
           branch_name: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),

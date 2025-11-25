@@ -210,8 +210,6 @@ export function suggestWorkingBranch(specPhase?: string): string[] {
   // フェーズに基づいた提案
   if (specPhase === 'implementation') {
     suggestions.push('feature/<機能名>');
-  } else if (specPhase === 'testing') {
-    suggestions.push('test/<テスト内容>');
   }
 
   // 共通の提案
