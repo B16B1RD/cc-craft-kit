@@ -1,6 +1,20 @@
 import { PhaseChangedEvent } from './event-bus.js';
 import { QualityCheckAutomation } from '../quality/automation.js';
 import type { TriggerPhase } from '../quality/schema.js';
+import { getDatabase } from '../database/connection.js';
+import { getSpecWithGitHubInfo } from '../database/helpers.js';
+import { join } from 'node:path';
+import { existsSync } from 'node:fs';
+import { parseTaskList, hasTaskListSection } from '../spec/parser.js';
+
+/**
+ * UUID フォーマット検証
+ */
+function validateSpecId(specId: string): void {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(specId)) {
+    throw new Error(`Invalid spec ID format: ${specId}`);
+  }
+}
 
 /**
  * フェーズ自動処理ハンドラー
@@ -8,8 +22,9 @@ import type { TriggerPhase } from '../quality/schema.js';
  * 各フェーズ切り替え時に必要な作業を自動的に実行します。
  * spec.phase_changed イベントをトリガーとして動作します。
  *
- * Note: このハンドラーは Claude Code 側で実行される自動処理の「トリガー」として機能します。
- * 実際の自動処理（設計生成、タスクリスト生成など）は CLAUDE.md の指示に従って Claude が実行します。
+ * Note: フェーズ自動処理は TypeScript コードで実装されており、CLAUDE.md に依存しません。
+ * - tasks フェーズ: 受け入れ基準から実装タスクリストを自動生成
+ * - implementation フェーズ: 実装タスクリストを表示し、進捗を追跡
  */
 export class PhaseAutomationHandler {
   private qualityCheckAutomation: QualityCheckAutomation;
@@ -147,20 +162,85 @@ export class PhaseAutomationHandler {
   /**
    * implementation フェーズの自動処理
    *
-   * - Claude が typescript-eslint スキルを実行し、既存コードをチェック
-   * - 「## 9. 実装タスクリスト」を読み込み、Claude が TodoWrite で表示
-   * - Claude が最初の未完了タスクを in_progress に設定
-   * - 実装対象ファイルを確認し、準備完了を通知
+   * - 「## 8. 実装タスクリスト」を読み込み、タスクを表示
+   * - 最初の未完了タスクを強調表示
    * - 品質要件チェックを実行
    */
   private async handleImplementationPhase(specId: string): Promise<void> {
-    // Note: TypeScript/ESLint チェック、タスク表示は Claude Code 側で実行される
-    // この関数では、実装フェーズに移行したことをユーザーに通知するのみ
-
     console.log(`✓ 実装フェーズに移行しました`);
-    console.log(
-      `\n次のステップ: Claude が TypeScript/ESLint チェックを実行し、実装を開始します（CLAUDE.md の指示通り）`
-    );
+
+    try {
+      // データベースから仕様書情報を取得
+      const db = getDatabase();
+      const spec = await getSpecWithGitHubInfo(db, specId);
+
+      if (!spec) {
+        throw new Error(`仕様書が見つかりません: ${specId}`);
+      }
+
+      // UUIDフォーマット検証（パストラバーサル攻撃防止）
+      validateSpecId(spec.id);
+
+      // 仕様書ファイルのパスを構築
+      const specFilePath = join(process.cwd(), '.cc-craft-kit', 'specs', `${spec.id}.md`);
+
+      if (!existsSync(specFilePath)) {
+        throw new Error(`仕様書ファイルが見つかりません: ${specFilePath}`);
+      }
+
+      // タスクリストセクションが存在するかチェック
+      if (!hasTaskListSection(specFilePath)) {
+        console.warn(
+          `\n⚠️  実装タスクリストセクションが見つかりません。tasks フェーズを先に実行してください。`
+        );
+        await this.runQualityCheck('implementation', specId);
+        return;
+      }
+
+      console.log(`\n📋 実装タスクリストを読み込んでいます...`);
+
+      // タスクリストを解析
+      const tasks = parseTaskList(specFilePath);
+
+      if (tasks.length === 0) {
+        console.warn(`\n⚠️  実装タスクが見つかりませんでした。手動でタスクを追加してください。`);
+        await this.runQualityCheck('implementation', specId);
+        return;
+      }
+
+      // タスク一覧を表示
+      console.log(`\n## 実装タスクリスト\n`);
+
+      const uncompletedTasks = tasks.filter((t) => !t.checked);
+      const completedTasks = tasks.filter((t) => t.checked);
+
+      console.log(`進捗: ${completedTasks.length}/${tasks.length} 完了\n`);
+
+      // 最初の未完了タスクを強調表示
+      let firstUncompleted = true;
+      for (const task of tasks) {
+        const indent = '  '.repeat(task.indentLevel);
+        const checkbox = task.checked ? '[x]' : '[ ]';
+        const prefix = !task.checked && firstUncompleted ? '👉' : '  ';
+
+        console.log(`${prefix} ${indent}- ${checkbox} ${task.text}`);
+
+        if (!task.checked && firstUncompleted) {
+          firstUncompleted = false;
+        }
+      }
+
+      if (uncompletedTasks.length > 0) {
+        console.log(`\n次のステップ: 👉 で示されたタスクから実装を開始してください\n`);
+      } else {
+        console.log(`\n✓ すべてのタスクが完了しています！completed フェーズに移行できます。\n`);
+      }
+    } catch (error) {
+      console.error(
+        `\n⚠️  タスクリスト表示中にエラーが発生しました。\n` +
+          `   エラー: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
 
     // 品質チェック実行
     await this.runQualityCheck('implementation', specId);
@@ -169,21 +249,15 @@ export class PhaseAutomationHandler {
   /**
    * completed フェーズの自動処理
    *
-   * - Claude が code-reviewer サブエージェントで最終レビューを実行
-   * - Claude が git-operations スキルで変更差分を確認
    * - Git 自動コミットを実行（イベント駆動で実装済み）
    * - GitHub Issue のステータスを Done に更新
    * - 品質要件チェックを実行
    */
   private async handleCompletedPhase(specId: string): Promise<void> {
-    // Note: 最終レビュー、変更差分確認は Claude Code 側で実行される
-    // Git 自動コミットは、git-integration.ts のイベントハンドラーで実行される
-    // この関数では、完了フェーズに移行したことをユーザーに通知するのみ
+    // Note: Git 自動コミットは、git-integration.ts のイベントハンドラーで実行される
 
     console.log(`✓ 完了フェーズに移行しました`);
-    console.log(
-      `\n次のステップ: Claude が最終レビューと変更差分確認を実行します（CLAUDE.md の指示通り）`
-    );
+    console.log(`\n🎉 実装が完了しました！変更内容を確認し、プルリクエストを作成してください。`);
 
     // 品質チェック実行
     await this.runQualityCheck('completed', specId);

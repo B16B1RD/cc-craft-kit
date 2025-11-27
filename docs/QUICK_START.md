@@ -65,9 +65,14 @@ GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
 # GitHub組織名・ユーザー名
 GITHUB_OWNER=your-username
 
+# ベースブランチ（デフォルト: develop）
+BASE_BRANCH=develop
+
 # ログレベル
 LOG_LEVEL=info
 ```
+
+**重要**: `BASE_BRANCH` は、仕様書作成時に自動生成されるブランチの派生元を指定します。デフォルトは `develop` です。ブランチはカレントブランチからではなく、この BASE_BRANCH から派生します。
 
 ### GitHub Token取得方法
 
