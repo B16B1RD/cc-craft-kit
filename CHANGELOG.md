@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] - 2025-11-27
+
+### Added
+
+- 詳細設計とタスク分割の統合: design フェーズでタスク分割を自動実行（tasks フェーズは非推奨化）
+- design フェーズ移行時に詳細設計セクション（7.1〜7.5）を自動生成
+- GitHub Issue 本文同期: フェーズ変更時に仕様書の内容を Issue 本文に自動反映
+- フェーズ完了時の未コミット検出: git status チェックと警告表示
+- 環境変数 BASE_BRANCH: デフォルトブランチの明示的な指定をサポート
+
+### Changed
+
+- プロンプトファースト原則の強化: CLAUDE.md に開発前チェックリストを追加
+- `/cft:spec-create` コマンドをプロンプトベースに再設計（日本語ガイダンス対応）
+- `/cft:spec-phase` コマンドの見直し: completed フェーズ移行時の PR 作成処理を改善
+- `/cft:spec-delete` コマンドをプロンプトファースト型に再設計
+- `/cft:status` コマンドをプロンプトベースに再設計
+- 環境変数 GITHUB_DEFAULT_BASE_BRANCH を BASE_BRANCH にリネーム
+
+### Fixed
+
+- completed フェーズ移行時の PR 作成失敗: ブランチ自動プッシュ機能を追加
+- PR 作成時のマージ先ブランチの誤り
+- 仕様書 createdAt/updatedAt のフォーマット統一
+- 存在しないフェーズ（testing）の案内を削除
+
 ## [0.1.0] - 2025-11-24
 
 ### Added
@@ -28,4 +54,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - なし（初回リリース）
 
+[0.1.1]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.1
 [0.1.0]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.0
