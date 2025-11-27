@@ -212,7 +212,6 @@ thoroughness: "medium"
   - src/core/**/*.ts
   - CLAUDE.md
   - .cc-craft-kit/specs/*.md
-
 除外: tests/**/*, node_modules/**/*
 
 収集情報:
