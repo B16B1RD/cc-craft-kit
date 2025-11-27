@@ -80,13 +80,34 @@ git branch --show-current
 
 決定したブランチ名を `BRANCH_NAME` として記録してください。
 
+### Step 4.5: ベースブランチの決定
+
+Bash ツールで `.env` から `BASE_BRANCH` を読み込みます。
+
+```bash
+# .env からベースブランチを取得（デフォルト: develop）
+BASE_BRANCH=$(grep '^BASE_BRANCH=' .env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | xargs)
+BASE_BRANCH=${BASE_BRANCH:-develop}
+
+echo "ベースブランチ: $BASE_BRANCH"
+```
+
+出力を `BASE_BRANCH` として記録してください。
+
 ### Step 5: ブランチ作成・切り替え
 
 Bash ツールでブランチを作成し、切り替えます。
 
 ```bash
-# ブランチ作成（現在のブランチから分岐）
-git branch "$BRANCH_NAME"
+# BASE_BRANCH の存在確認
+if ! git rev-parse --verify "$BASE_BRANCH" > /dev/null 2>&1; then
+  echo "❌ ベースブランチ '$BASE_BRANCH' が見つかりません"
+  echo "   .env の BASE_BRANCH 設定を確認してください"
+  exit 1
+fi
+
+# BASE_BRANCH からブランチを派生
+git branch "$BRANCH_NAME" "$BASE_BRANCH"
 
 # ブランチ切り替え
 git checkout "$BRANCH_NAME"
@@ -94,6 +115,7 @@ git checkout "$BRANCH_NAME"
 
 **エラーハンドリング:**
 
+- `BASE_BRANCH` が存在しない場合、エラーメッセージを表示して処理を中断
 - ブランチ作成に失敗した場合、エラーメッセージを表示して処理を中断
 - 既に同名のブランチが存在する場合、既存ブランチに切り替える
 
@@ -284,9 +306,28 @@ git checkout "$ORIGINAL_BRANCH"
 | ステップ | エラー | 対処 |
 |---|---|---|
 | Step 1 | UUID 生成失敗 | `crypto.randomUUID()` にフォールバック |
+| Step 4.5 | BASE_BRANCH 読み込み失敗 | デフォルト値 `develop` を使用 |
+| Step 5 | BASE_BRANCH が存在しない | 処理中断、.env の設定確認を案内 |
 | Step 5 | ブランチ作成失敗 | 処理中断、エラーメッセージ表示 |
 | Step 6 | ファイル作成失敗 | 処理中断、エラーメッセージ表示 |
 | Step 7 | DB 登録失敗 | ロールバック処理実行 |
 | Step 8 | コードベース解析失敗 | スキップ、テンプレート状態で保存 |
 | Step 9 | 自動完成失敗 | スキップ、テンプレート状態で保存 |
 | Step 10 | ブランチ復帰失敗 | 警告表示、手動復帰を案内 |
+
+### BASE_BRANCH が存在しない場合
+
+```
+❌ ベースブランチ '$BASE_BRANCH' が見つかりません
+
+.env の BASE_BRANCH 設定を確認してください。
+
+確認事項:
+- ブランチ名が正しいか（例: develop, main）
+- ローカルリポジトリにブランチが存在するか（git branch -a で確認）
+- リモートからフェッチが必要か（git fetch origin）
+
+対処法:
+1. .env ファイルの BASE_BRANCH を修正
+2. または、ブランチをフェッチ: git fetch origin $BASE_BRANCH:$BASE_BRANCH
+```

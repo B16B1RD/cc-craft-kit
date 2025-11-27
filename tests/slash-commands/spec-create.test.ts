@@ -173,10 +173,12 @@ describe('Slash Command: /cft:spec-create', () => {
       expect(bashBlocks).not.toBeNull();
       expect(bashBlocks!.length).toBeGreaterThan(0);
 
-      // 各コードブロックをチェック
+      // 各コードブロックをチェック（JavaScript の undefined/null リテラル、/dev/null は許可）
       for (const block of bashBlocks!) {
-        expect(block).not.toContain('undefined');
-        expect(block).not.toContain('null');
+        expect(block).not.toMatch(/\bundefined\b/);
+        // /dev/null は許可、単独の null リテラルのみ禁止
+        const blockWithoutDevNull = block.replace(/\/dev\/null/g, '');
+        expect(blockWithoutDevNull).not.toMatch(/\bnull\b/);
       }
     });
 
@@ -331,6 +333,60 @@ describe('Slash Command: /cft:spec-create', () => {
     it('should reference correct slash command pattern', () => {
       // Assert
       expect(content).toMatch(/\/cft:spec-(get|phase)/);
+    });
+  });
+
+  describe('BASE_BRANCH Feature Tests', () => {
+    let content: string;
+
+    beforeEach(() => {
+      // Arrange
+      content = readFileSync(commandFilePath, 'utf-8');
+    });
+
+    it('should have Step 4.5 for base branch determination', () => {
+      // Assert
+      expect(content).toContain('### Step 4.5: ベースブランチの決定');
+      expect(content).toContain('BASE_BRANCH');
+    });
+
+    it('should read BASE_BRANCH from .env file', () => {
+      // Assert
+      expect(content).toContain("grep '^BASE_BRANCH=' .env");
+    });
+
+    it('should have default value for BASE_BRANCH', () => {
+      // Assert
+      expect(content).toContain('BASE_BRANCH=${BASE_BRANCH:-develop}');
+    });
+
+    it('should verify BASE_BRANCH existence before branch creation', () => {
+      // Assert
+      expect(content).toContain('git rev-parse --verify "$BASE_BRANCH"');
+    });
+
+    it('should create branch from BASE_BRANCH instead of current branch', () => {
+      // Assert
+      expect(content).toContain('git branch "$BRANCH_NAME" "$BASE_BRANCH"');
+    });
+
+    it('should have error handling for missing BASE_BRANCH', () => {
+      // Assert
+      expect(content).toContain('ベースブランチ');
+      expect(content).toContain('が見つかりません');
+      expect(content).toContain('.env の BASE_BRANCH 設定を確認');
+    });
+
+    it('should include BASE_BRANCH in error handling summary', () => {
+      // Act
+      const errorHandlingSection = content.match(
+        /## エラーハンドリングまとめ[\s\S]*?(?=##|$)/
+      );
+
+      // Assert
+      expect(errorHandlingSection).not.toBeNull();
+      expect(errorHandlingSection![0]).toContain('Step 4.5');
+      expect(errorHandlingSection![0]).toContain('BASE_BRANCH');
     });
   });
 });
