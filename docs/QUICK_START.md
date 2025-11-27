@@ -259,10 +259,87 @@ npm run db:migrate
 
 4. Claude Code を再起動
 
+## 高度なコマンド
+
+### サブエージェント起動
+
+コードレビューやテスト生成を自動化するサブエージェントを利用できます。
+
+```bash
+# コードレビュー実行
+/cft:code-review src/**/*.ts
+
+# テスト自動生成
+/cft:test-generate src/core/database/*.ts
+
+# リファクタリング支援
+/cft:refactor src/commands/**/*.ts
+```
+
+### スキル起動
+
+型チェックやスキーマ検証を実行します。
+
+```bash
+# TypeScript/ESLint チェック
+/cft:lint-check
+
+# データベーススキーマ検証
+/cft:schema-validate
+```
+
+### タスク管理ワークフロー
+
+design フェーズで自動生成された Sub Issue を使ったワークフローです。
+
+```bash
+# Sub Issue 一覧を確認
+/cft:task-list <spec-id>
+
+# タスク開始（ブランチ作成＆アサイン）
+/cft:task-start <issue-number>
+
+# タスク完了（Sub Issue クローズ＆ PR 作成）
+/cft:task-done <issue-number>
+
+# PR マージ後のブランチ削除
+/cft:pr-cleanup <spec-id>
+```
+
+### 品質管理
+
+```bash
+# 同期状態チェック
+/cft:sync-check
+
+# 同期修復
+/cft:sync-repair
+
+# データベース情報表示
+/cft:db-info
+```
+
+### ナレッジベース活用
+
+GitHub Issue をナレッジベースとして活用します。
+
+```bash
+# 進捗を記録
+/cft:knowledge-progress <spec-id> "認証機能の基本実装が完了"
+
+# エラー解決策を記録
+/cft:knowledge-error <spec-id> "CORSエラー" "Access-Control-Allow-Origin ヘッダーを追加"
+
+# Tips を記録
+/cft:knowledge-tip <spec-id> "performance" "useMemo でレンダリングを最適化"
+```
+
 ## さらに学ぶ
 
-- [テンプレートカスタマイズガイド](./TEMPLATES.md)
 - [アーキテクチャドキュメント](./ARCHITECTURE.md)
+- [GitHub Projects v2 推奨ビュー設定ガイド](./GITHUB_PROJECTS.md)
+- [TDD ガイド](./TDD_GUIDE.md)
+- [サブエージェント・スキルガイド](./SUBAGENTS_AND_SKILLS_GUIDE.md)
 
 ---
 

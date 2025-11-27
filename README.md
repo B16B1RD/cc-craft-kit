@@ -152,21 +152,81 @@ Project 追加が失敗した場合でも Issue 作成は成功し、警告メ�
 
 ### 全コマンド一覧
 
-```sh
-/cft:init my-project              # プロジェクト初期化
-/cft:status                       # 状態表示
-/cft:spec-create "機能名" "説明"  # 仕様書作成
-/cft:spec-list                    # 仕様書一覧
-/cft:spec-get <id>                # 仕様書詳細
-/cft:spec-phase <id> <phase>      # フェーズ更新
-/cft:github-init <owner> <repo>   # GitHub統合初期化
-/cft:github-issue-create <id>     # Issue作成
-/cft:github-sync <dir> <id>       # GitHub同期
-/cft:github-project-add <id> <num> # Project追加
-/cft:knowledge-progress <id> <msg> # 進捗記録
-/cft:knowledge-error <id> <err> <sol> # エラー記録
-/cft:knowledge-tip <id> <cat> <tip>   # Tips記録
-```
+#### プロジェクト管理
+
+| コマンド | 説明 |
+|---------|------|
+| `/cft:init <project-name>` | プロジェクト初期化 |
+| `/cft:status` | プロジェクト状態表示 |
+
+#### 仕様書管理
+
+| コマンド | 説明 |
+|---------|------|
+| `/cft:spec-create <name> [description]` | 仕様書作成 |
+| `/cft:spec-list [phase] [limit]` | 仕様書一覧表示 |
+| `/cft:spec-get <spec-id>` | 仕様書詳細表示 |
+| `/cft:spec-phase <spec-id> <phase>` | フェーズ更新 |
+| `/cft:spec-update` | 仕様書変更を GitHub Issue に通知 |
+| `/cft:spec-delete <spec-id>` | 仕様書削除 |
+| `/cft:migrate-tasks-to-design [spec-id]` | tasks → design フェーズ移行 |
+
+#### タスク管理
+
+| コマンド | 説明 |
+|---------|------|
+| `/cft:task-list <spec-id>` | Sub Issue 一覧表示 |
+| `/cft:task-start <issue-number>` | タスク開始（ブランチ作成） |
+| `/cft:task-done <issue-number>` | タスク完了（PR 作成） |
+
+#### GitHub 統合
+
+| コマンド | 説明 |
+|---------|------|
+| `/cft:github-init <owner> <repo>` | GitHub 統合初期化 |
+| `/cft:github-issue-create <spec-id>` | Issue 作成 |
+| `/cft:github-sync <direction> <spec-id>` | 双方向同期 |
+| `/cft:github-project-add <spec-id> <project-number>` | Project ボード追加 |
+| `/cft:pr-cleanup <spec-id>` | PR マージ後のブランチ削除 |
+| `/cft:watch` | ファイル変更監視 |
+
+#### 品質管理
+
+| コマンド | 説明 |
+|---------|------|
+| `/cft:code-review <file-pattern>` | コードレビュー実行 |
+| `/cft:test-generate <file-pattern>` | テスト自動生成 |
+| `/cft:refactor <file-pattern>` | リファクタリング支援 |
+| `/cft:lint-check` | TypeScript/ESLint チェック |
+| `/cft:schema-validate` | データベーススキーマ検証 |
+
+#### ナレッジベース
+
+| コマンド | 説明 |
+|---------|------|
+| `/cft:knowledge-progress <spec-id> <message>` | 進捗記録 |
+| `/cft:knowledge-error <spec-id> <error> <solution>` | エラー解決策記録 |
+| `/cft:knowledge-tip <spec-id> <category> <tip>` | Tips 記録 |
+
+#### ユーティリティ
+
+| コマンド | 説明 |
+|---------|------|
+| `/cft:sync-check` | ソース同期状態チェック |
+| `/cft:sync-repair` | ソース同期修復 |
+| `/cft:db-info` | データベース情報表示 |
+
+#### 拡張機能（開発者向け）
+
+| コマンド | 説明 |
+|---------|------|
+| `/cft:agent-create` | カスタムサブエージェント作成 |
+| `/cft:agent-list` | サブエージェント一覧 |
+| `/cft:skill-create` | カスタムスキル作成 |
+| `/cft:skill-list` | スキル一覧 |
+| `/cft:quality-init` | 品質ルール初期化 |
+| `/cft:quality-check` | 品質ルールチェック |
+| `/cft:quality-generate` | 品質レポート生成 |
 
 ## 🏗️ アーキテクチャ
 
