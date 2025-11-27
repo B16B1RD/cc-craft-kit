@@ -163,6 +163,24 @@ Bash ツールで以下を実行:
 gh issue close $ISSUE_NUMBER --repo "$REPO" --comment "Completed in $PR_URL"
 ```
 
+### Step 9.5: task.completed イベント発火
+
+Bash ツールで以下を実行:
+
+```bash
+npx tsx .cc-craft-kit/commands/task/done.ts $ISSUE_NUMBER
+```
+
+出力（JSON）を確認:
+
+- `success: true` の場合: イベント発火成功、次のステップへ
+- `eventEmitted: true` の場合: Sub Issue のステータスが自動的に更新される
+- `success: false` の場合: エラーメッセージを表示（処理は継続）
+
+> **注意**: このステップはイベント駆動アーキテクチャを通じて以下の処理を自動実行します:
+> - Sub Issue のステータス更新（既に Step 9 でクローズ済みのため、同期処理）
+> - GitHub Projects 上の Sub Issue ステータスを "Done" に更新
+
 ### Step 10: 結果の表示
 
 ```
