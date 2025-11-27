@@ -866,6 +866,149 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
       expect(syncRecords).toHaveLength(0);
     });
 
+    it('タスク完了時に Projects ステータスが Done に更新される', async () => {
+      const specId = randomUUID();
+      const taskId = randomUUID();
+
+      // 1. 仕様書作成
+      await lifecycle.db
+        .insertInto('specs')
+        .values({
+          id: specId,
+          name: 'Projects ステータス更新テスト',
+          description: null,
+          phase: 'implementation',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'spec',
+          entity_id: specId,
+          github_id: '550',
+          github_number: 550,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
+        })
+        .execute();
+
+      // 2. タスク作成
+      await lifecycle.db
+        .insertInto('tasks')
+        .values({
+          id: taskId,
+          spec_id: specId,
+          title: 'Projects テストタスク',
+          description: null,
+          status: 'in_progress',
+          priority: 1,
+
+          github_issue_number: null,
+          assignee: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // 3. github_sync に Sub Issue レコードを作成
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          id: randomUUID(),
+          entity_type: 'sub_issue',
+          entity_id: taskId,
+          github_id: 'test-owner/test-repo',
+          github_number: 551,
+          github_node_id: 'sub_issue_node_id_for_projects',
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
+        })
+        .execute();
+
+      // 4. config.json に project_name_cache を追加
+      const configPath = join(testConfigDir, '.cc-craft-kit', 'config.json');
+      const config = {
+        github: {
+          owner: 'test-owner',
+          repo: 'test-repo',
+          project_name_cache: {
+            name: 'test-project',
+            resolved_number: 1,
+            cached_at: new Date().toISOString(),
+          },
+        },
+      };
+      await writeFile(configPath, JSON.stringify(config, null, 2));
+
+      // 5. Issue ステータス更新のモック
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers(),
+        json: async () => ({
+          node_id: 'sub_issue_node_id_for_projects',
+          number: 551,
+          state: 'closed',
+        }),
+        text: async () => '',
+      });
+
+      // 6. Projects API モック
+      const MockGitHubProjects = GitHubProjects as jest.MockedClass<typeof GitHubProjects>;
+      MockGitHubProjects.prototype.get = jest.fn().mockResolvedValue({
+        id: 'project_id',
+        number: 1,
+        title: 'test-project',
+      });
+      MockGitHubProjects.prototype.addItem = jest.fn().mockResolvedValue({
+        id: 'project_item_id',
+        content: { id: 'sub_issue_node_id_for_projects', number: 551 },
+      });
+      MockGitHubProjects.prototype.updateProjectStatus = jest.fn().mockResolvedValue(undefined);
+
+      // 7. task.completed イベントを発火
+      await lifecycle.db
+        .updateTable('tasks')
+        .set({ status: 'done', updated_at: new Date().toISOString() })
+        .where('id', '=', taskId)
+        .execute();
+
+      await eventBus.emit(
+        eventBus.createEvent('task.completed', specId, { taskId }, taskId)
+      );
+
+      // 8. 検証: fetch が呼ばれた（Issue クローズ）
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.github.com/repos/test-owner/test-repo/issues/551',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ state: 'closed' }),
+        })
+      );
+
+      // 9. 検証: Projects API が呼ばれた
+      expect(MockGitHubProjects.prototype.get).toHaveBeenCalledWith('test-owner', 1);
+      expect(MockGitHubProjects.prototype.addItem).toHaveBeenCalledWith({
+        projectId: 'project_id',
+        contentId: 'sub_issue_node_id_for_projects',
+      });
+      expect(MockGitHubProjects.prototype.updateProjectStatus).toHaveBeenCalledWith({
+        owner: 'test-owner',
+        projectNumber: 1,
+        itemId: 'project_item_id',
+        status: 'Done',
+      });
+    });
+
     it('タスクに対応する Sub Issue が存在しない場合、task.completed イベントは警告のみ表示', async () => {
       const specId = randomUUID();
       const taskId = randomUUID();

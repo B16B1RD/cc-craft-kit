@@ -916,7 +916,7 @@ ${data.content}
     }
   });
 
-  // task.completed → Sub Issue ステータス更新
+  // task.completed → Sub Issue ステータス更新 + Projects ステータス更新
   eventBus.on<{ taskId: string }>(
     'task.completed',
     async (event: WorkflowEvent<{ taskId: string }>) => {
@@ -954,6 +954,9 @@ ${data.content}
         await subIssueManager.updateSubIssueStatus(taskId, 'closed', githubToken);
 
         console.log(`✓ Closed Sub Issue for task ${taskId}`);
+
+        // GitHub Projects ステータス更新を試みる
+        await updateSubIssueProjectStatus(db, taskId, githubConfig, githubToken);
       } catch (error) {
         // Sub Issue が存在しない場合は警告のみ
         if (error instanceof Error && error.message.includes('Sub issue not found')) {
@@ -968,4 +971,90 @@ ${data.content}
       }
     }
   );
+}
+
+/**
+ * Sub Issue の GitHub Projects ステータスを更新
+ *
+ * Sub Issue が Project に追加されている場合、ステータスを "Done" に更新します。
+ * Project に追加されていない場合は、追加してからステータスを更新します。
+ */
+async function updateSubIssueProjectStatus(
+  db: Kysely<Database>,
+  taskId: string,
+  githubConfig: { owner: string; repo: string },
+  githubToken: string
+): Promise<void> {
+  try {
+    // 1. config.json から project_number を取得
+    const ccCraftKitDir = join(process.cwd(), '.cc-craft-kit');
+    const configPath = join(ccCraftKitDir, 'config.json');
+
+    if (!existsSync(configPath)) {
+      console.log('No config.json found, skipping Projects status update');
+      return;
+    }
+
+    const config = JSON.parse(readFileSync(configPath, 'utf-8'));
+    const projectNumber = config.github?.project_name_cache?.resolved_number;
+
+    if (!projectNumber) {
+      console.log('No project_number in config, skipping Projects status update');
+      return;
+    }
+
+    // 2. github_sync から Sub Issue の node_id を取得
+    const syncRecord = await db
+      .selectFrom('github_sync')
+      .selectAll()
+      .where('entity_id', '=', taskId)
+      .where('entity_type', '=', 'sub_issue')
+      .executeTakeFirst();
+
+    if (!syncRecord || !syncRecord.github_node_id) {
+      console.log('No Sub Issue node_id found, skipping Projects status update');
+      return;
+    }
+
+    // 3. GitHub Client 作成
+    const client = new GitHubClient({ token: githubToken });
+    const projects = new GitHubProjects(client);
+
+    // 4. Project ID を取得
+    const project = await projects.get(githubConfig.owner, projectNumber);
+
+    // 5. Sub Issue を Project に追加（既に追加されている場合は既存の item を返す）
+    let projectItemId: string;
+    try {
+      const addResult = await projects.addItem({
+        projectId: project.id,
+        contentId: syncRecord.github_node_id,
+      });
+      projectItemId = addResult.id;
+    } catch (addError) {
+      // 既に追加されている場合のエラーは無視してステータス更新を試みる
+      if (addError instanceof Error && addError.message.includes('already exists')) {
+        // 既存のアイテム ID を取得する必要があるが、現在の API では取得が難しい
+        // そのため、ステータス更新はスキップ
+        console.log('Sub Issue already in Project, but cannot get item ID for status update');
+        return;
+      }
+      throw addError;
+    }
+
+    // 6. ステータスを "Done" に更新
+    await projects.updateProjectStatus({
+      owner: githubConfig.owner,
+      projectNumber,
+      itemId: projectItemId,
+      status: 'Done',
+    });
+
+    console.log(`✓ Updated Sub Issue Projects status to Done`);
+  } catch (error) {
+    // Projects 更新エラーは警告のみ（Sub Issue クローズは成功しているため）
+    if (process.env.DEBUG === '1') {
+      console.warn('Failed to update Sub Issue Projects status:', error);
+    }
+  }
 }

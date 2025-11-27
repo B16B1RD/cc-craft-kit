@@ -57,6 +57,44 @@ function getGitHubConfig(ccCraftKitDir: string): { owner: string; repo: string }
 }
 
 /**
+ * タスクタイトルから説明文を生成
+ *
+ * タスクタイトルに含まれるファイルパスや変更内容を解析して、
+ * Sub Issue の本文に設定する説明文を生成します。
+ */
+function generateTaskDescription(title: string, phaseName?: string): string {
+  const lines: string[] = [];
+
+  // Phase 情報があれば追加
+  if (phaseName) {
+    lines.push(`## Phase: ${phaseName}`);
+    lines.push('');
+  }
+
+  lines.push('## タスク内容');
+  lines.push('');
+  lines.push(title);
+  lines.push('');
+
+  // ファイルパスを検出（バッククォートで囲まれたパス）
+  const filePathMatches = title.match(/`([^`]+\.[a-z]+)`/gi);
+  if (filePathMatches && filePathMatches.length > 0) {
+    lines.push('## 対象ファイル');
+    lines.push('');
+    for (const match of filePathMatches) {
+      const filePath = match.replace(/`/g, '');
+      lines.push(`- \`${filePath}\``);
+    }
+    lines.push('');
+  }
+
+  lines.push('---');
+  lines.push('*この Issue は cc-craft-kit によって自動生成されました。*');
+
+  return lines.join('\n');
+}
+
+/**
  * 仕様書から実装タスクリストを解析
  */
 function parseTaskListFromSpecContent(content: string): TaskInfo[] {
@@ -78,7 +116,17 @@ function parseTaskListFromSpecContent(content: string): TaskInfo[] {
   // パターン 3: 「- [ ] `ファイル名` の変更内容」
   const lines = taskSection.split('\n');
 
+  // 現在の Phase 名を追跡
+  let currentPhase: string | undefined;
+
   for (const line of lines) {
+    // Phase ヘッダーを検出（### Phase X: ... 形式）
+    const phaseMatch = line.match(/^###\s*Phase\s*\d+:\s*(.+)$/i);
+    if (phaseMatch) {
+      currentPhase = phaseMatch[1].trim();
+      continue;
+    }
+
     // チェックボックス行を検出
     const checkboxMatch = line.match(/^\s*-\s*\[\s*\]\s*(.+)$/);
     if (!checkboxMatch) {
@@ -98,7 +146,7 @@ function parseTaskListFromSpecContent(content: string): TaskInfo[] {
     tasks.push({
       id: taskId,
       title: rawTitle,
-      description: undefined,
+      description: generateTaskDescription(rawTitle, currentPhase),
     });
   }
 
