@@ -17,6 +17,11 @@ import { SubIssueManager } from '../../integrations/github/sub-issues.js';
 import { parseTaskListFromSpec } from '../utils/task-parser.js';
 import { getErrorHandler } from '../errors/error-handler.js';
 import { getSpecWithGitHubInfo } from '../database/helpers.js';
+import {
+  detectChanges,
+  buildChangelogComment,
+  formatChangeSummary,
+} from '../../integrations/github/changelog-writer.js';
 
 /**
  * エラーをログに記録
@@ -189,13 +194,68 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
         const issues = new GitHubIssues(client);
         const projects = new GitHubProjects(client);
 
-        // Issue タイトル・ラベル更新（本文は履歴保持のため更新しない）
+        // Issue タイトル・ラベル更新 + 仕様書ファイルから本文を更新
+        const specPath = join(ccCraftKitDir, 'specs', `${spec.id}.md`);
+        let newSpecContent = '';
+
+        if (existsSync(specPath)) {
+          try {
+            newSpecContent = readFileSync(specPath, 'utf-8');
+            if (process.env.DEBUG === '1') {
+              console.log(`[DEBUG] Read spec file: ${specPath} (${newSpecContent.length} bytes)`);
+            }
+          } catch (error) {
+            await logError('warn', `Failed to read spec file: ${specPath}`, error, {
+              event: 'spec.phase_changed',
+              specId: event.specId,
+              action: 'read_spec_file',
+            });
+          }
+        } else {
+          if (process.env.DEBUG === '1') {
+            console.log(`[DEBUG] Spec file not found: ${specPath}`);
+          }
+        }
+
+        // 既存の Issue 内容を取得して変更を検出
+        let oldContent = '';
+        try {
+          const existingIssue = await issues.get(
+            githubConfig.owner,
+            githubConfig.repo,
+            spec.github_issue_number
+          );
+          oldContent = existingIssue.body || '';
+          if (process.env.DEBUG === '1') {
+            console.log(`[DEBUG] Fetched existing issue body (${oldContent.length} bytes)`);
+          }
+        } catch (fetchError) {
+          await logError(
+            'warn',
+            'Failed to fetch existing Issue for change detection',
+            fetchError,
+            {
+              event: 'spec.phase_changed',
+              specId: event.specId,
+              action: 'fetch_existing_issue',
+            }
+          );
+        }
+
+        // 変更を検出
+        const changes = detectChanges(oldContent, newSpecContent);
+        if (process.env.DEBUG === '1') {
+          console.log(`[DEBUG] Detected ${changes.length} changes`);
+        }
+
+        // Issue を更新（本文を必ず含める）
         await issues.update({
           owner: githubConfig.owner,
           repo: githubConfig.repo,
           issueNumber: spec.github_issue_number,
           title: `[${event.data.newPhase}] ${spec.name}`,
           labels: [`phase:${event.data.newPhase}`],
+          body: newSpecContent || oldContent, // 新しい内容がなければ既存を維持
         });
 
         // フェーズ移行をコメントで記録
@@ -229,6 +289,41 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
               action: 'add_comment',
             }
           );
+        }
+
+        // 変更履歴コメントを追加（変更がある場合のみ）
+        if (changes.length > 0) {
+          const changelogComment = buildChangelogComment(changes, spec.id);
+          const changeSummary = formatChangeSummary(changes);
+
+          try {
+            await issues.addComment(
+              githubConfig.owner,
+              githubConfig.repo,
+              spec.github_issue_number,
+              changelogComment
+            );
+
+            if (process.env.DEBUG === '1') {
+              console.log(`[DEBUG] Changelog comment added: ${changeSummary}`);
+            }
+          } catch (changelogError) {
+            await logError(
+              'warn',
+              'Failed to add changelog comment to GitHub Issue',
+              changelogError,
+              {
+                event: 'spec.phase_changed',
+                specId: event.specId,
+                action: 'add_changelog_comment',
+                changesCount: changes.length,
+              }
+            );
+          }
+        } else {
+          if (process.env.DEBUG === '1') {
+            console.log('[DEBUG] No changes detected, skipping changelog comment');
+          }
         }
 
         // ========== ここから新規追加: Project ステータス更新 ==========
@@ -332,8 +427,9 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
 
         // ========== ここまで新規追加 ==========
 
-        // tasks フェーズ移行時に Sub Issue を自動作成
-        if (event.data.newPhase === 'tasks') {
+        // design フェーズ移行時に Sub Issue を自動作成
+        // 注意: tasks フェーズは非推奨。design フェーズでタスク分割と Sub Issue 作成を同時実行
+        if (event.data.newPhase === 'design' || event.data.newPhase === 'tasks') {
           try {
             const specPath = join(ccCraftKitDir, 'specs', `${spec.id}.md`);
             if (!existsSync(specPath)) {
@@ -356,7 +452,14 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
             const taskList = await parseTaskListFromSpec(specPath);
 
             if (taskList.length === 0) {
-              console.log('No tasks found in spec file, skipping Sub Issue creation');
+              // design フェーズではタスクリストがなくても正常（まだ生成されていない場合がある）
+              if (event.data.newPhase === 'design') {
+                console.log(
+                  'No tasks found yet, Sub Issue creation will be handled by spec-phase.md'
+                );
+              } else {
+                console.log('No tasks found in spec file, skipping Sub Issue creation');
+              }
               return;
             }
 
@@ -603,7 +706,7 @@ ${data.content}
     }
   });
 
-  // spec.updated → GitHub Issue 本文更新 + コメント追加
+  // spec.updated → GitHub Issue 本文更新 + 変更履歴コメント追加
   eventBus.on('spec.updated', async (event: WorkflowEvent) => {
     try {
       const githubToken = process.env.GITHUB_TOKEN;
@@ -647,6 +750,22 @@ ${data.content}
       const client = new GitHubClient({ token: githubToken });
       const issues = new GitHubIssues(client);
 
+      // 既存の Issue 本文を取得して変更を検出
+      let oldContent = '';
+      try {
+        const existingIssue = await issues.get(
+          githubConfig.owner,
+          githubConfig.repo,
+          spec.github_issue_number
+        );
+        oldContent = existingIssue.body || '';
+      } catch {
+        // Issue 取得に失敗した場合は変更検出をスキップ
+      }
+
+      // 変更を検出
+      const changes = detectChanges(oldContent, specContent);
+
       // Issue 本文を仕様書の最新内容で更新
       try {
         await issues.update({
@@ -663,28 +782,29 @@ ${data.content}
         });
       }
 
-      // 仕様書更新をコメントで記録
-      const updateComment = `## 📝 仕様書更新
+      // 変更履歴をコメントで記録（変更がある場合のみ）
+      if (changes.length > 0) {
+        const changelogComment = buildChangelogComment(changes, spec.id);
+        const changeSummary = formatChangeSummary(changes);
 
-仕様書が更新されました。Issue 本文を最新の内容で更新しました。
+        try {
+          await issues.addComment(
+            githubConfig.owner,
+            githubConfig.repo,
+            spec.github_issue_number,
+            changelogComment
+          );
 
-**更新日時:** ${new Date().toLocaleString('ja-JP')}
-**最新の仕様書:** [\`.cc-craft-kit/specs/${spec.id}.md\`](../../.cc-craft-kit/specs/${spec.id}.md)
-`;
-
-      try {
-        await issues.addComment(
-          githubConfig.owner,
-          githubConfig.repo,
-          spec.github_issue_number,
-          updateComment
-        );
-      } catch (commentError) {
-        await logError('warn', 'Failed to add spec update comment to GitHub Issue', commentError, {
-          event: 'spec.updated',
-          specId: event.specId,
-          action: 'add_comment',
-        });
+          if (process.env.DEBUG === '1') {
+            console.log(`✓ Changelog comment added: ${changeSummary}`);
+          }
+        } catch (commentError) {
+          await logError('warn', 'Failed to add changelog comment to GitHub Issue', commentError, {
+            event: 'spec.updated',
+            specId: event.specId,
+            action: 'add_changelog_comment',
+          });
+        }
       }
     } catch (error) {
       await logError('error', 'Failed to handle spec.updated event', error, {

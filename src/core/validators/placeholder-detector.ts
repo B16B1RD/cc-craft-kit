@@ -20,13 +20,7 @@ export interface PlaceholderDetectionResult {
 /**
  * 仕様書のフェーズ
  */
-export type Phase =
-  | 'requirements'
-  | 'design'
-  | 'tasks'
-  | 'implementation'
-  | 'testing'
-  | 'completed';
+export type Phase = 'requirements' | 'design' | 'tasks' | 'implementation' | 'completed';
 
 /**
  * プレースホルダーパターンの定義
@@ -91,15 +85,6 @@ const REQUIRED_SECTIONS: Record<Phase, string[]> = {
     '## 8. 実装タスクリスト',
   ],
   implementation: [
-    '## 1. 背景と目的',
-    '## 2. 対象ユーザー',
-    '## 3. 受け入れ基準',
-    '## 4. 制約条件',
-    '## 5. 依存関係',
-    '## 7. 設計詳細',
-    '## 8. 実装タスクリスト',
-  ],
-  testing: [
     '## 1. 背景と目的',
     '## 2. 対象ユーザー',
     '## 3. 受け入れ基準',
@@ -274,11 +259,24 @@ export function checkDesignPhase(content: string): string[] {
   }
 
   // 設計詳細のサブセクションをチェック
-  const subSectionsToCheck = ['### 7.1. アーキテクチャ設計', '### 7.5. テスト戦略'];
+  // Note: 実際のセクション番号は仕様書によって異なる可能性があるため、
+  // 柔軟にマッチングする
+  const subSectionsToCheck = [
+    { pattern: /### 7\.\d+\. アーキテクチャ設計/, display: 'アーキテクチャ設計' },
+    { pattern: /### 7\.\d+\. テスト戦略/, display: 'テスト戦略' },
+  ];
 
   for (const subSection of subSectionsToCheck) {
-    if (hasPlaceholderInSection(content, subSection)) {
-      missingSections.push(subSection);
+    const lines = content.split('\n');
+    const sectionLine = lines.find((line) => subSection.pattern.test(line.trim()));
+
+    if (!sectionLine) {
+      missingSections.push(`### 7.x. ${subSection.display}`);
+      continue;
+    }
+
+    if (hasPlaceholderInSection(content, sectionLine.trim())) {
+      missingSections.push(sectionLine.trim());
     }
   }
 

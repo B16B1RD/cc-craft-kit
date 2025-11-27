@@ -1,6 +1,9 @@
 import { Kysely } from 'kysely';
+import { join } from 'node:path';
+import { existsSync } from 'node:fs';
 import { Database } from '../../core/database/schema.js';
 import crypto from 'crypto';
+import { CheckboxSyncService, formatCheckboxChangeSummary } from './checkbox-sync.js';
 
 /**
  * Webhook イベント種別
@@ -90,7 +93,10 @@ export class GitHubWebhookHandler {
         await this.handleIssueReopened(spec.id, issue);
         break;
       case 'edited':
-        await this.handleIssueEdited(spec.id, issue);
+        await this.handleIssueEdited(spec.id, {
+          title: issue.title,
+          body: issue.body,
+        });
         break;
       case 'labeled':
         await this.handleIssueLabeled(spec.id, issue);
@@ -226,8 +232,13 @@ export class GitHubWebhookHandler {
 
   /**
    * Issue 編集処理
+   *
+   * タイトル変更時は仕様名を更新し、本文変更時はチェックボックス状態を仕様書に同期する。
    */
-  private async handleIssueEdited(specId: string, issue: { title: string }): Promise<void> {
+  private async handleIssueEdited(
+    specId: string,
+    issue: { title: string; body: string }
+  ): Promise<void> {
     // タイトルから仕様名を抽出
     const match = issue.title.match(/^\[.*?\]\s*(.+)$/);
     const name = match ? match[1] : issue.title;
@@ -240,6 +251,44 @@ export class GitHubWebhookHandler {
       })
       .where('id', '=', specId)
       .execute();
+
+    // チェックボックス同期（Issue → 仕様書）
+    if (issue.body) {
+      const specPath = join(process.cwd(), '.cc-craft-kit', 'specs', `${specId}.md`);
+
+      if (existsSync(specPath)) {
+        try {
+          const checkboxSync = new CheckboxSyncService(this.db);
+          const result = await checkboxSync.syncToSpec(specId, specPath, issue.body);
+
+          if (result.success && result.changes.length > 0) {
+            const summary = formatCheckboxChangeSummary(result.changes);
+            console.log(`✓ Checkbox sync (Issue → Spec): ${summary}`);
+
+            // ログに記録
+            const { randomUUID } = await import('crypto');
+            await this.db
+              .insertInto('logs')
+              .values({
+                id: randomUUID(),
+                task_id: null,
+                spec_id: specId,
+                action: 'checkbox_sync',
+                level: 'info',
+                message: `Checkbox sync from Issue: ${summary}`,
+                metadata: JSON.stringify({
+                  direction: 'to_spec',
+                  changes: result.changes,
+                }),
+                timestamp: new Date().toISOString(),
+              })
+              .execute();
+          }
+        } catch (error) {
+          console.error('Failed to sync checkboxes from Issue:', error);
+        }
+      }
+    }
   }
 
   /**

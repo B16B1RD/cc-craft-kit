@@ -4,14 +4,17 @@ import type { ColumnType, Generated, Insertable, Selectable, Updateable } from '
  * データベーススキーマ定義
  */
 
-// 仕様書フェーズ
-export type SpecPhase =
-  | 'requirements'
-  | 'design'
-  | 'tasks'
-  | 'implementation'
-  | 'testing'
-  | 'completed';
+/**
+ * 仕様書フェーズ
+ *
+ * 4 フェーズモデル: requirements → design → implementation → completed
+ *
+ * @deprecated 'tasks' フェーズは非推奨です。
+ * design フェーズでタスク分割を行い、Sub Issue として管理してください。
+ * 既存の tasks フェーズの仕様書は後方互換性のため引き続きサポートされますが、
+ * 新規作成時は design フェーズを使用してください。
+ */
+export type SpecPhase = 'requirements' | 'design' | 'tasks' | 'implementation' | 'completed';
 
 // タスクステータス
 export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'review' | 'done';
@@ -95,6 +98,8 @@ export interface GitHubSyncTable {
   updated_at: ColumnType<Date, string | undefined, string>; // 更新日時
   sync_status: 'success' | 'failed' | 'pending';
   error_message: string | null;
+  checkbox_hash: string | null; // チェックボックス状態のハッシュ（競合検出用）
+  last_body_hash: string | null; // 最後に同期した Issue 本文のハッシュ
 }
 
 export type GitHubSync = Selectable<GitHubSyncTable>;

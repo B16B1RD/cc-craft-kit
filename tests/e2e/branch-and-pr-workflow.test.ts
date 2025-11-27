@@ -157,7 +157,8 @@ describe('Branch and PR Workflow E2E', () => {
   });
 
   describe('Feature開発フロー', () => {
-    test('仕様書作成 → tasks → implementation → completed の完全フロー', async () => {
+    // NOTE: PR 自動作成処理は、プロンプトベース実装（spec-phase.md）に移行されました
+    test.skip('仕様書作成 → tasks → implementation → completed の完全フロー', async () => {
       // 環境変数をクリア
       delete process.env.GITHUB_OWNER;
 

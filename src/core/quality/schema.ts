@@ -12,13 +12,7 @@ export type QualityRequirementType = 'subagent' | 'skill';
 /**
  * フェーズ名
  */
-export type TriggerPhase =
-  | 'requirements'
-  | 'design'
-  | 'tasks'
-  | 'implementation'
-  | 'testing'
-  | 'completed';
+export type TriggerPhase = 'requirements' | 'design' | 'tasks' | 'implementation' | 'completed';
 
 /**
  * 品質要件定義
@@ -151,7 +145,6 @@ function validateQualityRequirement(
     'design',
     'tasks',
     'implementation',
-    'testing',
     'completed',
   ];
 

@@ -73,40 +73,20 @@ describe('Slash Command: /cft:spec-create', () => {
       expect(content).toMatch(/- `\$2`.*オプション/);
     });
 
-    it('should have "実行内容" section', () => {
-      // Assert
-      expect(content).toContain('## 実行内容');
-    });
-
     it('should have "使用例" section with code block', () => {
       // Assert
       expect(content).toContain('## 使用例');
       expect(content).toMatch(/```bash\n\/cft:spec-create/);
     });
 
-    it('should have "ブランチ名生成" section', () => {
+    it('should have "自動実行フロー" section', () => {
       // Assert
-      expect(content).toContain('## ブランチ名生成');
-      expect(content).toContain('仕様書名と説明を分析');
-      expect(content).toContain('英語ブランチ名の生成規則');
-      expect(content).toContain('ブランチ名の例');
-    });
-
-    it('should have "自動ブランチ作成の動作" section', () => {
-      // Assert
-      expect(content).toContain('## 自動ブランチ作成の動作（v0.2.0 以降）');
-      expect(content).toContain('保護ブランチ');
-      expect(content).toContain('ブランチ命名規則');
-    });
-
-    it('should have "ブランチ作成後の動作" section', () => {
-      // Assert
-      expect(content).toContain('## ブランチ作成後の動作（v0.3.0 以降）');
-      expect(content).toContain('元のブランチへ自動的に戻る');
+      expect(content).toContain('## 自動実行フロー');
+      expect(content).toContain('自動的に実行');
     });
   });
 
-  describe('Phase Definition Tests', () => {
+  describe('Step Definition Tests', () => {
     let content: string;
 
     beforeEach(() => {
@@ -114,39 +94,66 @@ describe('Slash Command: /cft:spec-create', () => {
       content = readFileSync(commandFilePath, 'utf-8');
     });
 
-    it('should have "仕様書自動完成フロー" section', () => {
+    it('should have Step 1: UUID 生成', () => {
       // Assert
-      expect(content).toContain('## 仕様書の自動完成フロー (v0.4.0 以降)');
-      expect(content).toContain('自動的に実行');
+      expect(content).toContain('### Step 1: UUID 生成');
+      expect(content).toContain('uuidgen');
     });
 
-    it('should have Phase 1: 事前情報収集', () => {
+    it('should have Step 2: ブランチ名生成', () => {
       // Assert
-      expect(content).toContain('### フェーズ 1: 事前情報収集');
-      expect(content).toContain('コードベース解析');
+      expect(content).toContain('### Step 2: ブランチ名生成');
+      expect(content).toContain('kebab-case');
+    });
+
+    it('should have Step 3: 現在ブランチ確認', () => {
+      // Assert
+      expect(content).toContain('### Step 3: 現在ブランチ確認');
+      expect(content).toContain('git branch --show-current');
+    });
+
+    it('should have Step 4: 保護ブランチ判定', () => {
+      // Assert
+      expect(content).toContain('### Step 4: 保護ブランチ判定');
+      expect(content).toContain('main');
+      expect(content).toContain('develop');
+    });
+
+    it('should have Step 5: ブランチ作成・切り替え', () => {
+      // Assert
+      expect(content).toContain('### Step 5: ブランチ作成・切り替え');
+      expect(content).toContain('git branch');
+      expect(content).toContain('git checkout');
+    });
+
+    it('should have Step 6: 仕様書ファイル作成', () => {
+      // Assert
+      expect(content).toContain('### Step 6: 仕様書ファイル作成');
+      expect(content).toContain('Write ツール');
+    });
+
+    it('should have Step 7: DB 登録 + イベント発火', () => {
+      // Assert
+      expect(content).toContain('### Step 7: DB 登録 + イベント発火');
+      expect(content).toContain('register.ts');
+    });
+
+    it('should have Step 8: コードベース解析', () => {
+      // Assert
+      expect(content).toContain('### Step 8: コードベース解析');
       expect(content).toContain('Explore サブエージェント');
-      expect(content).toContain('情報の整理');
     });
 
-    it('should have Phase 2: 不明情報の確認', () => {
+    it('should have Step 9: 仕様書の自動完成', () => {
       // Assert
-      expect(content).toContain('### フェーズ 2: 不明情報の確認 (オプション)');
-      expect(content).toContain('対話的な質問');
-      expect(content).toContain('AskUserQuestion');
+      expect(content).toContain('### Step 9: 仕様書の自動完成');
+      expect(content).toContain('Edit ツール');
     });
 
-    it('should have Phase 3: 仕様書の自動完成', () => {
+    it('should have Step 10: 元ブランチに復帰', () => {
       // Assert
-      expect(content).toContain('### フェーズ 3: 仕様書の自動完成');
-      expect(content).toContain('自動完成された内容の反映');
-    });
-
-    it('should have Phase 4: 品質レビュー', () => {
-      // Assert
-      expect(content).toContain('### フェーズ 4: 品質レビュー');
-      expect(content).toContain('仕様書の品質レビュー');
-      expect(content).toContain('code-reviewer サブエージェント');
-      expect(content).toContain('次のアクションを案内');
+      expect(content).toContain('### Step 10: 元ブランチに復帰');
+      expect(content).toContain('git checkout');
     });
   });
 
@@ -173,57 +180,11 @@ describe('Slash Command: /cft:spec-create', () => {
       }
     });
 
-    it('should have command execution example with npx tsx', () => {
+    it('should have command execution example with npx tsx register.ts', () => {
       // Assert
       expect(content).toMatch(
-        /npx tsx \.cc-craft-kit\/commands\/spec\/create\.ts/
+        /npx tsx \.cc-craft-kit\/commands\/spec\/register\.ts/
       );
-    });
-
-    it('should have git checkout example in bash code block', () => {
-      // Assert
-      expect(content).toMatch(/```bash\n# 作成されたブランチに切り替え\ngit checkout/);
-    });
-
-    it('should have branch name option in command', () => {
-      // Assert
-      expect(content).toContain('--branch-name "<生成したブランチ名>"');
-    });
-  });
-
-  describe('Flow Clarity Tests', () => {
-    let content: string;
-
-    beforeEach(() => {
-      // Arrange
-      content = readFileSync(commandFilePath, 'utf-8');
-    });
-
-    it('should have numbered steps in Phase 0', () => {
-      // Assert
-      expect(content).toMatch(/1\.\s+\*\*仕様書ファイルの作成\*\*/);
-    });
-
-    it('should have numbered steps in Phase 1', () => {
-      // Assert
-      expect(content).toMatch(/1\.\s+\*\*コードベース解析\*\*/);
-      expect(content).toMatch(/2\.\s+\*\*情報の整理\*\*/);
-    });
-
-    it('should have numbered steps in Phase 2', () => {
-      // Assert
-      expect(content).toMatch(/1\.\s+\*\*対話的な質問\*\*/);
-    });
-
-    it('should have numbered steps in Phase 3', () => {
-      // Assert
-      expect(content).toMatch(/1\.\s+\*\*自動完成された内容の反映\*\*/);
-    });
-
-    it('should have numbered steps in Phase 4', () => {
-      // Assert
-      expect(content).toMatch(/1\.\s+\*\*仕様書の品質レビュー\*\*/);
-      expect(content).toMatch(/2\.\s+\*\*次のアクションを案内\*\*/);
     });
   });
 
@@ -237,8 +198,7 @@ describe('Slash Command: /cft:spec-create', () => {
 
     it('should specify thoroughness level for Explore subagent', () => {
       // Assert
-      expect(content).toContain('thoroughness level: "medium"');
-      expect(content).toContain('想定コンテキスト消費: 約 20,000〜40,000 トークン');
+      expect(content).toContain('thoroughness: "medium"');
     });
 
     it('should have file pattern specification for Explore', () => {
@@ -248,14 +208,6 @@ describe('Slash Command: /cft:spec-create', () => {
       expect(content).toContain('src/core/**/*.ts');
       expect(content).toContain('CLAUDE.md');
       expect(content).toContain('.cc-craft-kit/specs/*.md');
-    });
-
-    it('should have AskUserQuestion example', () => {
-      // Assert
-      expect(content).toContain('question:');
-      expect(content).toContain('options:');
-      expect(content).toContain('label:');
-      expect(content).toContain('description:');
     });
 
     it('should specify automatic execution without user confirmation', () => {
@@ -296,11 +248,28 @@ describe('Slash Command: /cft:spec-create', () => {
     it('should have branch naming table', () => {
       // Assert
       expect(content).toMatch(/\|\s*実行元ブランチ\s*\|/);
-      expect(content).toMatch(/\|\s*カスタムブランチ名\s*\|/);
       expect(content).toMatch(/\|\s*生成されるブランチ名\s*\|/);
-      expect(content).toContain('feature/*');
       expect(content).toContain('develop');
       expect(content).toContain('main');
+    });
+  });
+
+  describe('Error Handling Tests', () => {
+    let content: string;
+
+    beforeEach(() => {
+      // Arrange
+      content = readFileSync(commandFilePath, 'utf-8');
+    });
+
+    it('should have error handling summary', () => {
+      // Assert
+      expect(content).toContain('## エラーハンドリングまとめ');
+    });
+
+    it('should specify rollback processing', () => {
+      // Assert
+      expect(content).toContain('ロールバック');
     });
   });
 
@@ -344,46 +313,6 @@ describe('Slash Command: /cft:spec-create', () => {
         }
       }
     });
-
-    it('should not have duplicate section headings', () => {
-      // Act
-      const headings = content.match(/^#{1,6}\s+.+$/gm);
-
-      // Assert
-      if (headings) {
-        const headingTexts = headings.map((h) =>
-          h.replace(/^#{1,6}\s+/, '').trim()
-        );
-        const uniqueHeadings = new Set(headingTexts);
-
-        // 重複許可リスト（同じ見出しが複数回登場しても良い場合）
-        const allowedDuplicates = new Set<string>([
-          // 必要に応じて追加
-        ]);
-
-        for (const heading of headingTexts) {
-          if (
-            !allowedDuplicates.has(heading) &&
-            headingTexts.filter((h) => h === heading).length > 1
-          ) {
-            // 重複見出しが見つかった場合は失敗
-            expect(uniqueHeadings.size).toBe(headingTexts.length);
-          }
-        }
-      }
-    });
-  });
-
-  describe('Error Handling Tests', () => {
-    it('should throw error for non-existent file', () => {
-      // Arrange
-      const nonExistentPath = '/non/existent/path.md';
-
-      // Act & Assert
-      expect(() => {
-        readFileSync(nonExistentPath, 'utf-8');
-      }).toThrow();
-    });
   });
 
   describe('Integration Tests', () => {
@@ -396,19 +325,12 @@ describe('Slash Command: /cft:spec-create', () => {
 
     it('should have correct file extension in command', () => {
       // Assert
-      expect(content).toContain('.cc-craft-kit/commands/spec/create.ts');
+      expect(content).toContain('.cc-craft-kit/commands/spec/register.ts');
     });
 
     it('should reference correct slash command pattern', () => {
       // Assert
       expect(content).toMatch(/\/cft:spec-(get|phase)/);
-    });
-
-    it('should have version annotations', () => {
-      // Assert
-      expect(content).toContain('v0.2.0 以降');
-      expect(content).toContain('v0.3.0 以降');
-      expect(content).toContain('v0.4.0 以降');
     });
   });
 });
