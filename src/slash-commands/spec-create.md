@@ -193,30 +193,7 @@ $2（または "(背景を記述してください)"）
 
 ファイル作成後、パスを `SPEC_PATH` として記録してください。
 
-### Step 7: DB 登録 + イベント発火
-
-最小スクリプトを呼び出して、データベースに登録し、イベントを発火します。
-
-```bash
-npx tsx .cc-craft-kit/commands/spec/register.ts \
-  --id "$SPEC_ID" \
-  --name "$1" \
-  --description "$2" \
-  --branch-name "$BRANCH_NAME" \
-  --spec-path "$SPEC_PATH"
-```
-
-**出力の確認:**
-
-- `success: true` の場合、次のステップへ進む
-- `success: false` の場合、エラーメッセージを表示し、ロールバック処理を実行
-
-**ロールバック処理（エラー時）:**
-
-1. 仕様書ファイル削除: `rm "$SPEC_PATH"`
-2. ブランチ削除: `git checkout "$ORIGINAL_BRANCH" && git branch -D "$BRANCH_NAME"`
-
-### Step 8: コードベース解析
+### Step 7: コードベース解析
 
 Task ツールで Explore サブエージェントを実行し、コードベース情報を収集します。
 
@@ -248,14 +225,14 @@ thoroughness: "medium"
   - 制約条件・依存関係の候補
 ```
 
-**成功時:** 解析結果を `ANALYSIS_RESULT` として記録し、Step 9 へ進む
+**成功時:** 解析結果を `ANALYSIS_RESULT` として記録し、Step 8 へ進む
 
 **エラーハンドリング:**
 
 - Explore が失敗した場合、`ANALYSIS_RESULT` を空として記録
-- 警告メッセージを表示し、Step 9 へ進む（処理は継続）
+- 警告メッセージを表示し、Step 8 へ進む（処理は継続）
 
-### Step 9: 仕様書の自動完成
+### Step 8: 仕様書の自動完成
 
 Edit ツールで仕様書を更新し、要件定義を自動生成します。
 
@@ -287,12 +264,35 @@ Edit ツールで仕様書を更新し、要件定義を自動生成します。
    - 検索: `(依存する他の仕様やコンポーネントを記述してください)`
    - 置換: コードベース解析結果から抽出した関連モジュール・ファイル
 
-**成功時:** `AUTO_COMPLETE_SUCCESS` を `true` として記録
+**成功時:** `AUTO_COMPLETE_SUCCESS` を `true` として記録し、Step 9 へ進む
 
 **エラーハンドリング:**
 
 - Edit が失敗した場合、`AUTO_COMPLETE_SUCCESS` を `false` として記録
-- 仕様書はテンプレート状態で保存され、処理は継続
+- 仕様書はテンプレート状態で保存され、Step 9 へ継続
+
+### Step 9: DB 登録 + イベント発火
+
+最小スクリプトを呼び出して、データベースに登録し、イベントを発火します。
+
+```bash
+npx tsx .cc-craft-kit/commands/spec/register.ts \
+  --id "$SPEC_ID" \
+  --name "$1" \
+  --description "$2" \
+  --branch-name "$BRANCH_NAME" \
+  --spec-path "$SPEC_PATH"
+```
+
+**出力の確認:**
+
+- `success: true` の場合、Step 10 へ進む
+- `success: false` の場合、エラーメッセージを表示し、ロールバック処理を実行
+
+**ロールバック処理（エラー時）:**
+
+1. 仕様書ファイル削除: `rm "$SPEC_PATH"`
+2. ブランチ削除: `git checkout "$ORIGINAL_BRANCH" && git branch -D "$BRANCH_NAME"`
 
 ### Step 10: 元ブランチに復帰
 
@@ -370,9 +370,9 @@ git checkout "$ORIGINAL_BRANCH"
 | Step 5 | BASE_BRANCH が存在しない | 処理中断、.env の設定確認を案内 |
 | Step 5 | ブランチ作成失敗 | 処理中断、エラーメッセージ表示 |
 | Step 6 | ファイル作成失敗 | 処理中断、エラーメッセージ表示 |
-| Step 7 | DB 登録失敗 | ロールバック処理実行 |
-| Step 8 | コードベース解析失敗 | `ANALYSIS_RESULT` を空として記録、Step 9 へ継続 |
-| Step 9 | 自動完成失敗 | `AUTO_COMPLETE_SUCCESS` を false として記録、警告メッセージ付きで成功扱い |
+| Step 7 | コードベース解析失敗 | `ANALYSIS_RESULT` を空として記録、Step 8 へ継続 |
+| Step 8 | 自動完成失敗 | `AUTO_COMPLETE_SUCCESS` を false として記録、Step 9 へ継続 |
+| Step 9 | DB 登録失敗 | ロールバック処理実行（ファイル削除、ブランチ削除） |
 | Step 10 | ブランチ復帰失敗 | 警告表示、手動復帰を案内 |
 
 ### BASE_BRANCH が存在しない場合
