@@ -11,7 +11,7 @@ cc-craft-kit は、Claude Code 上のカスタムスラッシュコマンドで�
 - スラッシュコマンド設計により、MCP サーバー不要でコンテキスト効率的なアーキテクチャを実現（MCP 比 99%削減）
 - GitHub Projects v2、Issue、Milestone の完全統合による自動管理
 - Issue をナレッジベース化し、課題管理＋途中経過＋エラー対策＋Tips を統合記録
-- Requirements → Design → Tasks → Implementation の構造化ワークフローによる仕様駆動開発
+- Requirements → Design → Implementation → Completed の構造化ワークフローによる仕様駆動開発（4フェーズモデル）
 - **ブランチ保護機能**により、統合ブランチ（main、develop など）での直接編集を防止し、適切なブランチ戦略を強制
 - すべての機能を `.cc-craft-kit/` ディレクトリに集約し、既存プロジェクトと競合しない設計
 
@@ -155,16 +155,18 @@ Project 追加が失敗した場合でも Issue 作成は成功し、警告メ�
 
 ```sh
 # 進捗記録
-/cft:knowledge-progress <spec-id> "認証機能の基本実装が完了"
+/cft:knowledge progress <spec-id> "認証機能の基本実装が完了"
 
 # エラー解決策記録
-/cft:knowledge-error <spec-id> "CORSエラーが発生" "Access-Control-Allow-Originヘッダーを追加"
+/cft:knowledge error <spec-id> "CORSエラーが発生" "Access-Control-Allow-Originヘッダーを追加"
 
 # Tips記録
-/cft:knowledge-tip <spec-id> "performance" "useMemoを使ってレンダリングを最適化"
+/cft:knowledge tip <spec-id> "performance" "useMemoを使ってレンダリングを最適化"
 ```
 
-### 全コマンド一覧
+### 全コマンド一覧（24コマンド）
+
+cc-craft-kit v0.1.2 では、関連機能を統合コマンドにまとめ、42個から24個へコマンド数を削減しました。
 
 #### プロジェクト管理
 
@@ -177,21 +179,23 @@ Project 追加が失敗した場合でも Issue 作成は成功し、警告メ�
 
 | コマンド | 説明 |
 |---------|------|
-| `/cft:spec-create <name> [description]` | 仕様書作成 |
+| `/cft:spec-create <name> [description]` | 仕様書作成（自動ブランチ作成） |
 | `/cft:spec-list [phase] [limit]` | 仕様書一覧表示 |
 | `/cft:spec-get <spec-id>` | 仕様書詳細表示 |
-| `/cft:spec-phase <spec-id> <phase>` | フェーズ更新 |
+| `/cft:spec-phase <spec-id> <phase>` | フェーズ更新（design で自動タスク分割） |
 | `/cft:spec-update` | 仕様書変更を GitHub Issue に通知 |
 | `/cft:spec-delete <spec-id>` | 仕様書削除 |
-| `/cft:migrate-tasks-to-design [spec-id]` | tasks → design フェーズ移行 |
 
-#### タスク管理
+#### タスク管理（統合コマンド）
 
 | コマンド | 説明 |
 |---------|------|
-| `/cft:task-list <spec-id>` | Sub Issue 一覧表示 |
-| `/cft:task-start <issue-number>` | タスク開始（ブランチ作成） |
-| `/cft:task-done <issue-number>` | タスク完了（PR 作成） |
+| `/cft:task list <spec-id>` | Sub Issue 一覧表示 |
+| `/cft:task start <issue-number>` | タスク開始（ブランチ作成） |
+| `/cft:task done <issue-number>` | タスク完了 |
+| `/cft:task update <issue-number> <status>` | タスク状態更新 |
+| `/cft:task split <spec-id>` | タスク分割 |
+| `/cft:task report <spec-id>` | 進捗レポート生成 |
 
 #### GitHub 統合
 
@@ -199,10 +203,8 @@ Project 追加が失敗した場合でも Issue 作成は成功し、警告メ�
 |---------|------|
 | `/cft:github-init <owner> <repo>` | GitHub 統合初期化 |
 | `/cft:github-issue-create <spec-id>` | Issue 作成 |
-| `/cft:github-sync <direction> <spec-id>` | 双方向同期 |
-| `/cft:github-project-add <spec-id> <project-number>` | Project ボード追加 |
+| `/cft:github-sync <direction> <spec-id>` | 双方向同期（to-github / from-github） |
 | `/cft:pr-cleanup <spec-id>` | PR マージ後のブランチ削除 |
-| `/cft:watch` | ファイル変更監視 |
 
 #### 品質管理
 
@@ -214,33 +216,44 @@ Project 追加が失敗した場合でも Issue 作成は成功し、警告メ�
 | `/cft:lint-check` | TypeScript/ESLint チェック |
 | `/cft:schema-validate` | データベーススキーマ検証 |
 
-#### ナレッジベース
+#### ナレッジベース（統合コマンド）
 
 | コマンド | 説明 |
 |---------|------|
-| `/cft:knowledge-progress <spec-id> <message>` | 進捗記録 |
-| `/cft:knowledge-error <spec-id> <error> <solution>` | エラー解決策記録 |
-| `/cft:knowledge-tip <spec-id> <category> <tip>` | Tips 記録 |
+| `/cft:knowledge progress <spec-id> <message>` | 進捗記録 |
+| `/cft:knowledge error <spec-id> <error> <solution>` | エラー解決策記録 |
+| `/cft:knowledge tip <spec-id> <category> <tip>` | Tips 記録 |
 
-#### ユーティリティ
-
-| コマンド | 説明 |
-|---------|------|
-| `/cft:sync-check` | ソース同期状態チェック |
-| `/cft:sync-repair` | ソース同期修復 |
-| `/cft:db-info` | データベース情報表示 |
-
-#### 拡張機能（開発者向け）
+#### セッション管理
 
 | コマンド | 説明 |
 |---------|------|
-| `/cft:agent-create` | カスタムサブエージェント作成 |
-| `/cft:agent-list` | サブエージェント一覧 |
-| `/cft:skill-create` | カスタムスキル作成 |
-| `/cft:skill-list` | スキル一覧 |
-| `/cft:quality-init` | 品質ルール初期化 |
-| `/cft:quality-check` | 品質ルールチェック |
-| `/cft:quality-generate` | 品質レポート生成 |
+| `/cft:session-start [spec-id]` | セッション開始プロトコル実行 |
+| `/cft:session-end [spec-id]` | セッション終了プロトコル実行 |
+
+#### 同期管理（統合コマンド）
+
+| コマンド | 説明 |
+|---------|------|
+| `/cft:sync check` | ソース同期状態チェック |
+| `/cft:sync repair` | ソース同期修復 |
+
+#### 品質ルール管理（統合コマンド）
+
+| コマンド | 説明 |
+|---------|------|
+| `/cft:quality init` | 品質ルール初期化 |
+| `/cft:quality check` | 品質ルールチェック |
+| `/cft:quality generate` | 品質レポート生成 |
+
+#### カスタムツール管理（統合コマンド）
+
+| コマンド | 説明 |
+|---------|------|
+| `/cft:custom-tools skill list` | スキル一覧表示 |
+| `/cft:custom-tools skill create <name>` | スキル作成 |
+| `/cft:custom-tools agent list` | サブエージェント一覧表示 |
+| `/cft:custom-tools agent create <name>` | サブエージェント作成 |
 
 ## 🏗️ アーキテクチャ
 
@@ -311,7 +324,7 @@ CREATE TABLE specs (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT,
-  phase TEXT NOT NULL, -- requirements/design/tasks/implementation/completed
+  phase TEXT NOT NULL, -- requirements/design/implementation/completed（4フェーズモデル）
   github_issue_id INTEGER,
   github_project_id TEXT,
   github_milestone_id INTEGER,
