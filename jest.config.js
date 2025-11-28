@@ -66,6 +66,15 @@ export default {
     '!src/commands/**/*.ts', // import.meta issue - requires integration tests
     '!src/scripts/**/*.ts', // CLI scripts - requires integration tests
   ],
+  // カバレッジ閾値
+  // 段階的向上計画:
+  //   Phase 1 (現在): 33% - ベースライン確立
+  //   Phase 2: 50% - ユーティリティ関数のテスト拡充
+  //   Phase 3: 70% - コアモジュールのテスト拡充
+  //   Phase 4: 80% - 統合テスト・境界テストの追加
+  //
+  // 注意: 100% を目指さない（手段の目的化を避ける）
+  // 参考: https://gihyo.jp/article/2024/01/automated-test-and-tdd
   coverageThreshold: {
     global: {
       branches: 24,

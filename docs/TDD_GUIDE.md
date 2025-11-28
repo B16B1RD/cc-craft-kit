@@ -6,11 +6,12 @@
 
 1. [TDD とは](#tdd-とは)
 2. [Red-Green-Refactor サイクル](#red-green-refactor-サイクル)
-3. [Vitest の使い方](#vitest-の使い方)
+3. [Jest の使い方](#jest-の使い方)
 4. [テストダブル（モック、スタブ、スパイ）](#テストダブルモックスタブスパイ)
 5. [AAA パターン](#aaa-パターン)
 6. [コミットメッセージ規約](#コミットメッセージ規約)
 7. [実践例](#実践例)
+8. [SDD（仕様駆動開発）との統合](#sdd仕様駆動開発との統合)
 
 ---
 
@@ -31,19 +32,65 @@
 - **ドキュメントとしてのテスト**: テストコードが仕様書として機能する
 - **バグの早期発見**: 実装と同時にテストを書くため、バグを早期に発見できる
 
+### テストファースト ≠ TDD
+
+**重要な区別**: 「テストファースト」と「TDD」は同じではありません。
+
+| 手法 | 特徴 | 効果 |
+|---|---|---|
+| **テストファースト** | 実装前にテストを書く | 試験性（テスタビリティ）の向上 |
+| **TDD** | Red-Green-Refactor サイクルを回す | 試験性 + 設計品質の向上 |
+
+**テストファースト**は、テストを先に書くことで「テスト可能な設計」を導きます。しかし、これだけでは TDD とは言えません。
+
+**TDD の本質**は Refactor ステップにあります:
+
+1. Red-Green だけでは「動くコード」が得られる
+2. Refactor を加えることで「動く**きれいな**コード」が得られる
+
+> **「動作するきれいなコード」** - これこそが TDD の目標です。
+> テストファーストだけでは「動作するコード」しか保証されません。
+
+### よくある誤解と警告
+
+**❌ 100% カバレッジの追求**
+
+カバレッジ 100% を目指すことは「手段の目的化」の典型例です。
+重要なのは「無駄なく、漏れなく」テストを書くことであり、数値目標ではありません。
+
+**❌ 過度な先行設計（スコープクリープ）**
+
+TDD は小さなサイクルで進めます。「あれもこれも」と先に設計しすぎると、
+本来の TDD の利点（不安のコントロール、段階的な品質向上）が失われます。
+
 ---
 
 ## Red-Green-Refactor サイクル
 
 TDD の核心は **Red-Green-Refactor サイクル** です。このサイクルを繰り返すことで、高品質なコードを段階的に構築します。
 
+### サイクルの本質: 焦点の分離
+
+Red-Green-Refactor の最も重要な原則は、**各ステップで焦点を分離する**ことです:
+
+| ステップ | 焦点 | 考えないこと |
+|---|---|---|
+| **Red** | 何を実現したいか（仕様） | どう実装するか |
+| **Green** | テストを通すこと | コードの美しさ |
+| **Refactor** | コードの品質向上 | 新しい機能追加 |
+
+この分離により、一度に考えることを減らし、**プログラミング中の不安をコントロール**できます。
+
+> **参考**: TDD は「テストを書く手法」ではなく、Kent Beck が提唱した「不安をコントロールする手法」です。
+
 ### ステップ 1: Red（失敗するテストを書く）
 
 実装前に、期待される動作を検証するテストを書きます。
 
+**このステップでの焦点**: 何を実現したいか（インターフェースと期待値の定義）
+
 ```typescript
 // tests/utils/calculator.test.ts
-import { describe, it, expect } from 'vitest';
 import { add } from '../../src/utils/calculator.js';
 
 describe('add', () => {
@@ -73,6 +120,11 @@ npm test
 
 テストを通過させるための最小限の実装をします。
 
+**このステップでの焦点**: テストを通過させること（動くコードを書く）
+
+> **重要**: このステップでは「きれいなコード」を書こうとしないでください。
+> 「動くコード」が先、「きれいなコード」は後（Refactor）です。
+
 ```typescript
 // src/utils/calculator.ts
 export function add(a: number, b: number): number {
@@ -91,6 +143,11 @@ npm test
 ### ステップ 3: Refactor（コードを改善する）
 
 テストが通過した状態で、コードをリファクタリングします。
+
+**このステップでの焦点**: コードの品質向上（重複排除、命名改善、構造の整理）
+
+> **ポイント**: Refactor では新しい機能を追加しないでください。
+> テストが Green のまま維持されることを確認しながら、コードを改善します。
 
 ```typescript
 // src/utils/calculator.ts
@@ -115,9 +172,9 @@ npm test
 
 ---
 
-## Vitest の使い方
+## Jest の使い方
 
-cc-craft-kit では **Vitest** をテストランナーとして使用します。
+cc-craft-kit では **Jest** をテストランナーとして使用します。
 
 ### 基本的な使い方
 
@@ -137,7 +194,7 @@ tests/
 #### テストの構造
 
 ```typescript
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+// Jest では describe, it, expect などはグローバルに利用可能
 
 describe('テスト対象の関数名またはクラス名', () => {
   // テストの前処理
@@ -243,15 +300,13 @@ expect(() => fn()).toThrow('Error message'); // 特定のメッセージ
 関数呼び出しの検証に使用します。
 
 ```typescript
-import { describe, it, expect, vi } from 'vitest';
-
 describe('Database integration', () => {
   it('should call database insert method', async () => {
     // Arrange: モックデータベースを作成
     const mockDb = {
-      insertInto: vi.fn().mockReturnValue({
-        values: vi.fn().mockReturnValue({
-          execute: vi.fn().mockResolvedValue({ id: 1 }),
+      insertInto: jest.fn().mockReturnValue({
+        values: jest.fn().mockReturnValue({
+          execute: jest.fn().mockResolvedValue({ id: 1 }),
         }),
       }),
     };
@@ -271,12 +326,10 @@ describe('Database integration', () => {
 固定値を返すモックです。
 
 ```typescript
-import { describe, it, expect, vi } from 'vitest';
-
 describe('API client', () => {
   it('should return user data', async () => {
     // Arrange: スタブを作成（固定値を返す）
-    const fetchStub = vi.fn().mockResolvedValue({
+    const fetchStub = jest.fn().mockResolvedValue({
       json: async () => ({ id: 1, name: 'John' }),
     });
     global.fetch = fetchStub;
@@ -295,13 +348,12 @@ describe('API client', () => {
 元の実装を保持しつつ、呼び出しを監視します。
 
 ```typescript
-import { describe, it, expect, vi } from 'vitest';
 import * as utils from '../../src/utils/logger.js';
 
 describe('Logger spy', () => {
   it('should log message', () => {
     // Arrange: スパイを作成
-    const logSpy = vi.spyOn(utils, 'log');
+    const logSpy = jest.spyOn(utils, 'log');
 
     // Act
     utils.log('Test message');
@@ -318,11 +370,11 @@ describe('Logger spy', () => {
 
 ### モックの使い分け
 
-| テストダブル | 用途 | Vitest の機能 |
+| テストダブル | 用途 | Jest の機能 |
 |---|---|---|
-| **モック（Mock）** | 関数呼び出しの検証 | `vi.fn()`, `vi.mock()` |
-| **スタブ（Stub）** | 固定値を返す | `vi.fn().mockReturnValue()` |
-| **スパイ（Spy）** | 元の実装を保持しつつ監視 | `vi.spyOn()` |
+| **モック（Mock）** | 関数呼び出しの検証 | `jest.fn()`, `jest.mock()` |
+| **スタブ（Stub）** | 固定値を返す | `jest.fn().mockReturnValue()` |
+| **スパイ（Spy）** | 元の実装を保持しつつ監視 | `jest.spyOn()` |
 
 ---
 
@@ -337,7 +389,7 @@ describe('Logger spy', () => {
 ```typescript
 // Arrange
 const input = 'test input';
-const mockDb = vi.fn();
+const mockDb = jest.fn();
 ```
 
 ### Act（実行）
@@ -448,7 +500,6 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 ```typescript
 // tests/utils/string.test.ts
-import { describe, it, expect } from 'vitest';
 import { reverse } from '../../src/utils/string.js';
 
 describe('reverse', () => {
@@ -560,7 +611,6 @@ git commit -m "refactor: improve reverse function with edge cases"
 
 ```typescript
 // tests/database/spec-repository.test.ts
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createSpec } from '../../src/database/spec-repository.js';
 
 describe('createSpec', () => {
@@ -568,9 +618,9 @@ describe('createSpec', () => {
 
   beforeEach(() => {
     mockDb = {
-      insertInto: vi.fn().mockReturnValue({
-        values: vi.fn().mockReturnValue({
-          execute: vi.fn().mockResolvedValue({ id: '123' }),
+      insertInto: jest.fn().mockReturnValue({
+        values: jest.fn().mockReturnValue({
+          execute: jest.fn().mockResolvedValue({ id: '123' }),
         }),
       }),
     };
@@ -673,6 +723,113 @@ npm test
 git add src/database/spec-repository.ts
 git commit -m "refactor: add type definitions to createSpec"
 ```
+
+---
+
+## SDD（仕様駆動開発）との統合
+
+cc-craft-kit では **SDD（Specification-Driven Development）** と **TDD** を組み合わせて開発を進めます。
+
+### SDD と TDD の関係
+
+| 手法 | 焦点 | 成果物 |
+|---|---|---|
+| **SDD** | 何を作るか（What） | 仕様書（requirements → design → implementation） |
+| **TDD** | どう作るか（How） | テストコード + 実装コード |
+
+SDD は「仕様書を中心に開発を進める」手法、TDD は「テストを先に書いて実装を進める」手法です。
+cc-craft-kit ではこれらを組み合わせることで、**仕様に基づいた高品質な実装**を実現します。
+
+### 統合ワークフロー
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                        SDD フロー                           │
+│  requirements → design → implementation → completed        │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   implementation フェーズ                    │
+│                                                             │
+│   ┌─────────────────────────────────────────────────────┐   │
+│   │                    TDD サイクル                      │   │
+│   │                                                     │   │
+│   │   タスク 1: Red → Green → Refactor → Commit        │   │
+│   │   タスク 2: Red → Green → Refactor → Commit        │   │
+│   │   タスク 3: Red → Green → Refactor → Commit        │   │
+│   │   ...                                               │   │
+│   └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 実践手順
+
+#### 1. 仕様書から受け入れ基準を抽出
+
+仕様書の「## 3. 受け入れ基準」セクションから、テストすべき項目を特定します。
+
+```markdown
+## 3. 受け入れ基準
+
+- [ ] ユーザーがログインできること
+- [ ] 無効なパスワードでエラーが表示されること
+- [ ] セッションが正しく管理されること
+```
+
+#### 2. 各受け入れ基準に対して TDD サイクルを回す
+
+```bash
+# タスク 1: ユーザーがログインできること
+
+# Red: 失敗するテストを書く
+git add tests/auth/login.test.ts
+git commit -m "test: add failing test for user login"
+
+# Green: テストを通過させる
+git add src/auth/login.ts
+git commit -m "feat: implement user login to pass test"
+
+# Refactor: コードを改善
+git add src/auth/login.ts tests/auth/login.test.ts
+git commit -m "refactor: improve login implementation"
+```
+
+#### 3. 仕様書のタスクリストを更新
+
+タスクが完了したら、仕様書のチェックボックスを更新します。
+
+```markdown
+## 8. 実装タスクリスト
+
+- [x] ユーザーがログインできること ← 完了
+- [ ] 無効なパスワードでエラーが表示されること
+- [ ] セッションが正しく管理されること
+```
+
+### cc-craft-kit のコマンド連携
+
+| フェーズ | コマンド | 説明 |
+|---|---|---|
+| テスト生成 | `/cft:test-generate <file>` | 実装解析ベースのテスト生成 |
+| 実装開始 | `/cft:spec-phase <id> impl` | implementation フェーズへ移行 |
+| タスク管理 | `/cft:task list` | タスク一覧表示 |
+| 品質チェック | `/cft:lint-check` | 型チェック・リント実行 |
+
+### ベストプラクティス
+
+1. **仕様書の受け入れ基準 = テストケースの元**
+   - 受け入れ基準を満たすテストを先に書く
+   - テストが通れば、受け入れ基準を満たした証拠
+
+2. **小さなタスク単位で TDD サイクル**
+   - 1 タスク = 1 TDD サイクル
+   - 大きなタスクは分割（`/cft:task split`）
+
+3. **コミットメッセージに Red-Green-Refactor を記録**
+   - `test:` = Red フェーズ
+   - `feat:` = Green フェーズ
+   - `refactor:` = Refactor フェーズ
 
 ---
 
