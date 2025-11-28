@@ -6,7 +6,7 @@
 
 1. [TDD とは](#tdd-とは)
 2. [Red-Green-Refactor サイクル](#red-green-refactor-サイクル)
-3. [Vitest の使い方](#vitest-の使い方)
+3. [Jest の使い方](#jest-の使い方)
 4. [テストダブル（モック、スタブ、スパイ）](#テストダブルモックスタブスパイ)
 5. [AAA パターン](#aaa-パターン)
 6. [コミットメッセージ規約](#コミットメッセージ規約)
@@ -43,7 +43,6 @@ TDD の核心は **Red-Green-Refactor サイクル** です。このサイクル
 
 ```typescript
 // tests/utils/calculator.test.ts
-import { describe, it, expect } from 'vitest';
 import { add } from '../../src/utils/calculator.js';
 
 describe('add', () => {
@@ -115,9 +114,9 @@ npm test
 
 ---
 
-## Vitest の使い方
+## Jest の使い方
 
-cc-craft-kit では **Vitest** をテストランナーとして使用します。
+cc-craft-kit では **Jest** をテストランナーとして使用します。
 
 ### 基本的な使い方
 
@@ -137,7 +136,7 @@ tests/
 #### テストの構造
 
 ```typescript
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+// Jest では describe, it, expect などはグローバルに利用可能
 
 describe('テスト対象の関数名またはクラス名', () => {
   // テストの前処理
@@ -243,15 +242,13 @@ expect(() => fn()).toThrow('Error message'); // 特定のメッセージ
 関数呼び出しの検証に使用します。
 
 ```typescript
-import { describe, it, expect, vi } from 'vitest';
-
 describe('Database integration', () => {
   it('should call database insert method', async () => {
     // Arrange: モックデータベースを作成
     const mockDb = {
-      insertInto: vi.fn().mockReturnValue({
-        values: vi.fn().mockReturnValue({
-          execute: vi.fn().mockResolvedValue({ id: 1 }),
+      insertInto: jest.fn().mockReturnValue({
+        values: jest.fn().mockReturnValue({
+          execute: jest.fn().mockResolvedValue({ id: 1 }),
         }),
       }),
     };
@@ -271,12 +268,10 @@ describe('Database integration', () => {
 固定値を返すモックです。
 
 ```typescript
-import { describe, it, expect, vi } from 'vitest';
-
 describe('API client', () => {
   it('should return user data', async () => {
     // Arrange: スタブを作成（固定値を返す）
-    const fetchStub = vi.fn().mockResolvedValue({
+    const fetchStub = jest.fn().mockResolvedValue({
       json: async () => ({ id: 1, name: 'John' }),
     });
     global.fetch = fetchStub;
@@ -295,13 +290,12 @@ describe('API client', () => {
 元の実装を保持しつつ、呼び出しを監視します。
 
 ```typescript
-import { describe, it, expect, vi } from 'vitest';
 import * as utils from '../../src/utils/logger.js';
 
 describe('Logger spy', () => {
   it('should log message', () => {
     // Arrange: スパイを作成
-    const logSpy = vi.spyOn(utils, 'log');
+    const logSpy = jest.spyOn(utils, 'log');
 
     // Act
     utils.log('Test message');
@@ -318,11 +312,11 @@ describe('Logger spy', () => {
 
 ### モックの使い分け
 
-| テストダブル | 用途 | Vitest の機能 |
+| テストダブル | 用途 | Jest の機能 |
 |---|---|---|
-| **モック（Mock）** | 関数呼び出しの検証 | `vi.fn()`, `vi.mock()` |
-| **スタブ（Stub）** | 固定値を返す | `vi.fn().mockReturnValue()` |
-| **スパイ（Spy）** | 元の実装を保持しつつ監視 | `vi.spyOn()` |
+| **モック（Mock）** | 関数呼び出しの検証 | `jest.fn()`, `jest.mock()` |
+| **スタブ（Stub）** | 固定値を返す | `jest.fn().mockReturnValue()` |
+| **スパイ（Spy）** | 元の実装を保持しつつ監視 | `jest.spyOn()` |
 
 ---
 
@@ -337,7 +331,7 @@ describe('Logger spy', () => {
 ```typescript
 // Arrange
 const input = 'test input';
-const mockDb = vi.fn();
+const mockDb = jest.fn();
 ```
 
 ### Act（実行）
@@ -448,7 +442,6 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 ```typescript
 // tests/utils/string.test.ts
-import { describe, it, expect } from 'vitest';
 import { reverse } from '../../src/utils/string.js';
 
 describe('reverse', () => {
@@ -560,7 +553,6 @@ git commit -m "refactor: improve reverse function with edge cases"
 
 ```typescript
 // tests/database/spec-repository.test.ts
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createSpec } from '../../src/database/spec-repository.js';
 
 describe('createSpec', () => {
@@ -568,9 +560,9 @@ describe('createSpec', () => {
 
   beforeEach(() => {
     mockDb = {
-      insertInto: vi.fn().mockReturnValue({
-        values: vi.fn().mockReturnValue({
-          execute: vi.fn().mockResolvedValue({ id: '123' }),
+      insertInto: jest.fn().mockReturnValue({
+        values: jest.fn().mockReturnValue({
+          execute: jest.fn().mockResolvedValue({ id: '123' }),
         }),
       }),
     };
