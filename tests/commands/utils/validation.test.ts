@@ -13,6 +13,9 @@ import {
   validatePath,
   validateURL,
   validateEmail,
+  isGitHubIssueNumber,
+  parseGitHubIssueNumber,
+  isSpecId,
   VALID_PHASES,
   Phase,
 } from '../../../src/commands/utils/validation.js';
@@ -367,5 +370,139 @@ describe('validateEmail', () => {
 
   test('should reject empty string', () => {
     expect(() => validateEmail('', 'arg')).toThrow();
+  });
+});
+
+describe('isGitHubIssueNumber', () => {
+  test('should return true for "#42" format', () => {
+    expect(isGitHubIssueNumber('#42')).toBe(true);
+  });
+
+  test('should return true for "42" format (without #)', () => {
+    expect(isGitHubIssueNumber('42')).toBe(true);
+  });
+
+  test('should return true for single digit issue number', () => {
+    expect(isGitHubIssueNumber('#1')).toBe(true);
+    expect(isGitHubIssueNumber('1')).toBe(true);
+  });
+
+  test('should return true for 6 digit issue number (max)', () => {
+    expect(isGitHubIssueNumber('#123456')).toBe(true);
+    expect(isGitHubIssueNumber('123456')).toBe(true);
+  });
+
+  test('should return false for 7+ digit number', () => {
+    expect(isGitHubIssueNumber('#1234567')).toBe(false);
+    expect(isGitHubIssueNumber('1234567')).toBe(false);
+  });
+
+  test('should return false for spec ID format', () => {
+    expect(isGitHubIssueNumber('f6621295')).toBe(false);
+    expect(isGitHubIssueNumber('ca338052-941d-4a47-81da-f757558d629c')).toBe(false);
+  });
+
+  test('should return false for empty string', () => {
+    expect(isGitHubIssueNumber('')).toBe(false);
+  });
+
+  test('should return false for whitespace-only string', () => {
+    expect(isGitHubIssueNumber('   ')).toBe(false);
+  });
+
+  test('should return false for non-numeric string', () => {
+    expect(isGitHubIssueNumber('#abc')).toBe(false);
+    expect(isGitHubIssueNumber('abc')).toBe(false);
+  });
+
+  test('should return false for negative number', () => {
+    expect(isGitHubIssueNumber('#-1')).toBe(false);
+    expect(isGitHubIssueNumber('-1')).toBe(false);
+  });
+
+  test('should return false for decimal number', () => {
+    expect(isGitHubIssueNumber('#42.5')).toBe(false);
+    expect(isGitHubIssueNumber('42.5')).toBe(false);
+  });
+});
+
+describe('parseGitHubIssueNumber', () => {
+  test('should parse "#42" to 42', () => {
+    expect(parseGitHubIssueNumber('#42')).toBe(42);
+  });
+
+  test('should parse "42" to 42', () => {
+    expect(parseGitHubIssueNumber('42')).toBe(42);
+  });
+
+  test('should parse "#1" to 1', () => {
+    expect(parseGitHubIssueNumber('#1')).toBe(1);
+  });
+
+  test('should parse "#123456" to 123456', () => {
+    expect(parseGitHubIssueNumber('#123456')).toBe(123456);
+  });
+
+  test('should throw for "#0"', () => {
+    expect(() => parseGitHubIssueNumber('#0')).toThrow();
+  });
+
+  test('should throw for "0"', () => {
+    expect(() => parseGitHubIssueNumber('0')).toThrow();
+  });
+
+  test('should throw for empty string', () => {
+    expect(() => parseGitHubIssueNumber('')).toThrow();
+  });
+
+  test('should throw for whitespace-only string', () => {
+    expect(() => parseGitHubIssueNumber('   ')).toThrow();
+  });
+
+  test('should throw for non-numeric string', () => {
+    expect(() => parseGitHubIssueNumber('#abc')).toThrow();
+    expect(() => parseGitHubIssueNumber('abc')).toThrow();
+  });
+
+  test('should throw for negative number', () => {
+    expect(() => parseGitHubIssueNumber('#-1')).toThrow();
+  });
+});
+
+describe('isSpecId', () => {
+  test('should return true for full UUID', () => {
+    expect(isSpecId('ca338052-941d-4a47-81da-f757558d629c')).toBe(true);
+  });
+
+  test('should return true for partial UUID (8 characters)', () => {
+    expect(isSpecId('f6621295')).toBe(true);
+  });
+
+  test('should return true for partial UUID (more than 8 characters)', () => {
+    expect(isSpecId('ca338052-941d')).toBe(true);
+  });
+
+  test('should return false for string shorter than 8 characters', () => {
+    expect(isSpecId('f66212')).toBe(false);
+    expect(isSpecId('1234567')).toBe(false);
+  });
+
+  test('should return false for GitHub Issue number format', () => {
+    expect(isSpecId('#42')).toBe(false);
+    expect(isSpecId('42')).toBe(false);
+  });
+
+  test('should return false for empty string', () => {
+    expect(isSpecId('')).toBe(false);
+  });
+
+  test('should return false for string with invalid characters', () => {
+    expect(isSpecId('abcdefgh!')).toBe(false);
+    expect(isSpecId('12345678@')).toBe(false);
+  });
+
+  test('should accept uppercase hex characters', () => {
+    expect(isSpecId('CA338052')).toBe(true);
+    expect(isSpecId('F6621295-ABCD')).toBe(true);
   });
 });
