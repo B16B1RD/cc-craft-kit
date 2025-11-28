@@ -11,6 +11,7 @@
 5. [AAA パターン](#aaa-パターン)
 6. [コミットメッセージ規約](#コミットメッセージ規約)
 7. [実践例](#実践例)
+8. [SDD（仕様駆動開発）との統合](#sdd仕様駆動開発との統合)
 
 ---
 
@@ -722,6 +723,113 @@ npm test
 git add src/database/spec-repository.ts
 git commit -m "refactor: add type definitions to createSpec"
 ```
+
+---
+
+## SDD（仕様駆動開発）との統合
+
+cc-craft-kit では **SDD（Specification-Driven Development）** と **TDD** を組み合わせて開発を進めます。
+
+### SDD と TDD の関係
+
+| 手法 | 焦点 | 成果物 |
+|---|---|---|
+| **SDD** | 何を作るか（What） | 仕様書（requirements → design → implementation） |
+| **TDD** | どう作るか（How） | テストコード + 実装コード |
+
+SDD は「仕様書を中心に開発を進める」手法、TDD は「テストを先に書いて実装を進める」手法です。
+cc-craft-kit ではこれらを組み合わせることで、**仕様に基づいた高品質な実装**を実現します。
+
+### 統合ワークフロー
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                        SDD フロー                           │
+│  requirements → design → implementation → completed        │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   implementation フェーズ                    │
+│                                                             │
+│   ┌─────────────────────────────────────────────────────┐   │
+│   │                    TDD サイクル                      │   │
+│   │                                                     │   │
+│   │   タスク 1: Red → Green → Refactor → Commit        │   │
+│   │   タスク 2: Red → Green → Refactor → Commit        │   │
+│   │   タスク 3: Red → Green → Refactor → Commit        │   │
+│   │   ...                                               │   │
+│   └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 実践手順
+
+#### 1. 仕様書から受け入れ基準を抽出
+
+仕様書の「## 3. 受け入れ基準」セクションから、テストすべき項目を特定します。
+
+```markdown
+## 3. 受け入れ基準
+
+- [ ] ユーザーがログインできること
+- [ ] 無効なパスワードでエラーが表示されること
+- [ ] セッションが正しく管理されること
+```
+
+#### 2. 各受け入れ基準に対して TDD サイクルを回す
+
+```bash
+# タスク 1: ユーザーがログインできること
+
+# Red: 失敗するテストを書く
+git add tests/auth/login.test.ts
+git commit -m "test: add failing test for user login"
+
+# Green: テストを通過させる
+git add src/auth/login.ts
+git commit -m "feat: implement user login to pass test"
+
+# Refactor: コードを改善
+git add src/auth/login.ts tests/auth/login.test.ts
+git commit -m "refactor: improve login implementation"
+```
+
+#### 3. 仕様書のタスクリストを更新
+
+タスクが完了したら、仕様書のチェックボックスを更新します。
+
+```markdown
+## 8. 実装タスクリスト
+
+- [x] ユーザーがログインできること ← 完了
+- [ ] 無効なパスワードでエラーが表示されること
+- [ ] セッションが正しく管理されること
+```
+
+### cc-craft-kit のコマンド連携
+
+| フェーズ | コマンド | 説明 |
+|---|---|---|
+| テスト生成 | `/cft:test-generate <file>` | 実装解析ベースのテスト生成 |
+| 実装開始 | `/cft:spec-phase <id> impl` | implementation フェーズへ移行 |
+| タスク管理 | `/cft:task list` | タスク一覧表示 |
+| 品質チェック | `/cft:lint-check` | 型チェック・リント実行 |
+
+### ベストプラクティス
+
+1. **仕様書の受け入れ基準 = テストケースの元**
+   - 受け入れ基準を満たすテストを先に書く
+   - テストが通れば、受け入れ基準を満たした証拠
+
+2. **小さなタスク単位で TDD サイクル**
+   - 1 タスク = 1 TDD サイクル
+   - 大きなタスクは分割（`/cft:task split`）
+
+3. **コミットメッセージに Red-Green-Refactor を記録**
+   - `test:` = Red フェーズ
+   - `feat:` = Green フェーズ
+   - `refactor:` = Refactor フェーズ
 
 ---
 
