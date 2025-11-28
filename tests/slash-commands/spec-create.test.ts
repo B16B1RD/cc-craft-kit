@@ -132,22 +132,22 @@ describe('Slash Command: /cft:spec-create', () => {
       expect(content).toContain('Write ツール');
     });
 
-    it('should have Step 7: DB 登録 + イベント発火', () => {
+    it('should have Step 7: コードベース解析', () => {
       // Assert
-      expect(content).toContain('### Step 7: DB 登録 + イベント発火');
-      expect(content).toContain('register.ts');
-    });
-
-    it('should have Step 8: コードベース解析', () => {
-      // Assert
-      expect(content).toContain('### Step 8: コードベース解析');
+      expect(content).toContain('### Step 7: コードベース解析');
       expect(content).toContain('Explore サブエージェント');
     });
 
-    it('should have Step 9: 仕様書の自動完成', () => {
+    it('should have Step 8: 仕様書の自動完成', () => {
       // Assert
-      expect(content).toContain('### Step 9: 仕様書の自動完成');
+      expect(content).toContain('### Step 8: 仕様書の自動完成');
       expect(content).toContain('Edit ツール');
+    });
+
+    it('should have Step 9: DB 登録 + イベント発火', () => {
+      // Assert
+      expect(content).toContain('### Step 9: DB 登録 + イベント発火');
+      expect(content).toContain('register.ts');
     });
 
     it('should have Step 10: 元ブランチに復帰', () => {
