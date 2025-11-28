@@ -1,10 +1,10 @@
 # GitHub Projects v2 推奨ビュー設定ガイド
 
-このガイドでは、Takumi と GitHub Projects v2 を効果的に連携させるための推奨ビュー設定を解説します。
+このガイドでは、cc-craft-kit と GitHub Projects v2 を効果的に連携させるための推奨ビュー設定を解説します。
 
 ## 概要
 
-GitHub Projects v2 を作成すると、デフォルトでテーブルビューが追加されていますが、効果的なプロジェクト管理のためにはビューのカスタマイズが必須です。このガイドでは、Takumi の開発ワークフローに最適化された 3 つの推奨ビュー設定を紹介します。
+GitHub Projects v2 を作成すると、デフォルトでテーブルビューが追加されていますが、効果的なプロジェクト管理のためにはビューのカスタマイズが必須です。このガイドでは、cc-craft-kit の開発ワークフローに最適化された 3 つの推奨ビュー設定を紹介します。
 
 ## 事前準備: Status フィールドを表示する
 
@@ -20,11 +20,11 @@ GitHub Projects v2 では、Status フィールドは **デフォルトで Hidde
 
 これで Status フィールド（Todo、In Progress、Done）が利用可能になります。
 
-### Takumi の Phase と Project Status のマッピング
+### cc-craft-kit の Phase と Project Status のマッピング
 
-Takumi では、仕様書のフェーズ変更時に自動的に GitHub Project の Status フィールドが更新されます。
+cc-craft-kit では、仕様書のフェーズ変更時に自動的に GitHub Project の Status フィールドが更新されます。
 
-| Takumi Phase   | Project Status |
+| cc-craft-kit Phase | Project Status |
 |----------------|----------------|
 | requirements   | Todo           |
 | design         | In Progress    |
@@ -36,7 +36,7 @@ Takumi では、仕様書のフェーズ変更時に自動的に GitHub Project 
 
 ## 推奨ビュー構成
 
-Takumi プロジェクトでは、以下の 3 つのビューを設定することを推奨します。
+cc-craft-kit プロジェクトでは、以下の 3 つのビューを設定することを推奨します。
 
 1. **Status Board** (Board) - 日々の作業管理用
 2. **All Tasks** (Table) - 全タスクの詳細確認・検索用
@@ -72,7 +72,7 @@ is:open
 
 - Title（タスク名）
 - Assignees（担当者）
-- Labels（Takumi が自動付与する `phase:requirements` などのラベルを表示）
+- Labels（cc-craft-kit が自動付与する `phase:requirements` などのラベルを表示）
 
 ### 利点
 
@@ -137,7 +137,7 @@ Priority: High → Medium → Low
 assignee:@me
 ```
 
-**特定ラベルのみ表示**（Takumi の phase ラベル）。
+**特定ラベルのみ表示**（cc-craft-kit の phase ラベル）。
 
 ```text
 label:phase:implementation
@@ -174,7 +174,7 @@ label:phase:implementation,phase:design
 | Title      | タスク名（デフォルトで表示）                                                |
 | Status     | Todo/In Progress/Done（Hidden fields から表示設定が必要）                   |
 | Assignees  | 担当者（デフォルトで表示）                                                  |
-| Labels     | Takumi が自動付与する `phase:requirements` などのラベル（デフォルトで表示） |
+| Labels     | cc-craft-kit が自動付与する `phase:requirements` などのラベル（デフォルトで表示） |
 
 ### 利点
 
@@ -222,7 +222,7 @@ is:open
 
 ⚠️ **Roadmap ビューを使用するには、各 Issue に開始日・期日を設定する必要があります。**
 
-Takumi では、開始日・期日のフィールドを自動設定する機能は現在提供していません。以下の手順で手動追加してください。
+cc-craft-kit では、開始日・期日のフィールドを自動設定する機能は現在提供していません。以下の手順で手動追加してください。
 
 1. Project の Settings → Fields → Add field に移動する
 2. **「Date」** タイプのカスタムフィールドを 2 つ作成する（`Start date` と `End date`）
@@ -295,9 +295,9 @@ Column by: Status
 
 ---
 
-## Takumi プロジェクトでの実践例
+## cc-craft-kit プロジェクトでの実践例
 
-Takumi 開発プロジェクト自身では、以下のビュー構成を使用しています。
+cc-craft-kit 開発プロジェクト自身では、以下のビュー構成を使用しています。
 
 ### 基本構成（最小セット）
 
@@ -358,7 +358,7 @@ GitHub Projects v2 では、Status フィールドはデフォルトで Hidden f
 
 ### Phase ラベルが自動更新されない
 
-Takumi の GitHub 統合が正しく設定されているか確認してください。
+cc-craft-kit の GitHub 統合が正しく設定されているか確認してください。
 
 **チェック項目**。
 
@@ -395,9 +395,5 @@ GITHUB_PROJECT_NAME="Your Project Name"
 ## 参考情報
 
 - [GitHub Projects v2 公式ドキュメント](https://docs.github.com/en/issues/planning-and-tracking-with-projects)
-- [Takumi クイックスタートガイド](./QUICK_START.md)
-- [Takumi GitHub 統合ガイド](./QUICK_START.md#github連携を有効にする場合)
-
----
-
-**Takumi (匠)** - 匠の技で、開発ワークフローを磨き上げる。
+- [cc-craft-kit クイックスタートガイド](./QUICK_START.md)
+- [cc-craft-kit GitHub 統合ガイド](./QUICK_START.md#github連携を有効にする場合)

@@ -98,7 +98,7 @@ Kysely + SQLite による型安全なデータベース層。
 #### Spec Manager
 
 - 仕様書の作成・更新・削除
-- フェーズ管理 (Requirements → Design → Tasks → Implementation)
+- フェーズ管理 (Requirements → Design → Implementation → Completed)（4フェーズモデル）
 - テンプレート適用
 
 #### Task Manager
@@ -463,6 +463,6 @@ EventBus (コア層)
 
 ---
 
-**最終更新:** 2025-11-27
-**バージョン:** 0.1.1
+**最終更新:** 2025-11-28
+**バージョン:** 0.1.2
 **Phase 6 完了**: プロンプトベースアーキテクチャへの移行完了。

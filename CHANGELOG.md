@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.2] - 2025-11-28
+
+### Added
+
+- なし
+
+### Changed
+
+- コマンド数の削減: 42個から24個へ統合（task, knowledge, sync, quality, custom-tools）
+- 4フェーズモデルへの移行: tasks フェーズを廃止し、design → implementation の直接遷移を推奨
+- ドキュメント更新:
+  - README.md のコマンド一覧を24コマンドに更新
+  - docs/ARCHITECTURE.md のフェーズ定義を4フェーズモデルに更新
+  - docs/GITHUB_PROJECTS.md のプロジェクト名を cc-craft-kit に統一
+  - docs/SUBAGENTS_AND_SKILLS_GUIDE.md のプロジェクト名を cc-craft-kit に統一
+
+### Fixed
+
+- なし
+
 ## [0.1.1] - 2025-11-27
 
 ### Added
@@ -54,5 +74,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - なし（初回リリース）
 
+[0.1.2]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.2
 [0.1.1]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.1
 [0.1.0]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.0
