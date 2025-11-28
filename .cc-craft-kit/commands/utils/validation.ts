@@ -204,3 +204,64 @@ export function validateEmail(email: string, argumentName: string): void {
     throw createValidationError(argumentName, 'Must be a valid email address');
   }
 }
+
+/**
+ * GitHub Issue 番号形式の判定
+ *
+ * "#42" または "42" 形式の入力が GitHub Issue 番号かを判定します。
+ * 1-6桁の数値を GitHub Issue 番号として認識します。
+ *
+ * @param input - 判定対象の文字列
+ * @returns GitHub Issue 番号形式の場合 true
+ */
+export function isGitHubIssueNumber(input: string): boolean {
+  if (!input || input.trim().length === 0) {
+    return false;
+  }
+
+  const stripped = input.startsWith('#') ? input.slice(1) : input;
+
+  // 1-6桁の数値（GitHub Issue 番号として妥当な範囲）
+  return /^\d{1,6}$/.test(stripped);
+}
+
+/**
+ * GitHub Issue 番号のパース
+ *
+ * "#42" または "42" 形式の入力から数値を抽出します。
+ *
+ * @param input - パース対象の文字列
+ * @returns パースされた数値
+ * @throws 無効な形式の場合
+ */
+export function parseGitHubIssueNumber(input: string): number {
+  if (!input || input.trim().length === 0) {
+    throw createValidationError('issue-number', `Invalid GitHub Issue number: "${input}"`);
+  }
+
+  const stripped = input.startsWith('#') ? input.slice(1) : input;
+  const num = parseInt(stripped, 10);
+
+  if (isNaN(num) || num < 1) {
+    throw createValidationError('issue-number', `Invalid GitHub Issue number: "${input}"`);
+  }
+
+  return num;
+}
+
+/**
+ * 仕様書 ID 形式の判定
+ *
+ * 8文字以上で UUID パターン（英小文字 + 数字 + ハイフン）にマッチするかを判定します。
+ *
+ * @param input - 判定対象の文字列
+ * @returns 仕様書 ID 形式の場合 true
+ */
+export function isSpecId(input: string): boolean {
+  if (!input || input.length < 8) {
+    return false;
+  }
+
+  // 英小文字、数字、ハイフンで構成される8文字以上
+  return /^[a-f0-9-]{8,}$/i.test(input);
+}
