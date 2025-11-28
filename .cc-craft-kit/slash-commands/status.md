@@ -1,15 +1,25 @@
 ---
 description: "プロジェクトの現在の状況を表示します"
+argument-hint: "[--verbose]"
 ---
 
 # プロジェクト状況
 
 cc-craft-kit プロジェクトの現在の状況を表示します。
 
+## 引数
+
+- `--verbose` または `-v` (任意): 詳細情報を表示（DB 情報を含む）
+
 ## 使用例
 
 ```bash
+# 通常表示
 /cft:status
+
+# 詳細表示（DB 情報を含む）
+/cft:status --verbose
+/cft:status -v
 ```
 
 ---
@@ -209,4 +219,71 @@ cc-craft-kit を使用するには、まずプロジェクトを初期化して�
 対処法:
 1. データベースの状態を確認: `npx tsx .cc-craft-kit/scripts/repair-database.ts`
 2. 設定ファイルを確認: `.cc-craft-kit/config.json`
+```
+
+---
+
+## --verbose オプション
+
+`--verbose` または `-v` フラグが指定された場合、以下の追加情報を表示します。
+
+### Step V1: DB 情報の取得
+
+Bash ツールで以下を実行:
+
+```bash
+npx tsx .cc-craft-kit/commands/db/info.ts
+```
+
+出力（JSON）を解析し、以下の情報を記録:
+
+- `database.path`: データベースファイルのパス
+- `database.size`: データベースファイルのサイズ
+- `tables`: テーブル一覧と各テーブルのレコード数
+- `migrations`: マイグレーション状況
+
+### Step V2: 詳細情報の表示
+
+```markdown
+## データベース情報
+
+- **パス**: {database.path}
+- **サイズ**: {database.size を適切な単位で表示（KB/MB）}
+
+### テーブル統計
+
+| テーブル名 | レコード数 |
+|----------|----------:|
+{tables の各テーブルを表形式で表示}
+
+### マイグレーション状況
+
+- **適用済み**: {migrations.applied} 件
+- **未適用**: {migrations.pending} 件
+
+{migrations.pending が 1 件以上の場合}
+⚠️ 未適用のマイグレーションがあります
+実行: `npm run db:migrate`
+
+### 整合性チェック
+
+- **ファイル総数**: {integrity.totalFiles} 件
+- **DB レコード総数**: {integrity.totalRecords} 件
+- **同期率**: {integrity.syncRate}%
+
+{integrity.syncRate が 100 未満の場合}
+⚠️ 整合性に問題があります
+修復: `/cft:sync repair`
+```
+
+### コマンドが見つからない場合
+
+`db/info.ts` が存在しない場合:
+
+```
+ℹ️ データベース詳細情報は利用できません
+
+代替手段:
+- 整合性チェック: /cft:sync check
+- データベースファイル: .cc-craft-kit/cc-craft-kit.db
 ```
