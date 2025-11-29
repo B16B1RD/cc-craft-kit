@@ -103,7 +103,7 @@ Organization の Projects を使用する場合のみ、Fine-grained PAT が利�
 Claude Code CLI 内で、cc-craft-kit プロジェクトを初期化します。
 
 ```bash
-/cft:init my-awesome-app "革新的なWebアプリケーション"
+/cft:init
 ```
 
 これにより、以下が作成されます。

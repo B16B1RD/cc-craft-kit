@@ -168,7 +168,7 @@ export function createProjectNotInitializedError(): CLIError {
   return new CLIError(
     'Project is not initialized',
     ERROR_CODES.PROJECT_NOT_INITIALIZED,
-    'Run "/cft:init <project-name>" to initialize a new project.',
+    'Run "/cft:init" to initialize a new project.',
     {}
   );
 }
@@ -201,7 +201,7 @@ export function createInvalidSpecIdError(specId: string): CLIError {
 }
 
 export function createInvalidPhaseError(phase: string): CLIError {
-  const validPhases = ['requirements', 'design', 'tasks', 'implementation', 'completed'];
+  const validPhases = ['requirements', 'design', 'implementation', 'completed'];
   return new CLIError(
     `Invalid phase: ${phase}`,
     ERROR_CODES.INVALID_PHASE,
