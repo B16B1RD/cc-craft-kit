@@ -41,7 +41,7 @@ curl -fsSL https://cc-craft-kit.dev/install.sh | sh -s -- /path/to/project
 curl -fsSL https://cc-craft-kit.dev/install.sh | sh -s -- --project my-new-project
 ```
 
-インストール後、Claude Code で `/cft:init my-project` を実行してプロジェクトを初期化します。
+インストール後、Claude Code で `/cft:init` を実行してプロジェクトを初期化します。
 
 #### 方法2: 開発者向けクローン
 
@@ -94,7 +94,7 @@ echo "BASE_BRANCH=develop" >> .env
 Claude Code のチャットで以下のスラッシュコマンドを実行します。
 
 ```sh
-/cft:init my-project
+/cft:init
 ```
 
 ## 📚 使い方
@@ -172,7 +172,7 @@ cc-craft-kit v0.1.2 では、関連機能を統合コマンドにまとめ、42�
 
 | コマンド | 説明 |
 |---------|------|
-| `/cft:init <project-name>` | プロジェクト初期化 |
+| `/cft:init` | プロジェクト初期化 |
 | `/cft:status` | プロジェクト状態表示 |
 
 #### 仕様書管理
