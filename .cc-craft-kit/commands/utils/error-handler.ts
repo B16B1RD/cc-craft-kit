@@ -168,7 +168,7 @@ export function createProjectNotInitializedError(): CLIError {
   return new CLIError(
     'Project is not initialized',
     ERROR_CODES.PROJECT_NOT_INITIALIZED,
-    'Run "/cft:init <project-name>" to initialize a new project.',
+    'Run "/cft:init" to initialize a new project.',
     {}
   );
 }

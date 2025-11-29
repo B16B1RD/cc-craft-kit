@@ -1,16 +1,10 @@
 ---
 description: "cc-craft-kitプロジェクトを初期化します"
-argument-hint: "<project-name> [description]"
 ---
 
 # cc-craft-kitプロジェクト初期化
 
-指定されたプロジェクト名で cc-craft-kit プロジェクトを初期化します。
-
-## 引数
-
-- `$1` (必須): プロジェクト名
-- `$2` (オプション): プロジェクトの説明
+cc-craft-kit プロジェクトを初期化します。
 
 ## 実行内容
 
@@ -21,7 +15,7 @@ argument-hint: "<project-name> [description]"
 ## 使用例
 
 ```bash
-/cft:init my-awesome-app
+/cft:init
 ```
 
 ---
@@ -29,7 +23,7 @@ argument-hint: "<project-name> [description]"
 以下のコマンドを実行してプロジェクトを初期化してください。
 
 ```bash
-npx tsx .cc-craft-kit/commands/init.ts "$1"
+npx tsx .cc-craft-kit/commands/init.ts
 ```
 
 初期化が完了したら、結果を要約して表示し、必要に応じて次のアクションを案内してください。
