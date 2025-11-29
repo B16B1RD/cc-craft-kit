@@ -77,7 +77,7 @@ export async function runTests(): Promise<void> {
     const initCommand = `cd ${testProjectDir} && npx tsx ${join(
       process.cwd(),
       'src/commands/init.ts'
-    )} test-project "Test project description"`;
+    )}`;
 
     const initResult = runCommand(initCommand, { cwd: process.cwd() });
 
