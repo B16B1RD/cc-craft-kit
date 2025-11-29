@@ -201,7 +201,7 @@ export function createInvalidSpecIdError(specId: string): CLIError {
 }
 
 export function createInvalidPhaseError(phase: string): CLIError {
-  const validPhases = ['requirements', 'design', 'tasks', 'implementation', 'completed'];
+  const validPhases = ['requirements', 'design', 'implementation', 'completed'];
   return new CLIError(
     `Invalid phase: ${phase}`,
     ERROR_CODES.INVALID_PHASE,
