@@ -21,6 +21,18 @@ export interface SubIssueConfig {
   parentIssueNumber: number;
   taskList: Array<{ id: string; title: string; description?: string }>;
   githubToken: string;
+  /** 親 Issue に紐づく仕様書 ID（オプション） */
+  specId?: string;
+}
+
+/**
+ * Sub Issue 同期データ記録オプション
+ */
+export interface RecordSubIssueSyncOptions {
+  /** 親 Issue の番号 */
+  parentIssueNumber?: number;
+  /** 親 Issue に紐づく仕様書 ID */
+  parentSpecId?: string;
 }
 
 /**
@@ -127,13 +139,17 @@ export class SubIssueManager {
 
       await this.addSubIssueToParent(parentNodeId, subIssueNodeId, config.githubToken);
 
-      // 5. github_sync テーブルに記録
+      // 5. github_sync テーブルに記録（親 Issue 関連情報を含む）
       await this.recordSubIssueSyncData(
         task.id,
         subIssueNumber,
         subIssueNodeId,
         config.owner,
-        config.repo
+        config.repo,
+        {
+          parentIssueNumber: config.parentIssueNumber,
+          parentSpecId: config.specId,
+        }
       );
     }
   }
@@ -242,13 +258,21 @@ export class SubIssueManager {
 
   /**
    * github_sync テーブルに Sub Issue 情報を記録
+   *
+   * @param taskId タスク ID
+   * @param issueNumber Sub Issue の GitHub Issue 番号
+   * @param nodeId Sub Issue の GraphQL Node ID
+   * @param owner リポジトリオーナー
+   * @param repo リポジトリ名
+   * @param options 親 Issue 関連情報（オプション）
    */
   private async recordSubIssueSyncData(
     taskId: string,
     issueNumber: number,
     nodeId: string,
     owner: string,
-    repo: string
+    repo: string,
+    options?: RecordSubIssueSyncOptions
   ): Promise<void> {
     const { randomUUID } = await import('crypto');
     const repository = `${owner}/${repo}`;
@@ -265,6 +289,8 @@ export class SubIssueManager {
         last_synced_at: new Date().toISOString(),
         sync_status: 'success',
         error_message: null,
+        parent_issue_number: options?.parentIssueNumber ?? null,
+        parent_spec_id: options?.parentSpecId ?? null,
       })
       .execute();
   }
