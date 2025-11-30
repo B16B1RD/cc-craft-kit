@@ -397,11 +397,16 @@ export class SubIssueManager {
     const currentBody = issueData.body || '';
 
     // 2. チェックボックスのパターンにマッチする行を更新
-    // パターン: `- [ ] #XXX` または `- [x] #XXX`
-    const checkboxPattern = new RegExp(`(- \\[)[ x](\\] .*#${subIssueNumber}(?:\\D|$))`, 'gm');
+    // パターン: `- [ ] #XXX` または `- [x] #XXX` (行頭のみにマッチ)
+    // 改善点:
+    // - `^` で行頭を指定（multiline モードで各行の先頭にマッチ）
+    // - `\s*` で先頭の空白を許容（インデント対応）
+    // - `\b` で単語境界を指定し、#123 が #1234 にマッチしないようにする
+    // - `.*` を削除し、Issue 番号の直前の任意文字列にはマッチしないようにする
+    const checkboxPattern = new RegExp(`^(\\s*- \\[)([ x])(\\] #${subIssueNumber}\\b)`, 'gm');
 
     const newCheckState = status === 'closed' ? 'x' : ' ';
-    const updatedBody = currentBody.replace(checkboxPattern, `$1${newCheckState}$2`);
+    const updatedBody = currentBody.replace(checkboxPattern, `$1${newCheckState}$3`);
 
     // 3. 本文が変更されていない場合はスキップ
     if (updatedBody === currentBody) {
