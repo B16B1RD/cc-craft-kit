@@ -88,7 +88,24 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
         // GitHub統合チェック
         const githubToken = process.env.GITHUB_TOKEN;
         if (!githubToken) {
-          // トークンが未設定の場合はスキップ（エラーにしない）
+          // トークンが未設定の場合は警告を出力してスキップ
+          console.warn(`
+⚠️ GitHub Issue が自動作成されませんでした
+
+原因: GITHUB_TOKEN 環境変数が設定されていません
+
+対処方法:
+1. GitHub Personal Access Token を作成
+   https://github.com/settings/tokens/new?scopes=repo,project
+
+2. .env ファイルに以下を追加:
+   GITHUB_TOKEN=ghp_xxxxxxxxxxxx
+
+3. /cft:github-init <owner> <repo> を実行して GitHub 統合を初期化
+
+手動で Issue を作成する場合:
+   /cft:github-issue-create ${event.specId.substring(0, 8)}
+`);
           return;
         }
 
@@ -97,7 +114,20 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
         const githubConfig = getGitHubConfig(ccCraftKitDir);
 
         if (!githubConfig) {
-          // GitHub設定がない場合はスキップ
+          // GitHub 設定がない場合は警告を出力してスキップ
+          console.warn(`
+⚠️ GitHub Issue が自動作成されませんでした
+
+原因: GitHub 統合が初期化されていません
+
+対処方法:
+1. /cft:github-init <owner> <repo> を実行して GitHub 統合を初期化
+
+   例: /cft:github-init myorg myrepo
+
+手動で Issue を作成する場合:
+   /cft:github-issue-create ${event.specId.substring(0, 8)}
+`);
           return;
         }
 
