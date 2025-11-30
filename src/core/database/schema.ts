@@ -100,6 +100,8 @@ export interface GitHubSyncTable {
   error_message: string | null;
   checkbox_hash: string | null; // チェックボックス状態のハッシュ（競合検出用）
   last_body_hash: string | null; // 最後に同期した Issue 本文のハッシュ
+  parent_issue_number: number | null; // 親 Issue の番号（Sub Issue の場合のみ）
+  parent_spec_id: string | null; // 親 Issue に紐づく仕様書 ID（Sub Issue の場合のみ）
 }
 
 export type GitHubSync = Selectable<GitHubSyncTable>;
