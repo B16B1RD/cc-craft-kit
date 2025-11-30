@@ -444,46 +444,6 @@ export class SubIssueManager {
   }
 
   /**
-   * 全 Sub Issue がクローズされているかチェック
-   *
-   * @param parentIssueNumber 親 Issue の番号
-   * @returns 全 Sub Issue がクローズされていれば true
-   */
-  async checkAllSubIssuesClosed(parentIssueNumber: number): Promise<boolean> {
-    // DB から同じ親 Issue に紐づく全 Sub Issue を取得
-    const subIssues = await this.db
-      .selectFrom('github_sync')
-      .selectAll()
-      .where('entity_type', '=', 'sub_issue')
-      .where('parent_issue_number', '=', parentIssueNumber)
-      .execute();
-
-    if (subIssues.length === 0) {
-      // Sub Issue がない場合は true を返す
-      return true;
-    }
-
-    // 全 Sub Issue の sync_status を確認
-    // 注: sync_status は Sub Issue のクローズ状態ではなく同期状態を示す
-    // 実際のクローズ状態は GitHub API から取得する必要がある
-    // ここでは簡易的に、直近の更新で 'closed' 状態になっているかを確認
-    // より正確な実装では GitHub API を呼び出してステータスを確認する
-
-    // まずはリポジトリ情報を取得（最初の Sub Issue から）
-    const firstSubIssue = subIssues[0];
-    const parts = firstSubIssue.github_id.split('/');
-    if (parts.length !== 2) {
-      console.warn(`Invalid github_id format: ${firstSubIssue.github_id}`);
-      return false;
-    }
-
-    // ここでは DB のデータのみで判断するため、常に true を返す
-    // 実際の実装では GitHub API を呼び出して各 Sub Issue のステータスを確認する
-    console.log(`Found ${subIssues.length} Sub Issues for parent issue #${parentIssueNumber}`);
-    return true;
-  }
-
-  /**
    * 全 Sub Issue がクローズされているか GitHub API で確認
    *
    * @param owner リポジトリオーナー
