@@ -59,10 +59,146 @@ npx tsx .cc-craft-kit/commands/spec/resolve-id.ts "$1"
 
 ### Step 3: ブランチ切り替え
 
-`BRANCH_NAME` が null でない場合、Bash ツールで実行:
+`BRANCH_NAME` が null でない場合、以下の処理を実行:
+
+#### 3.1 ベースブランチの取得
+
+Bash ツールで `.env` から `BASE_BRANCH` を取得:
 
 ```bash
+BASE_BRANCH=$(grep '^BASE_BRANCH=' .env 2>/dev/null | cut -d'=' -f2 | tr -d '"' || echo "develop")
+echo "ベースブランチ: $BASE_BRANCH"
+```
+
+#### 3.2 ブランチ存在確認・自動作成
+
+Bash ツールで実行:
+
+```bash
+# ブランチが存在するか確認
+if git rev-parse --verify "$BRANCH_NAME" > /dev/null 2>&1; then
+  echo "✓ ブランチ '$BRANCH_NAME' が見つかりました"
+else
+  echo "⚠️ ブランチ '$BRANCH_NAME' が見つかりません。自動作成を試みます..."
+
+  # ベースブランチの存在確認
+  if ! git rev-parse --verify "$BASE_BRANCH" > /dev/null 2>&1; then
+    echo "❌ ベースブランチ '$BASE_BRANCH' が見つかりません"
+    exit 1
+  fi
+
+  # ベースブランチから自動作成
+  if git branch "$BRANCH_NAME" "$BASE_BRANCH"; then
+    echo "✓ ブランチを作成しました: $BRANCH_NAME (from $BASE_BRANCH)"
+  else
+    echo "❌ ブランチ作成に失敗しました"
+    exit 1
+  fi
+fi
+
+# ブランチに切り替え
 git checkout "$BRANCH_NAME"
+```
+
+**エラーハンドリング:**
+
+- **ブランチが存在しない + 自動作成成功**: 処理続行
+- **ベースブランチが存在しない**: 以下のエラーメッセージを表示して処理中断
+
+```
+❌ ブランチ操作に失敗しました
+
+ブランチ: $BRANCH_NAME
+ベースブランチ: $BASE_BRANCH (存在しません)
+
+対処方法:
+1. .env の BASE_BRANCH 設定を確認
+2. ベースブランチをフェッチ: git fetch origin $BASE_BRANCH:$BASE_BRANCH
+3. 再実行: /cft:spec-phase $SPEC_ID $NEW_PHASE
+```
+
+- **ブランチ作成失敗**: 以下のエラーメッセージを表示して処理中断
+
+```
+❌ ブランチ作成に失敗しました
+
+ブランチ: $BRANCH_NAME
+
+対処方法:
+1. 同名ブランチが存在しないか確認: git branch -a | grep "$BRANCH_NAME"
+2. 手動でブランチを作成: git branch "$BRANCH_NAME" "$BASE_BRANCH"
+3. 再実行: /cft:spec-phase $SPEC_ID $NEW_PHASE
+```
+
+- **ブランチ切り替え失敗**: 以下のエラーメッセージを表示して処理中断
+
+```
+❌ ブランチ切り替えに失敗しました
+
+ブランチ: $BRANCH_NAME
+
+対処方法:
+1. 未コミットの変更を確認: git status
+2. 変更をスタッシュ: git stash
+3. 手動で切り替え: git checkout "$BRANCH_NAME"
+4. 再実行: /cft:spec-phase $SPEC_ID $NEW_PHASE
+```
+
+### Step 3.5: GitHub Issue 連携状態確認
+
+`GITHUB_ISSUE_NUMBER` を確認し、GitHub Issue との連携状態を検証します。
+
+**判定ロジック:**
+
+```
+GITHUB_ISSUE_NUMBER が null の場合:
+  → 警告を表示し、処理を継続するか確認
+
+GITHUB_ISSUE_NUMBER が null でない場合:
+  → Step 4 へ進む
+```
+
+**警告メッセージ（GITHUB_ISSUE_NUMBER が null の場合）:**
+
+```
+⚠️ 警告: この仕様書には GitHub Issue が関連付けられていません
+
+仕様書: $SPEC_NAME
+現在のフェーズ: $CURRENT_PHASE → $NEW_PHASE
+
+GitHub Issue を作成すると、以下の機能が利用できます:
+  - フェーズ移行時の自動ラベル更新
+  - 進捗・エラー・Tips の自動コメント追加
+  - completed フェーズでの自動クローズ
+  - GitHub Projects との連携
+
+対処方法:
+1. GitHub Issue を作成: /cft:github-issue-create $SPEC_ID
+2. GitHub 統合を初期化（未設定の場合）: /cft:github-init <owner> <repo>
+```
+
+**AskUserQuestion:**
+
+- question: "GitHub Issue なしで $NEW_PHASE フェーズに移行しますか？"
+- header: "Issue"
+- options:
+  - label: "このまま続行"
+    description: "GitHub Issue 連携なしでフェーズを移行します"
+  - label: "中断して Issue を作成"
+    description: "/cft:github-issue-create を実行してから再度移行します"
+- multiSelect: false
+
+**ユーザー選択:**
+
+- 「このまま続行」: Step 4 へ進む
+- 「中断して Issue を作成」: 処理を中断し、以下のメッセージを表示:
+
+```
+処理を中断しました。
+
+GitHub Issue を作成してから再実行してください:
+  /cft:github-issue-create $SPEC_ID
+  /cft:spec-phase $SPEC_ID $NEW_PHASE
 ```
 
 ### Step 4: バリデーション（プロンプト内実行）

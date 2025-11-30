@@ -112,11 +112,11 @@ describe('Slash Command: /cft:spec-create', () => {
       expect(content).toContain('git branch --show-current');
     });
 
-    it('should have Step 4: 保護ブランチ判定', () => {
+    it('should have Step 4: ブランチプレフィックス判定とブランチ名決定', () => {
       // Assert
-      expect(content).toContain('### Step 4: 保護ブランチ判定');
-      expect(content).toContain('main');
-      expect(content).toContain('develop');
+      expect(content).toContain('### Step 4: ブランチプレフィックス判定とブランチ名決定');
+      expect(content).toContain('feature/');
+      expect(content).toContain('fix/');
     });
 
     it('should have Step 5: ブランチ作成・切り替え', () => {
@@ -247,12 +247,14 @@ describe('Slash Command: /cft:spec-create', () => {
       expect(content).toContain('add-user-authentication');
     });
 
-    it('should have branch naming table', () => {
+    it('should have branch prefix table', () => {
       // Assert
-      expect(content).toMatch(/\|\s*実行元ブランチ\s*\|/);
-      expect(content).toMatch(/\|\s*生成されるブランチ名\s*\|/);
-      expect(content).toContain('develop');
-      expect(content).toContain('main');
+      expect(content).toMatch(/\|\s*キーワード\s*\|/);
+      expect(content).toMatch(/\|\s*プレフィックス\s*\|/);
+      expect(content).toContain('feature/');
+      expect(content).toContain('fix/');
+      expect(content).toContain('docs/');
+      expect(content).toContain('refactor/');
     });
   });
 

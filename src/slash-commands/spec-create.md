@@ -64,21 +64,33 @@ git branch --show-current
 
 取得したブランチ名を `ORIGINAL_BRANCH` として記録してください。
 
-### Step 4: 保護ブランチ判定とブランチ名決定
+### Step 4: ブランチプレフィックス判定とブランチ名決定
 
-現在のブランチ（`ORIGINAL_BRANCH`）が保護ブランチかどうかを判定し、最終的なブランチ名を決定します。
+仕様書名（`$1`）と説明（`$2`）を分析し、適切なブランチプレフィックスを決定します。
 
-**判定ロジック:**
+**プレフィックス判定ロジック:**
 
-| 実行元ブランチ | 生成されるブランチ名 |
-|---|---|
-| `main` | `feature/spec-<短縮ID>-<BRANCH_SUFFIX>` |
-| `develop` | `feature/spec-<短縮ID>-<BRANCH_SUFFIX>` |
-| その他 | `spec/<短縮ID>-<BRANCH_SUFFIX>` |
+1. 仕様書名・説明に以下のキーワードが含まれる場合、対応するプレフィックスを使用:
+
+| キーワード | プレフィックス | 例 |
+|---|---|---|
+| `バグ`, `修正`, `エラー`, `fix`, `bug` | `fix/` | `fix/spec-<短縮ID>-<BRANCH_SUFFIX>` |
+| `ドキュメント`, `文書`, `README`, `docs` | `docs/` | `docs/spec-<短縮ID>-<BRANCH_SUFFIX>` |
+| `リファクタ`, `リファクタリング`, `refactor` | `refactor/` | `refactor/spec-<短縮ID>-<BRANCH_SUFFIX>` |
+| `テスト`, `test` | `test/` | `test/spec-<短縮ID>-<BRANCH_SUFFIX>` |
+| 上記以外 | `feature/` | `feature/spec-<短縮ID>-<BRANCH_SUFFIX>` |
+
+2. キーワードが複数該当する場合は、最も優先度の高いものを使用（優先度: fix > refactor > test > docs > feature）
 
 **短縮 ID**: `SPEC_ID` の最初の 8 文字
 
 決定したブランチ名を `BRANCH_NAME` として記録してください。
+
+**例:**
+
+- 仕様書名「GitHub Issue が作成されない」→ `fix/spec-12345678-github-issue-not-created`
+- 仕様書名「ユーザー認証機能追加」→ `feature/spec-12345678-add-user-auth`
+- 仕様書名「README を更新」→ `docs/spec-12345678-update-readme`
 
 ### Step 4.5: ベースブランチの決定
 
@@ -93,6 +105,57 @@ echo "ベースブランチ: $BASE_BRANCH"
 ```
 
 出力を `BASE_BRANCH` として記録してください。
+
+### Step 4.6: 実行元ブランチの確認と警告
+
+現在のブランチ（`ORIGINAL_BRANCH`）がベースブランチ（`BASE_BRANCH`）以外の場合、警告を表示します。
+
+**判定ロジック:**
+
+```
+ORIGINAL_BRANCH == BASE_BRANCH の場合:
+  → 警告なし、Step 5 へ進む
+
+ORIGINAL_BRANCH != BASE_BRANCH の場合:
+  → 警告を表示し、AskUserQuestion ツールで確認
+```
+
+**警告メッセージ:**
+
+```
+⚠️ 警告: 現在のブランチは '$ORIGINAL_BRANCH' です
+
+仕様書作成時は通常、ベースブランチ（$BASE_BRANCH）から実行することを推奨します。
+現在のブランチから実行すると、作業ブランチが $BASE_BRANCH ではなく $ORIGINAL_BRANCH から派生します。
+
+選択肢:
+1. このまま続行（$ORIGINAL_BRANCH から派生）
+2. ベースブランチに切り替えてから再実行
+```
+
+**AskUserQuestion:**
+
+- question: "現在のブランチ '$ORIGINAL_BRANCH' から仕様書を作成しますか？"
+- header: "Branch"
+- options:
+  - label: "このまま続行"
+    description: "$ORIGINAL_BRANCH から派生してブランチを作成します"
+  - label: "中断"
+    description: "先にベースブランチに切り替えてから再実行します"
+- multiSelect: false
+
+**ユーザー選択:**
+
+- 「このまま続行」: Step 5 へ進む
+- 「中断」: 処理を中断し、以下のメッセージを表示:
+
+```
+処理を中断しました。
+
+ベースブランチに切り替えてから再実行してください:
+  git checkout $BASE_BRANCH
+  /cft:spec-create "$1" "$2"
+```
 
 ### Step 5: ブランチ作成・切り替え
 
@@ -294,6 +357,41 @@ npx tsx .cc-craft-kit/commands/spec/register.ts \
 1. 仕様書ファイル削除: `rm "$SPEC_PATH"`
 2. ブランチ削除: `git checkout "$ORIGINAL_BRANCH" && git branch -D "$BRANCH_NAME"`
 
+### Step 9.5: 仕様書ファイルの自動コミット
+
+仕様書ファイルをステージングし、コミットします。
+
+**実行:**
+
+```bash
+# 仕様書ブランチに切り替え（Step 9 の後、元ブランチに戻る前に実行）
+git checkout "$BRANCH_NAME"
+
+# 仕様書ファイルをステージング
+git add "$SPEC_PATH"
+
+# コミット
+git commit -m "feat: $1 の仕様書を作成"
+```
+
+**成功時:** Step 10 へ進む
+
+**エラーハンドリング:**
+
+- ブランチ切り替えに失敗した場合、警告メッセージを表示し、手動でのコミットを案内
+- ステージングまたはコミットに失敗した場合:
+  - 警告メッセージを表示
+  - 手動でのコミットを案内:
+    ```
+    ⚠️ 自動コミットに失敗しました
+
+    手動でコミットしてください:
+      git checkout $BRANCH_NAME
+      git add $SPEC_PATH
+      git commit -m "feat: $1 の仕様書を作成"
+    ```
+  - Step 10 へ継続（処理は中断しない）
+
 ### Step 10: 元ブランチに復帰
 
 Bash ツールで元のブランチに復帰します。
@@ -367,12 +465,14 @@ git checkout "$ORIGINAL_BRANCH"
 |---|---|---|
 | Step 1 | UUID 生成失敗 | `crypto.randomUUID()` にフォールバック |
 | Step 4.5 | BASE_BRANCH 読み込み失敗 | デフォルト値 `develop` を使用 |
+| Step 4.6 | ユーザーが中断を選択 | 処理中断、ベースブランチ切り替えを案内 |
 | Step 5 | BASE_BRANCH が存在しない | 処理中断、.env の設定確認を案内 |
 | Step 5 | ブランチ作成失敗 | 処理中断、エラーメッセージ表示 |
 | Step 6 | ファイル作成失敗 | 処理中断、エラーメッセージ表示 |
 | Step 7 | コードベース解析失敗 | `ANALYSIS_RESULT` を空として記録、Step 8 へ継続 |
 | Step 8 | 自動完成失敗 | `AUTO_COMPLETE_SUCCESS` を false として記録、Step 9 へ継続 |
 | Step 9 | DB 登録失敗 | ロールバック処理実行（ファイル削除、ブランチ削除） |
+| Step 9.5 | 自動コミット失敗 | 警告表示、手動コミットを案内、Step 10 へ継続 |
 | Step 10 | ブランチ復帰失敗 | 警告表示、手動復帰を案内 |
 
 ### BASE_BRANCH が存在しない場合

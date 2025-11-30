@@ -6,7 +6,7 @@
  * テストケース:
  * 1. 既存 Issue がない場合、新規作成される
  * 2. 既存 Issue がある場合、DUPLICATE_ISSUE エラーが throw される
- * 3. sync_status=failed のレコードは無視され、再作成が許可される
+ * 3. sync_status に関わらずレコード存在で重複判定される
  */
 
 import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
@@ -154,8 +154,8 @@ describe('GitHub Issue 重複作成防止', () => {
     });
   });
 
-  describe('テストケース3: sync_status=failed のレコードは無視され、再作成が許可される', () => {
-    test('github_sync テーブルに sync_status=failed のレコードがある場合、再作成される', async () => {
+  describe('テストケース3: sync_status に関わらずレコード存在で重複判定される', () => {
+    test('github_sync テーブルに sync_status=failed のレコードがある場合も重複エラー', async () => {
       const specId = randomUUID();
       const owner = 'testowner';
       const repo = 'testrepo';
@@ -174,27 +174,63 @@ describe('GitHub Issue 重複作成防止', () => {
         .execute();
 
       // 失敗した github_sync レコードを作成（sync_status=failed）
+      // 修正後: sync_status に関わらずレコードが存在すれば重複と判定
       await lifecycle.db
         .insertInto('github_sync')
         .values({
           id: randomUUID(),
           entity_type: 'spec',
           entity_id: specId,
-          github_id: '',
-          github_number: null,
-          github_node_id: null,
+          github_id: '1',
+          github_number: 1,
+          github_node_id: 'node_123',
           last_synced_at: new Date().toISOString(),
           sync_status: 'failed',
           error_message: 'Network error',
         })
         .execute();
 
-      // Issue 作成APIのモック
+      // Issue 作成を試行 → エラーが throw されることを確認
+      // 修正後: sync_status=failed でも既存レコードがあれば重複エラー
+      await expect(
+        syncService.syncSpecToIssue({
+          specId,
+          owner,
+          repo,
+          createIfNotExists: true,
+        })
+      ).rejects.toThrow('この仕様書には既に GitHub Issue が作成されています');
+
+      // Issue 作成 API が呼び出されていないことを確認
+      expect(mockIssues.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('テストケース4: recordSyncLog の UNIQUE 制約違反時 UPDATE フォールバック', () => {
+    test('recordSyncLog で競合状態が発生しても UPDATE で正しく記録される', async () => {
+      const specId = randomUUID();
+      const owner = 'testowner';
+      const repo = 'testrepo';
+
+      // 仕様書作成
+      await lifecycle.db
+        .insertInto('specs')
+        .values({
+          id: specId,
+          name: 'テスト仕様書',
+          description: 'UNIQUE 制約テスト',
+          phase: 'requirements',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // Issue 作成APIのモック（recordSyncLog が呼び出されるまで Issue 作成を成功させる）
       mockIssues.create = jest.fn().mockResolvedValue({
-        number: 2,
-        id: 123457,
-        node_id: 'node_124',
-        html_url: `https://github.com/${owner}/${repo}/issues/2`,
+        number: 3,
+        id: 123458,
+        node_id: 'node_125',
+        html_url: `https://github.com/${owner}/${repo}/issues/3`,
         title: '[requirements] テスト仕様書',
         body: '仕様書本文',
         state: 'open',
@@ -202,7 +238,7 @@ describe('GitHub Issue 重複作成防止', () => {
         updated_at: new Date().toISOString(),
       });
 
-      // Issue 作成実行 → エラーが throw されないことを確認
+      // Issue 作成実行（初回は成功）
       const issueNumber = await syncService.syncSpecToIssue({
         specId,
         owner,
@@ -210,24 +246,19 @@ describe('GitHub Issue 重複作成防止', () => {
         createIfNotExists: true,
       });
 
-      // Issue が作成されたことを確認
-      expect(issueNumber).toBe(2);
-      expect(mockIssues.create).toHaveBeenCalledTimes(1);
+      expect(issueNumber).toBe(3);
 
-      // github_sync テーブルのレコードが更新されたことを確認
-      const syncRecords = await lifecycle.db
+      // github_sync テーブルにレコードが作成されたことを確認
+      const syncRecord = await lifecycle.db
         .selectFrom('github_sync')
         .where('entity_type', '=', 'spec')
         .where('entity_id', '=', specId)
         .selectAll()
-        .execute();
+        .executeTakeFirst();
 
-      // recordSyncLog は既存レコードを更新するため、レコード数は 1 のまま
-      expect(syncRecords).toHaveLength(1);
-      const successRecord = syncRecords[0];
-      expect(successRecord.sync_status).toBe('success');
-      expect(successRecord.github_number).toBe(2);
-      expect(successRecord.error_message).toBeNull();
+      expect(syncRecord).toBeDefined();
+      expect(syncRecord?.github_number).toBe(3);
+      expect(syncRecord?.sync_status).toBe('success');
     });
   });
 

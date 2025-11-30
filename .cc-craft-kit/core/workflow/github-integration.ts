@@ -22,6 +22,14 @@ import {
   buildChangelogComment,
   formatChangeSummary,
 } from '../../integrations/github/changelog-writer.js';
+import { z } from 'zod';
+
+/**
+ * task.completed イベントデータのスキーマ
+ */
+const TaskCompletedEventDataSchema = z.object({
+  taskId: z.string().uuid('taskId must be a valid UUID'),
+});
 
 /**
  * エラーをログに記録
@@ -88,7 +96,24 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
         // GitHub統合チェック
         const githubToken = process.env.GITHUB_TOKEN;
         if (!githubToken) {
-          // トークンが未設定の場合はスキップ（エラーにしない）
+          // トークンが未設定の場合は警告を出力してスキップ
+          console.warn(`
+⚠️ GitHub Issue が自動作成されませんでした
+
+原因: GITHUB_TOKEN 環境変数が設定されていません
+
+対処方法:
+1. GitHub Personal Access Token を作成
+   https://github.com/settings/tokens/new?scopes=repo,project
+
+2. .env ファイルに以下を追加:
+   GITHUB_TOKEN=ghp_xxxxxxxxxxxx
+
+3. /cft:github-init <owner> <repo> を実行して GitHub 統合を初期化
+
+手動で Issue を作成する場合:
+   /cft:github-issue-create ${event.specId.substring(0, 8)}
+`);
           return;
         }
 
@@ -97,7 +122,20 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
         const githubConfig = getGitHubConfig(ccCraftKitDir);
 
         if (!githubConfig) {
-          // GitHub設定がない場合はスキップ
+          // GitHub 設定がない場合は警告を出力してスキップ
+          console.warn(`
+⚠️ GitHub Issue が自動作成されませんでした
+
+原因: GitHub 統合が初期化されていません
+
+対処方法:
+1. /cft:github-init <owner> <repo> を実行して GitHub 統合を初期化
+
+   例: /cft:github-init myorg myrepo
+
+手動で Issue を作成する場合:
+   /cft:github-issue-create ${event.specId.substring(0, 8)}
+`);
           return;
         }
 
@@ -463,7 +501,7 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
               return;
             }
 
-            // Sub Issue を作成
+            // Sub Issue を作成（specId を含めて親 Issue 関連性を記録）
             const subIssueManager = new SubIssueManager(db);
             await subIssueManager.createSubIssuesFromTaskList({
               owner: githubConfig.owner,
@@ -471,6 +509,7 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
               parentIssueNumber: spec.github_issue_number,
               taskList,
               githubToken,
+              specId: spec.id,
             });
 
             console.log(`✓ Created ${taskList.length} Sub Issues for spec ${spec.name}`);
@@ -916,7 +955,7 @@ ${data.content}
     }
   });
 
-  // task.completed → Sub Issue ステータス更新 + Projects ステータス更新
+  // task.completed → Sub Issue ステータス更新 + 親 Issue 連携 + Projects ステータス更新
   eventBus.on<{ taskId: string }>(
     'task.completed',
     async (event: WorkflowEvent<{ taskId: string }>) => {
@@ -933,27 +972,35 @@ ${data.content}
           return;
         }
 
-        // タスク ID を取得
-        const taskId = event.data.taskId || event.taskId;
-        if (!taskId) {
+        // タスク ID を Zod スキーマで検証
+        const eventDataToValidate = {
+          taskId: event.data?.taskId || (event as { taskId?: string }).taskId,
+        };
+        const parseResult = TaskCompletedEventDataSchema.safeParse(eventDataToValidate);
+        if (!parseResult.success) {
           await logError(
             'warn',
-            'task.completed event missing taskId',
-            new Error('Missing taskId'),
+            `task.completed event validation failed: ${parseResult.error.errors.map((e) => e.message).join(', ')}`,
+            new Error(parseResult.error.message),
             {
               event: 'task.completed',
               specId: event.specId,
               action: 'update_sub_issue_status',
+              receivedData: JSON.stringify(eventDataToValidate),
             }
           );
           return;
         }
+        const { taskId } = parseResult.data;
 
-        // Sub Issue のステータスを closed に更新
+        // Sub Issue Manager で一連の処理を実行:
+        // 1. Sub Issue をクローズ
+        // 2. 親 Issue のチェックボックスを更新
+        // 3. 全 Sub Issue がクローズされていたら親 Issue もクローズ
         const subIssueManager = new SubIssueManager(db);
-        await subIssueManager.updateSubIssueStatus(taskId, 'closed', githubToken);
+        await subIssueManager.handleTaskCompletion(taskId, githubToken);
 
-        console.log(`✓ Closed Sub Issue for task ${taskId}`);
+        console.log(`✓ Completed task ${taskId} and updated related GitHub Issues`);
 
         // GitHub Projects ステータス更新を試みる
         await updateSubIssueProjectStatus(db, taskId, githubConfig, githubToken);
@@ -961,6 +1008,8 @@ ${data.content}
         // Sub Issue が存在しない場合は警告のみ
         if (error instanceof Error && error.message.includes('Sub issue not found')) {
           console.log(`No Sub Issue found for task, skipping status update`);
+        } else if (error instanceof Error && error.message.includes('No Sub Issue found')) {
+          console.log(`No Sub Issue found for task, skipping parent issue update`);
         } else {
           await logError('warn', 'Failed to update Sub Issue status', error, {
             event: 'task.completed',

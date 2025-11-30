@@ -57,11 +57,11 @@ export class GitHubSyncService {
     }
 
     // 重複チェック: github_sync テーブルで既存 Issue を確認
+    // sync_status に関わらずレコードが存在すれば重複と判定
     const existingSync = await this.db
       .selectFrom('github_sync')
       .where('entity_type', '=', 'spec')
       .where('entity_id', '=', params.specId)
-      .where('sync_status', '=', 'success')
       .selectAll()
       .executeTakeFirst();
 
@@ -379,13 +379,28 @@ ${spec.description || '説明なし'}
         .execute();
     } else {
       // 新規レコードを挿入
-      await this.db
-        .insertInto('github_sync')
-        .values({
-          id: randomUUID(),
-          ...syncData,
-        })
-        .execute();
+      // UNIQUE 制約違反時は UPDATE で対応（競合状態への対策）
+      try {
+        await this.db
+          .insertInto('github_sync')
+          .values({
+            id: randomUUID(),
+            ...syncData,
+          })
+          .execute();
+      } catch (error) {
+        // UNIQUE 制約違反 → UPDATE で対応
+        if (error instanceof Error && error.message.includes('UNIQUE constraint failed')) {
+          await this.db
+            .updateTable('github_sync')
+            .set(syncData)
+            .where('entity_type', '=', syncData.entity_type)
+            .where('entity_id', '=', syncData.entity_id)
+            .execute();
+        } else {
+          throw error;
+        }
+      }
     }
   }
 }
