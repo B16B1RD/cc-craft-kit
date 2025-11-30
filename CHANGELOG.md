@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.4] - 2025-11-30
+
+### Added
+
+- GitHub Sub Issue 連携機能: design フェーズ移行時に実装タスクを Sub Issue として自動作成
+- 親 Issue ⇔ Sub Issue 間の自動リンク機能
+- Sub Issue 状態追跡用の DB カラム追加（parent_issue_number, parent_spec_id）
+- `/cft:spec-create` コマンドで GitHub Issue 自動作成を修正
+
+### Changed
+
+- データベースマイグレーション 011: parent_issue_columns の追加
+- github_sync テーブルに Sub Issue 対応カラムを追加
+
+### Fixed
+
+- `/cft:spec-create` で GitHub Issue が作成されない問題を修正
+- github_sync の issue_number が null になる問題を修正
+
 ## [0.1.3] - 2025-11-29
 
 ### Added
