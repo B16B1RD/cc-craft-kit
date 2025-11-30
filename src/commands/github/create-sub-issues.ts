@@ -249,6 +249,7 @@ export async function createSubIssues(
       parentIssueNumber: spec.github_issue_number,
       taskList: tasks,
       githubToken,
+      specId: spec.id,
     });
 
     console.log('');
@@ -366,6 +367,7 @@ export async function createSubIssuesJson(specId: string): Promise<void> {
       parentIssueNumber: spec.github_issue_number,
       taskList: tasks,
       githubToken,
+      specId: spec.id,
     });
 
     output.success = true;
