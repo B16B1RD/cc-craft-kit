@@ -36,6 +36,11 @@ Thumbs.db
 !.cc-craft-kit/.gitkeep
 !.cc-craft-kit/specs/
 !.cc-craft-kit/quality-templates/
+!.cc-craft-kit/commands/
+!.cc-craft-kit/core/
+!.cc-craft-kit/integrations/
+!.cc-craft-kit/slash-commands/
+!.cc-craft-kit/scripts/
 .cc-craft-kit-test/
 
 # Logs
