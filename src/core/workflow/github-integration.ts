@@ -463,7 +463,7 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
               return;
             }
 
-            // Sub Issue を作成
+            // Sub Issue を作成（specId を含めて親 Issue 関連性を記録）
             const subIssueManager = new SubIssueManager(db);
             await subIssueManager.createSubIssuesFromTaskList({
               owner: githubConfig.owner,
@@ -471,6 +471,7 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
               parentIssueNumber: spec.github_issue_number,
               taskList,
               githubToken,
+              specId: spec.id,
             });
 
             console.log(`✓ Created ${taskList.length} Sub Issues for spec ${spec.name}`);
@@ -916,7 +917,7 @@ ${data.content}
     }
   });
 
-  // task.completed → Sub Issue ステータス更新 + Projects ステータス更新
+  // task.completed → Sub Issue ステータス更新 + 親 Issue 連携 + Projects ステータス更新
   eventBus.on<{ taskId: string }>(
     'task.completed',
     async (event: WorkflowEvent<{ taskId: string }>) => {
@@ -949,11 +950,14 @@ ${data.content}
           return;
         }
 
-        // Sub Issue のステータスを closed に更新
+        // Sub Issue Manager で一連の処理を実行:
+        // 1. Sub Issue をクローズ
+        // 2. 親 Issue のチェックボックスを更新
+        // 3. 全 Sub Issue がクローズされていたら親 Issue もクローズ
         const subIssueManager = new SubIssueManager(db);
-        await subIssueManager.updateSubIssueStatus(taskId, 'closed', githubToken);
+        await subIssueManager.handleTaskCompletion(taskId, githubToken);
 
-        console.log(`✓ Closed Sub Issue for task ${taskId}`);
+        console.log(`✓ Completed task ${taskId} and updated related GitHub Issues`);
 
         // GitHub Projects ステータス更新を試みる
         await updateSubIssueProjectStatus(db, taskId, githubConfig, githubToken);
@@ -961,6 +965,8 @@ ${data.content}
         // Sub Issue が存在しない場合は警告のみ
         if (error instanceof Error && error.message.includes('Sub issue not found')) {
           console.log(`No Sub Issue found for task, skipping status update`);
+        } else if (error instanceof Error && error.message.includes('No Sub Issue found')) {
+          console.log(`No Sub Issue found for task, skipping parent issue update`);
         } else {
           await logError('warn', 'Failed to update Sub Issue status', error, {
             event: 'task.completed',
