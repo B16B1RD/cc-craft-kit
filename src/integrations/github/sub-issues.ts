@@ -397,11 +397,16 @@ export class SubIssueManager {
     const currentBody = issueData.body || '';
 
     // 2. チェックボックスのパターンにマッチする行を更新
-    // パターン: `- [ ] #XXX` または `- [x] #XXX`
-    const checkboxPattern = new RegExp(`(- \\[)[ x](\\] .*#${subIssueNumber}(?:\\D|$))`, 'gm');
+    // パターン: `- [ ] #XXX` または `- [x] #XXX` (行頭のみにマッチ)
+    // 改善点:
+    // - `^` で行頭を指定（multiline モードで各行の先頭にマッチ）
+    // - `\s*` で先頭の空白を許容（インデント対応）
+    // - `\b` で単語境界を指定し、#123 が #1234 にマッチしないようにする
+    // - `.*` を削除し、Issue 番号の直前の任意文字列にはマッチしないようにする
+    const checkboxPattern = new RegExp(`^(\\s*- \\[)([ x])(\\] #${subIssueNumber}\\b)`, 'gm');
 
     const newCheckState = status === 'closed' ? 'x' : ' ';
-    const updatedBody = currentBody.replace(checkboxPattern, `$1${newCheckState}$2`);
+    const updatedBody = currentBody.replace(checkboxPattern, `$1${newCheckState}$3`);
 
     // 3. 本文が変更されていない場合はスキップ
     if (updatedBody === currentBody) {
@@ -436,46 +441,6 @@ export class SubIssueManager {
     console.log(
       `Updated checkbox for Sub Issue #${subIssueNumber} in parent issue #${parentIssueNumber} to [${newCheckState}]`
     );
-  }
-
-  /**
-   * 全 Sub Issue がクローズされているかチェック
-   *
-   * @param parentIssueNumber 親 Issue の番号
-   * @returns 全 Sub Issue がクローズされていれば true
-   */
-  async checkAllSubIssuesClosed(parentIssueNumber: number): Promise<boolean> {
-    // DB から同じ親 Issue に紐づく全 Sub Issue を取得
-    const subIssues = await this.db
-      .selectFrom('github_sync')
-      .selectAll()
-      .where('entity_type', '=', 'sub_issue')
-      .where('parent_issue_number', '=', parentIssueNumber)
-      .execute();
-
-    if (subIssues.length === 0) {
-      // Sub Issue がない場合は true を返す
-      return true;
-    }
-
-    // 全 Sub Issue の sync_status を確認
-    // 注: sync_status は Sub Issue のクローズ状態ではなく同期状態を示す
-    // 実際のクローズ状態は GitHub API から取得する必要がある
-    // ここでは簡易的に、直近の更新で 'closed' 状態になっているかを確認
-    // より正確な実装では GitHub API を呼び出してステータスを確認する
-
-    // まずはリポジトリ情報を取得（最初の Sub Issue から）
-    const firstSubIssue = subIssues[0];
-    const parts = firstSubIssue.github_id.split('/');
-    if (parts.length !== 2) {
-      console.warn(`Invalid github_id format: ${firstSubIssue.github_id}`);
-      return false;
-    }
-
-    // ここでは DB のデータのみで判断するため、常に true を返す
-    // 実際の実装では GitHub API を呼び出して各 Sub Issue のステータスを確認する
-    console.log(`Found ${subIssues.length} Sub Issues for parent issue #${parentIssueNumber}`);
-    return true;
   }
 
   /**

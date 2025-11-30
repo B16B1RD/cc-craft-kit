@@ -22,6 +22,14 @@ import {
   buildChangelogComment,
   formatChangeSummary,
 } from '../../integrations/github/changelog-writer.js';
+import { z } from 'zod';
+
+/**
+ * task.completed イベントデータのスキーマ
+ */
+const TaskCompletedEventDataSchema = z.object({
+  taskId: z.string().uuid('taskId must be a valid UUID'),
+});
 
 /**
  * エラーをログに記録
@@ -964,21 +972,26 @@ ${data.content}
           return;
         }
 
-        // タスク ID を取得
-        const taskId = event.data.taskId || event.taskId;
-        if (!taskId) {
+        // タスク ID を Zod スキーマで検証
+        const eventDataToValidate = {
+          taskId: event.data?.taskId || (event as { taskId?: string }).taskId,
+        };
+        const parseResult = TaskCompletedEventDataSchema.safeParse(eventDataToValidate);
+        if (!parseResult.success) {
           await logError(
             'warn',
-            'task.completed event missing taskId',
-            new Error('Missing taskId'),
+            `task.completed event validation failed: ${parseResult.error.errors.map((e) => e.message).join(', ')}`,
+            new Error(parseResult.error.message),
             {
               event: 'task.completed',
               specId: event.specId,
               action: 'update_sub_issue_status',
+              receivedData: JSON.stringify(eventDataToValidate),
             }
           );
           return;
         }
+        const { taskId } = parseResult.data;
 
         // Sub Issue Manager で一連の処理を実行:
         // 1. Sub Issue をクローズ
