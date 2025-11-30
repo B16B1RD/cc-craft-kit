@@ -59,10 +59,89 @@ npx tsx .cc-craft-kit/commands/spec/resolve-id.ts "$1"
 
 ### Step 3: ブランチ切り替え
 
-`BRANCH_NAME` が null でない場合、Bash ツールで実行:
+`BRANCH_NAME` が null でない場合、以下の処理を実行:
+
+#### 3.1 ベースブランチの取得
+
+Bash ツールで `.env` から `BASE_BRANCH` を取得:
 
 ```bash
+BASE_BRANCH=$(grep '^BASE_BRANCH=' .env 2>/dev/null | cut -d'=' -f2 | tr -d '"' || echo "develop")
+echo "ベースブランチ: $BASE_BRANCH"
+```
+
+#### 3.2 ブランチ存在確認・自動作成
+
+Bash ツールで実行:
+
+```bash
+# ブランチが存在するか確認
+if git rev-parse --verify "$BRANCH_NAME" > /dev/null 2>&1; then
+  echo "✓ ブランチ '$BRANCH_NAME' が見つかりました"
+else
+  echo "⚠️ ブランチ '$BRANCH_NAME' が見つかりません。自動作成を試みます..."
+
+  # ベースブランチの存在確認
+  if ! git rev-parse --verify "$BASE_BRANCH" > /dev/null 2>&1; then
+    echo "❌ ベースブランチ '$BASE_BRANCH' が見つかりません"
+    exit 1
+  fi
+
+  # ベースブランチから自動作成
+  if git branch "$BRANCH_NAME" "$BASE_BRANCH"; then
+    echo "✓ ブランチを作成しました: $BRANCH_NAME (from $BASE_BRANCH)"
+  else
+    echo "❌ ブランチ作成に失敗しました"
+    exit 1
+  fi
+fi
+
+# ブランチに切り替え
 git checkout "$BRANCH_NAME"
+```
+
+**エラーハンドリング:**
+
+- **ブランチが存在しない + 自動作成成功**: 処理続行
+- **ベースブランチが存在しない**: 以下のエラーメッセージを表示して処理中断
+
+```
+❌ ブランチ操作に失敗しました
+
+ブランチ: $BRANCH_NAME
+ベースブランチ: $BASE_BRANCH (存在しません)
+
+対処方法:
+1. .env の BASE_BRANCH 設定を確認
+2. ベースブランチをフェッチ: git fetch origin $BASE_BRANCH:$BASE_BRANCH
+3. 再実行: /cft:spec-phase $SPEC_ID $NEW_PHASE
+```
+
+- **ブランチ作成失敗**: 以下のエラーメッセージを表示して処理中断
+
+```
+❌ ブランチ作成に失敗しました
+
+ブランチ: $BRANCH_NAME
+
+対処方法:
+1. 同名ブランチが存在しないか確認: git branch -a | grep "$BRANCH_NAME"
+2. 手動でブランチを作成: git branch "$BRANCH_NAME" "$BASE_BRANCH"
+3. 再実行: /cft:spec-phase $SPEC_ID $NEW_PHASE
+```
+
+- **ブランチ切り替え失敗**: 以下のエラーメッセージを表示して処理中断
+
+```
+❌ ブランチ切り替えに失敗しました
+
+ブランチ: $BRANCH_NAME
+
+対処方法:
+1. 未コミットの変更を確認: git status
+2. 変更をスタッシュ: git stash
+3. 手動で切り替え: git checkout "$BRANCH_NAME"
+4. 再実行: /cft:spec-phase $SPEC_ID $NEW_PHASE
 ```
 
 ### Step 3.5: GitHub Issue 連携状態確認
