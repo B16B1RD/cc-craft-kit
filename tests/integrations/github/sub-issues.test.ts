@@ -768,6 +768,229 @@ describe('SubIssueManager', () => {
     });
   });
 
+  describe('syncParentIssueCheckbox チェックボックスパターン', () => {
+    const taskId = randomUUID();
+    const parentIssueNumber = 100;
+    const subIssueNumber = 101;
+
+    beforeEach(async () => {
+      // github_sync レコードを作成（Sub Issue）
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          id: randomUUID(),
+          entity_type: 'sub_issue',
+          entity_id: taskId,
+          github_id: 'test-owner/test-repo',
+          github_number: subIssueNumber,
+          github_node_id: 'sub_issue_node_id',
+          parent_issue_number: parentIssueNumber,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
+        })
+        .execute();
+    });
+
+    it('正しい形式のチェックボックスにマッチする（- [ ] #番号）', async () => {
+      const issueBody = `## タスク\n- [ ] #${subIssueNumber} タスク1\n- [ ] #102 タスク2`;
+
+      // 親 Issue 取得
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({ body: issueBody }),
+        text: async () => '',
+      });
+
+      // 親 Issue 更新
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({}),
+        text: async () => '',
+      });
+
+      await manager.syncParentIssueCheckbox(
+        'test-owner',
+        'test-repo',
+        parentIssueNumber,
+        subIssueNumber,
+        'closed',
+        'ghp_test_token'
+      );
+
+      // PATCH リクエストの body を確認
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      const patchCall = mockFetch.mock.calls[1];
+      const patchBody = JSON.parse(patchCall[1].body);
+      expect(patchBody.body).toContain(`- [x] #${subIssueNumber}`);
+      expect(patchBody.body).toContain('- [ ] #102'); // 他のチェックボックスは変更なし
+    });
+
+    it('インデントされたチェックボックスにもマッチする', async () => {
+      const issueBody = `## タスク\n  - [ ] #${subIssueNumber} インデントタスク`;
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({ body: issueBody }),
+        text: async () => '',
+      });
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({}),
+        text: async () => '',
+      });
+
+      await manager.syncParentIssueCheckbox(
+        'test-owner',
+        'test-repo',
+        parentIssueNumber,
+        subIssueNumber,
+        'closed',
+        'ghp_test_token'
+      );
+
+      const patchCall = mockFetch.mock.calls[1];
+      const patchBody = JSON.parse(patchCall[1].body);
+      expect(patchBody.body).toContain(`  - [x] #${subIssueNumber}`);
+    });
+
+    it('類似番号にはマッチしない（#101 が #1011 にマッチしない）', async () => {
+      const issueBody = `## タスク\n- [ ] #1011 別タスク\n- [ ] #${subIssueNumber} 正しいタスク`;
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({ body: issueBody }),
+        text: async () => '',
+      });
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({}),
+        text: async () => '',
+      });
+
+      await manager.syncParentIssueCheckbox(
+        'test-owner',
+        'test-repo',
+        parentIssueNumber,
+        subIssueNumber,
+        'closed',
+        'ghp_test_token'
+      );
+
+      const patchCall = mockFetch.mock.calls[1];
+      const patchBody = JSON.parse(patchCall[1].body);
+      expect(patchBody.body).toContain('- [ ] #1011'); // 変更されない
+      expect(patchBody.body).toContain(`- [x] #${subIssueNumber}`); // 変更される
+    });
+
+    it('コメント内の Issue 参照にはマッチしない', async () => {
+      const issueBody = `## タスク\n- [ ] タスク説明 (#${subIssueNumber} を参照)\n- [ ] #${subIssueNumber} 正しいタスク`;
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({ body: issueBody }),
+        text: async () => '',
+      });
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({}),
+        text: async () => '',
+      });
+
+      await manager.syncParentIssueCheckbox(
+        'test-owner',
+        'test-repo',
+        parentIssueNumber,
+        subIssueNumber,
+        'closed',
+        'ghp_test_token'
+      );
+
+      const patchCall = mockFetch.mock.calls[1];
+      const patchBody = JSON.parse(patchCall[1].body);
+      // コメント内の参照は変更されない
+      expect(patchBody.body).toContain(`- [ ] タスク説明 (#${subIssueNumber} を参照)`);
+      // 正しい形式のチェックボックスのみ変更される
+      expect(patchBody.body).toContain(`- [x] #${subIssueNumber} 正しいタスク`);
+    });
+
+    it('チェックボックスが見つからない場合は更新をスキップする', async () => {
+      const issueBody = `## タスク\n- [ ] #999 別のタスク`;
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({ body: issueBody }),
+        text: async () => '',
+      });
+
+      await manager.syncParentIssueCheckbox(
+        'test-owner',
+        'test-repo',
+        parentIssueNumber,
+        subIssueNumber,
+        'closed',
+        'ghp_test_token'
+      );
+
+      // PATCH は呼ばれない（GET のみ）
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('reopened 時にチェックを外す（[x] → [ ]）', async () => {
+      const issueBody = `## タスク\n- [x] #${subIssueNumber} 完了タスク`;
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({ body: issueBody }),
+        text: async () => '',
+      });
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({}),
+        text: async () => '',
+      });
+
+      await manager.syncParentIssueCheckbox(
+        'test-owner',
+        'test-repo',
+        parentIssueNumber,
+        subIssueNumber,
+        'open', // reopened
+        'ghp_test_token'
+      );
+
+      const patchCall = mockFetch.mock.calls[1];
+      const patchBody = JSON.parse(patchCall[1].body);
+      expect(patchBody.body).toContain(`- [ ] #${subIssueNumber}`);
+    });
+  });
+
   describe('エッジケース', () => {
     it('空のタスクリストの場合は何も実行しない', async () => {
       const config: SubIssueConfig = {
