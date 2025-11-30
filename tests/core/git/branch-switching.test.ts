@@ -36,6 +36,9 @@ describe('branch-switching', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    // 環境変数をデフォルト状態にリセット（テスト間の副作用を防止）
+    delete process.env.PROTECTED_BRANCHES;
+
     // デフォルトのモック設定
     mockGetCurrentBranch.mockReturnValue('feature/current');
     mockCheckGitStatus.mockReturnValue({
