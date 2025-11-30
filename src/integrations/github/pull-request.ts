@@ -55,7 +55,7 @@ export async function recordPullRequestToIssue(
       .selectAll()
       .executeTakeFirst();
 
-    if (!syncRecord || !syncRecord.issue_number) {
+    if (!syncRecord || !syncRecord.github_number) {
       // Issueが存在しない場合はスキップ
       return;
     }
@@ -77,7 +77,7 @@ export async function recordPullRequestToIssue(
     await client.rest.issues.createComment({
       owner,
       repo,
-      issue_number: syncRecord.issue_number,
+      issue_number: syncRecord.github_number,
       body: `プルリクエストが作成されました: ${pullRequestUrl}`,
     });
   } catch (error) {
