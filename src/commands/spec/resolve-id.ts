@@ -66,7 +66,7 @@ async function resolveSpecById(partialId: string, ccCraftKitDir: string): Promis
   // github_sync テーブルから GitHub Issue 番号を取得
   const sync = await db
     .selectFrom('github_sync')
-    .select(['issue_number'])
+    .select(['github_number'])
     .where('entity_type', '=', 'spec')
     .where('entity_id', '=', spec.id)
     .executeTakeFirst();
@@ -82,7 +82,7 @@ async function resolveSpecById(partialId: string, ccCraftKitDir: string): Promis
       phase: spec.phase,
       branch_name: spec.branch_name,
       spec_path: specPath,
-      github_issue_number: sync?.issue_number ?? null,
+      github_issue_number: sync?.github_number ?? null,
     },
   };
 }
@@ -96,12 +96,12 @@ async function resolveSpecByIssueNumber(
 ): Promise<ResolveIdOutput> {
   const db = getDatabase();
 
-  // github_sync テーブルから entity_type = 'spec' で issue_number を検索
+  // github_sync テーブルから entity_type = 'spec' で github_number を検索
   const sync = await db
     .selectFrom('github_sync')
-    .select(['entity_id', 'issue_number'])
+    .select(['entity_id', 'github_number'])
     .where('entity_type', '=', 'spec')
-    .where('issue_number', '=', issueNumber)
+    .where('github_number', '=', issueNumber)
     .executeTakeFirst();
 
   if (!sync) {
@@ -136,7 +136,7 @@ async function resolveSpecByIssueNumber(
       phase: spec.phase,
       branch_name: spec.branch_name,
       spec_path: specPath,
-      github_issue_number: sync.issue_number,
+      github_issue_number: sync.github_number,
     },
   };
 }
