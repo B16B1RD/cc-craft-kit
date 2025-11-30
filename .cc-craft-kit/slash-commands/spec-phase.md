@@ -65,6 +65,63 @@ npx tsx .cc-craft-kit/commands/spec/resolve-id.ts "$1"
 git checkout "$BRANCH_NAME"
 ```
 
+### Step 3.5: GitHub Issue 連携状態確認
+
+`GITHUB_ISSUE_NUMBER` を確認し、GitHub Issue との連携状態を検証します。
+
+**判定ロジック:**
+
+```
+GITHUB_ISSUE_NUMBER が null の場合:
+  → 警告を表示し、処理を継続するか確認
+
+GITHUB_ISSUE_NUMBER が null でない場合:
+  → Step 4 へ進む
+```
+
+**警告メッセージ（GITHUB_ISSUE_NUMBER が null の場合）:**
+
+```
+⚠️ 警告: この仕様書には GitHub Issue が関連付けられていません
+
+仕様書: $SPEC_NAME
+現在のフェーズ: $CURRENT_PHASE → $NEW_PHASE
+
+GitHub Issue を作成すると、以下の機能が利用できます:
+  - フェーズ移行時の自動ラベル更新
+  - 進捗・エラー・Tips の自動コメント追加
+  - completed フェーズでの自動クローズ
+  - GitHub Projects との連携
+
+対処方法:
+1. GitHub Issue を作成: /cft:github-issue-create $SPEC_ID
+2. GitHub 統合を初期化（未設定の場合）: /cft:github-init <owner> <repo>
+```
+
+**AskUserQuestion:**
+
+- question: "GitHub Issue なしで $NEW_PHASE フェーズに移行しますか？"
+- header: "Issue"
+- options:
+  - label: "このまま続行"
+    description: "GitHub Issue 連携なしでフェーズを移行します"
+  - label: "中断して Issue を作成"
+    description: "/cft:github-issue-create を実行してから再度移行します"
+- multiSelect: false
+
+**ユーザー選択:**
+
+- 「このまま続行」: Step 4 へ進む
+- 「中断して Issue を作成」: 処理を中断し、以下のメッセージを表示:
+
+```
+処理を中断しました。
+
+GitHub Issue を作成してから再実行してください:
+  /cft:github-issue-create $SPEC_ID
+  /cft:spec-phase $SPEC_ID $NEW_PHASE
+```
+
 ### Step 4: バリデーション（プロンプト内実行）
 
 Read ツールで仕様書ファイル (`SPEC_PATH`) を読み込み、以下を検証:
