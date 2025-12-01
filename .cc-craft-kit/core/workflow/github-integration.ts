@@ -959,9 +959,14 @@ ${data.content}
   eventBus.on<{ taskId: string }>(
     'task.completed',
     async (event: WorkflowEvent<{ taskId: string }>) => {
+      // タスク ID を早期に取得してログ出力用に使用
+      const taskIdForLog = event.data?.taskId || (event as { taskId?: string }).taskId;
+      console.log(`[task.completed] ハンドラー開始: taskId=${taskIdForLog}`);
+
       try {
         const githubToken = process.env.GITHUB_TOKEN;
         if (!githubToken) {
+          console.log('[task.completed] GitHub トークン未設定のためスキップ');
           return;
         }
 
@@ -969,12 +974,13 @@ ${data.content}
         const githubConfig = getGitHubConfig(ccCraftKitDir);
 
         if (!githubConfig) {
+          console.log('[task.completed] GitHub 設定未設定のためスキップ');
           return;
         }
 
         // タスク ID を Zod スキーマで検証
         const eventDataToValidate = {
-          taskId: event.data?.taskId || (event as { taskId?: string }).taskId,
+          taskId: taskIdForLog,
         };
         const parseResult = TaskCompletedEventDataSchema.safeParse(eventDataToValidate);
         if (!parseResult.success) {
@@ -997,10 +1003,13 @@ ${data.content}
         // 1. Sub Issue をクローズ
         // 2. 親 Issue のチェックボックスを更新
         // 3. 全 Sub Issue がクローズされていたら親 Issue もクローズ
+        console.log(
+          `[task.completed] SubIssueManager.handleTaskCompletion 呼び出し: taskId=${taskId}`
+        );
         const subIssueManager = new SubIssueManager(db);
         await subIssueManager.handleTaskCompletion(taskId, githubToken);
 
-        console.log(`✓ Completed task ${taskId} and updated related GitHub Issues`);
+        console.log(`[task.completed] ハンドラー完了: taskId=${taskId}`);
 
         // GitHub Projects ステータス更新を試みる
         await updateSubIssueProjectStatus(db, taskId, githubConfig, githubToken);

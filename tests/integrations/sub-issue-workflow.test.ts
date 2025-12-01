@@ -1077,6 +1077,391 @@ describe('Sub Issue Workflow E2E Integration Tests', () => {
     });
   });
 
+  describe('Debug Logging Verification', () => {
+    let consoleSpy: jest.SpyInstance;
+    let consoleWarnSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+    });
+
+    afterEach(() => {
+      consoleSpy.mockRestore();
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('task.completed イベント受信時にハンドラー開始ログが出力される', async () => {
+      const specId = randomUUID();
+      const taskId = randomUUID();
+
+      // 仕様書作成
+      await lifecycle.db
+        .insertInto('specs')
+        .values({
+          id: specId,
+          name: 'ログテスト仕様書',
+          description: null,
+          phase: 'implementation',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // タスク作成
+      await lifecycle.db
+        .insertInto('tasks')
+        .values({
+          id: taskId,
+          spec_id: specId,
+          title: 'ログテストタスク',
+          description: null,
+          status: 'in_progress',
+          priority: 1,
+          github_issue_number: null,
+          assignee: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync に Sub Issue レコードを作成
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          id: randomUUID(),
+          entity_type: 'sub_issue',
+          entity_id: taskId,
+          github_id: 'test-owner/test-repo',
+          github_number: 801,
+          github_node_id: 'log_test_node_id',
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
+          parent_issue_number: 800,
+          parent_spec_id: specId,
+        })
+        .execute();
+
+      // Issue ステータス更新のモック
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers(),
+        json: async () => ({ node_id: 'log_test_node_id', number: 801, state: 'closed' }),
+        text: async () => '',
+      });
+
+      // 親 Issue の body 取得のモック
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers(),
+        json: async () => ({
+          node_id: 'parent_node_id',
+          number: 800,
+          body: '## Sub Issues\n- [ ] #801 ログテストタスク',
+        }),
+        text: async () => '',
+      });
+
+      // 親 Issue 更新のモック
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers(),
+        json: async () => ({ number: 800 }),
+        text: async () => '',
+      });
+
+      // Sub Issue 一覧取得のモック（全クローズチェック用）
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers(),
+        json: async () => [{ number: 801, state: 'closed' }],
+        text: async () => '',
+      });
+
+      // 親 Issue クローズのモック
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers(),
+        json: async () => ({ number: 800, state: 'closed' }),
+        text: async () => '',
+      });
+
+      // イベント発火
+      await eventBus.emit(
+        eventBus.createEvent('task.completed', specId, { taskId }, taskId)
+      );
+
+      // ハンドラー開始ログが出力されたことを検証
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[task.completed] ハンドラー開始')
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining(`taskId=${taskId}`)
+      );
+    });
+
+    it('Sub Issue 未登録時に詳細な警告ログが出力される', async () => {
+      const specId = randomUUID();
+      const taskId = randomUUID();
+
+      // 仕様書作成
+      await lifecycle.db
+        .insertInto('specs')
+        .values({
+          id: specId,
+          name: '未登録テスト仕様書',
+          description: null,
+          phase: 'implementation',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // タスク作成（github_sync レコードなし）
+      await lifecycle.db
+        .insertInto('tasks')
+        .values({
+          id: taskId,
+          spec_id: specId,
+          title: '未登録テストタスク',
+          description: null,
+          status: 'in_progress',
+          priority: 1,
+          github_issue_number: null,
+          assignee: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // イベント発火（Sub Issue が存在しないため警告ログが出力される）
+      await eventBus.emit(
+        eventBus.createEvent('task.completed', specId, { taskId }, taskId)
+      );
+
+      // Sub Issue 未登録の警告ログが出力されたことを検証
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[handleTaskCompletion] Sub Issue 未登録')
+      );
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(`taskId=${taskId}`)
+      );
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('登録済み Sub Issues')
+      );
+    });
+
+    it('handleTaskCompletion() で Sub Issue 発見時にログが出力される', async () => {
+      const specId = randomUUID();
+      const taskId = randomUUID();
+
+      // 仕様書作成
+      await lifecycle.db
+        .insertInto('specs')
+        .values({
+          id: specId,
+          name: '発見ログテスト仕様書',
+          description: null,
+          phase: 'implementation',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // タスク作成
+      await lifecycle.db
+        .insertInto('tasks')
+        .values({
+          id: taskId,
+          spec_id: specId,
+          title: '発見ログテストタスク',
+          description: null,
+          status: 'in_progress',
+          priority: 1,
+          github_issue_number: null,
+          assignee: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync に Sub Issue レコードを作成
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          id: randomUUID(),
+          entity_type: 'sub_issue',
+          entity_id: taskId,
+          github_id: 'test-owner/test-repo',
+          github_number: 802,
+          github_node_id: 'discovery_test_node_id',
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
+          parent_issue_number: 800,
+          parent_spec_id: specId,
+        })
+        .execute();
+
+      // Issue ステータス更新のモック
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers(),
+        json: async () => ({ node_id: 'discovery_test_node_id', number: 802, state: 'closed' }),
+        text: async () => '',
+      });
+
+      // 親 Issue の body 取得のモック
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers(),
+        json: async () => ({
+          node_id: 'parent_node_id',
+          number: 800,
+          body: '## Sub Issues\n- [ ] #802 発見ログテストタスク',
+        }),
+        text: async () => '',
+      });
+
+      // 親 Issue 更新のモック
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers(),
+        json: async () => ({ number: 800 }),
+        text: async () => '',
+      });
+
+      // Sub Issue 一覧取得のモック
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers(),
+        json: async () => [{ number: 802, state: 'closed' }],
+        text: async () => '',
+      });
+
+      // 親 Issue クローズのモック
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers(),
+        json: async () => ({ number: 800, state: 'closed' }),
+        text: async () => '',
+      });
+
+      // イベント発火
+      await eventBus.emit(
+        eventBus.createEvent('task.completed', specId, { taskId }, taskId)
+      );
+
+      // Sub Issue 発見ログが出力されたことを検証
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[handleTaskCompletion] Sub Issue 発見')
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('#802')
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('parent=#800')
+      );
+    });
+
+    it('parent_issue_number が null の場合に警告ログが出力される', async () => {
+      const specId = randomUUID();
+      const taskId = randomUUID();
+
+      // 仕様書作成
+      await lifecycle.db
+        .insertInto('specs')
+        .values({
+          id: specId,
+          name: 'parent null テスト仕様書',
+          description: null,
+          phase: 'implementation',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // タスク作成
+      await lifecycle.db
+        .insertInto('tasks')
+        .values({
+          id: taskId,
+          spec_id: specId,
+          title: 'parent null テストタスク',
+          description: null,
+          status: 'in_progress',
+          priority: 1,
+          github_issue_number: null,
+          assignee: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync に Sub Issue レコードを作成（parent_issue_number = null）
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          id: randomUUID(),
+          entity_type: 'sub_issue',
+          entity_id: taskId,
+          github_id: 'test-owner/test-repo',
+          github_number: 803,
+          github_node_id: 'parent_null_test_node_id',
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
+          parent_issue_number: null,
+          parent_spec_id: specId,
+        })
+        .execute();
+
+      // Issue ステータス更新のモック
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers(),
+        json: async () => ({ node_id: 'parent_null_test_node_id', number: 803, state: 'closed' }),
+        text: async () => '',
+      });
+
+      // イベント発火
+      await eventBus.emit(
+        eventBus.createEvent('task.completed', specId, { taskId }, taskId)
+      );
+
+      // parent_issue_number null の警告ログが出力されたことを検証
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[handleTaskCompletion] parent_issue_number が null')
+      );
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('#803')
+      );
+    });
+  });
+
   describe('Database State Verification', () => {
     it('github_sync テーブルに正しい entity_type="sub_issue" レコードが記録される', async () => {
       // 1. SubIssueManager を直接使用して Sub Issue を作成

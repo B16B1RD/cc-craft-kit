@@ -151,6 +151,31 @@ export class SubIssueManager {
           parentSpecId: config.specId,
         }
       );
+
+      // 6. 登録結果を検証
+      const verifyRecord = await this.db
+        .selectFrom('github_sync')
+        .selectAll()
+        .where('entity_id', '=', task.id)
+        .where('entity_type', '=', 'sub_issue')
+        .executeTakeFirst();
+
+      if (!verifyRecord) {
+        console.error(
+          `[recordSubIssueSyncData] 検証失敗: レコードが見つかりません\n` +
+            `taskId=${task.id}, issueNumber=${subIssueNumber}`
+        );
+      } else if (verifyRecord.parent_issue_number !== config.parentIssueNumber) {
+        console.error(
+          `[recordSubIssueSyncData] 検証失敗: parent_issue_number が不正\n` +
+            `期待値=${config.parentIssueNumber}, 実際値=${verifyRecord.parent_issue_number}`
+        );
+      } else {
+        console.log(
+          `[recordSubIssueSyncData] 検証成功: taskId=${task.id}, ` +
+            `Sub Issue #${subIssueNumber}, parent=#${config.parentIssueNumber}`
+        );
+      }
     }
   }
 
@@ -575,6 +600,8 @@ export class SubIssueManager {
    * @param token GitHub API トークン
    */
   async handleTaskCompletion(taskId: string, token: string): Promise<void> {
+    console.log(`[handleTaskCompletion] 開始: taskId=${taskId}`);
+
     // 1. github_sync から Sub Issue 情報を取得
     const syncRecord = await this.db
       .selectFrom('github_sync')
@@ -583,25 +610,47 @@ export class SubIssueManager {
       .where('entity_type', '=', 'sub_issue')
       .executeTakeFirst();
 
-    if (!syncRecord || !syncRecord.github_number) {
-      console.log(`No Sub Issue found for task: ${taskId}`);
+    if (!syncRecord) {
+      // デバッグ用: 登録済みの Sub Issue を全て取得
+      const allSubIssues = await this.db
+        .selectFrom('github_sync')
+        .select(['entity_id', 'github_number', 'parent_issue_number'])
+        .where('entity_type', '=', 'sub_issue')
+        .execute();
+      console.warn(
+        `[handleTaskCompletion] Sub Issue 未登録: taskId=${taskId}\n` +
+          `登録済み Sub Issues: ${JSON.stringify(allSubIssues, null, 2)}`
+      );
       return;
     }
+
+    if (!syncRecord.github_number) {
+      console.warn(`[handleTaskCompletion] github_number が null: taskId=${taskId}`);
+      return;
+    }
+
+    console.log(
+      `[handleTaskCompletion] Sub Issue 発見: #${syncRecord.github_number}, ` +
+        `parent=#${syncRecord.parent_issue_number || 'null'}`
+    );
 
     // owner/repo のパース
     const parts = syncRecord.github_id.split('/');
     if (parts.length !== 2) {
-      console.warn(`Invalid github_id format: ${syncRecord.github_id}`);
+      console.warn(`[handleTaskCompletion] Invalid github_id format: ${syncRecord.github_id}`);
       return;
     }
     const [owner, repo] = parts;
 
     // 2. Sub Issue をクローズ
+    console.log(`[handleTaskCompletion] Sub Issue #${syncRecord.github_number} をクローズ中...`);
     await this.updateSubIssueStatus(taskId, 'closed', token);
 
     // 3. 親 Issue が設定されている場合のみ連携処理を実行
     if (!syncRecord.parent_issue_number) {
-      console.log(`No parent issue linked for Sub Issue #${syncRecord.github_number}`);
+      console.warn(
+        `[handleTaskCompletion] parent_issue_number が null: Sub Issue #${syncRecord.github_number}`
+      );
       return;
     }
 
