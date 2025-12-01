@@ -359,7 +359,8 @@ describe('Slash Command: /cft:spec-create', () => {
 
     it('should have default value for BASE_BRANCH', () => {
       // Assert
-      expect(content).toContain('BASE_BRANCH=${BASE_BRANCH:-develop}');
+      // 単一パイプライン + フォールバック形式に変更（Claude Code Bash ツール互換）
+      expect(content).toContain('|| echo "develop"');
     });
 
     it('should verify BASE_BRANCH existence before branch creation', () => {
