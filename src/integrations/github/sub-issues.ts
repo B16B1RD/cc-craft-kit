@@ -151,6 +151,31 @@ export class SubIssueManager {
           parentSpecId: config.specId,
         }
       );
+
+      // 6. 登録結果を検証
+      const verifyRecord = await this.db
+        .selectFrom('github_sync')
+        .selectAll()
+        .where('entity_id', '=', task.id)
+        .where('entity_type', '=', 'sub_issue')
+        .executeTakeFirst();
+
+      if (!verifyRecord) {
+        console.error(
+          `[recordSubIssueSyncData] 検証失敗: レコードが見つかりません\n` +
+            `taskId=${task.id}, issueNumber=${subIssueNumber}`
+        );
+      } else if (verifyRecord.parent_issue_number !== config.parentIssueNumber) {
+        console.error(
+          `[recordSubIssueSyncData] 検証失敗: parent_issue_number が不正\n` +
+            `期待値=${config.parentIssueNumber}, 実際値=${verifyRecord.parent_issue_number}`
+        );
+      } else {
+        console.log(
+          `[recordSubIssueSyncData] 検証成功: taskId=${task.id}, ` +
+            `Sub Issue #${subIssueNumber}, parent=#${config.parentIssueNumber}`
+        );
+      }
     }
   }
 
