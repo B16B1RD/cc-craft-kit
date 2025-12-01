@@ -97,11 +97,7 @@ git branch --show-current
 Bash ツールで `.env` から `BASE_BRANCH` を読み込みます。
 
 ```bash
-# .env からベースブランチを取得（デフォルト: develop）
-BASE_BRANCH=$(grep '^BASE_BRANCH=' .env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | xargs)
-BASE_BRANCH=${BASE_BRANCH:-develop}
-
-echo "ベースブランチ: $BASE_BRANCH"
+grep '^BASE_BRANCH=' .env 2>/dev/null | cut -d'=' -f2 | tr -d '"' || echo "develop"
 ```
 
 出力を `BASE_BRANCH` として記録してください。
