@@ -472,9 +472,9 @@ git add "$SPEC_PATH" && git commit -m "feat: $SPEC_NAME の$(NEW_PHASE の日本
 
    型チェック・リントがクリーンな場合、以下の処理を**自動的に実行**してください:
 
-   ##### 6.1 現在のタスク情報表示
+   ##### 6.1 現在のタスク情報表示 + Sub Issue ステータス更新
 
-   TodoWrite で in_progress に設定した最初のタスクの内容を表示:
+   1. TodoWrite で in_progress に設定した最初のタスクの内容を表示:
 
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -482,12 +482,20 @@ git add "$SPEC_PATH" && git commit -m "feat: $SPEC_NAME の$(NEW_PHASE の日本
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
    タスク内容:
-   {最初のタスクの内容}
+   {最初のタスクの内容} (#{SUB_ISSUE_NUMBER})
 
    修正対象ファイル:
    - {修正対象ファイル1}
    - {修正対象ファイル2}
    ```
+
+   2. **Sub Issue を In Progress に更新**:
+      - タスク内容から Sub Issue 番号（`(#XXX)` 形式）を抽出
+      - Bash ツールで以下を実行:
+        ```bash
+        npx tsx .cc-craft-kit/commands/task/start.ts {SUB_ISSUE_NUMBER}
+        ```
+      - `task.started` イベントが発火され、Projects ステータスが自動的に In Progress に更新される
 
    ##### 6.2 修正対象ファイル読み込み
 
@@ -520,7 +528,18 @@ git add "$SPEC_PATH" && git commit -m "feat: $SPEC_NAME の$(NEW_PHASE の日本
       - 変更したファイルをステージング
       - コミットメッセージ: `feat($SPEC_NAME): {タスク内容の要約}`
 
-   4. **次のタスクへの遷移**:
+   4. **Sub Issue を Done に更新 + クローズ**:
+      - 完了したタスクの Sub Issue 番号（`(#XXX)` 形式）を抽出
+      - Bash ツールで以下を実行:
+        ```bash
+        npx tsx .cc-craft-kit/commands/task/done.ts {SUB_ISSUE_NUMBER}
+        ```
+      - `task.completed` イベントが発火され、以下が自動実行される:
+        - Sub Issue がクローズ
+        - Projects ステータスが Done に更新
+        - 全 Sub Issue がクローズされた場合、親 Issue も自動クローズ
+
+   5. **次のタスクへの遷移**:
       - 未完了タスクがある場合: Step 6.1 に戻り、次のタスクを開始
       - すべてのタスクが完了した場合: 完了ガイダンスを表示
 
@@ -664,7 +683,11 @@ Skill ツールで `pr-creator` スキルを実行:
    ```bash
    npx tsx .cc-craft-kit/commands/github/create-sub-issues.ts "$SPEC_ID"
    ```
-   - 出力を確認し、作成された Sub Issue の一覧を表示
+   - 出力（JSON）を解析し、作成された Sub Issue の一覧を取得
+   - **タスクリストに Sub Issue 番号を追記**:
+     - Edit ツールで「## 8. 実装タスクリスト」セクションの各タスクに Sub Issue 番号を追加
+     - 形式: `- [ ] [タスク内容] (#XXX)`
+     - 例: `- [ ] getSubIssueInfo で parent_spec_id を取得 (#485)`
    - エラー時は警告を表示し、手動での Sub Issue 作成を案内（処理は継続）
 
 6. **設計追加の自動コミット**:

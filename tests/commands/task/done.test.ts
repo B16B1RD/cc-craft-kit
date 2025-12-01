@@ -5,10 +5,12 @@
  * (done.ts は import.meta.url を使用しているため Jest では直接インポート不可)
  */
 import 'reflect-metadata';
-import { describe, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, expect, beforeEach, afterEach, it } from '@jest/globals';
 import { randomUUID } from 'crypto';
 import { setupDatabaseLifecycle, DatabaseLifecycle } from '../../helpers/db-lifecycle.js';
 import { EventBus, WorkflowEvent } from '../../../src/core/workflow/event-bus.js';
+import type { Kysely } from 'kysely';
+import type { Database as DatabaseSchema } from '../../../src/core/database/schema.js';
 
 describe('EventBus 統合テスト', () => {
   let lifecycle: DatabaseLifecycle;
@@ -80,5 +82,108 @@ describe('EventBus 統合テスト', () => {
     expect(handler2Results).toHaveLength(1);
     expect(handler1Results[0]).toBe(taskId);
     expect(handler2Results[0]).toBe(taskId);
+  });
+});
+
+describe('github_sync テーブルの parent_spec_id 取得テスト', () => {
+  let lifecycle: DatabaseLifecycle;
+  let db: Kysely<DatabaseSchema>;
+
+  beforeEach(async () => {
+    lifecycle = await setupDatabaseLifecycle();
+    db = lifecycle.db;
+  });
+
+  afterEach(async () => {
+    await lifecycle.cleanup();
+    await lifecycle.close();
+  });
+
+  it('Sub Issue レコードから parent_spec_id を取得できる', async () => {
+    const specId = randomUUID();
+    const taskId = randomUUID();
+    const issueNumber = 123;
+
+    // テスト用の仕様書を作成
+    await db
+      .insertInto('specs')
+      .values({
+        id: specId,
+        name: 'Test Spec',
+        description: 'Test Description',
+        phase: 'implementation',
+        branch_name: 'test-branch',
+      })
+      .execute();
+
+    // github_sync に Sub Issue レコードを作成
+    await db
+      .insertInto('github_sync')
+      .values({
+        id: randomUUID(),
+        entity_type: 'sub_issue',
+        entity_id: taskId,
+        github_id: 'I_123',
+        github_number: issueNumber,
+        sync_status: 'success',
+        parent_spec_id: specId,
+        parent_issue_number: 100,
+      })
+      .execute();
+
+    // レコードを取得
+    const record = await db
+      .selectFrom('github_sync')
+      .selectAll()
+      .where('entity_type', '=', 'sub_issue')
+      .where('github_number', '=', issueNumber)
+      .executeTakeFirst();
+
+    expect(record).toBeDefined();
+    expect(record?.parent_spec_id).toBe(specId);
+    expect(record?.entity_id).toBe(taskId);
+  });
+
+  it('parent_spec_id が null の場合でもレコードを取得できる', async () => {
+    const taskId = randomUUID();
+    const issueNumber = 456;
+
+    // parent_spec_id が null の Sub Issue レコードを作成
+    await db
+      .insertInto('github_sync')
+      .values({
+        id: randomUUID(),
+        entity_type: 'sub_issue',
+        entity_id: taskId,
+        github_id: 'I_456',
+        github_number: issueNumber,
+        sync_status: 'success',
+        parent_spec_id: null,
+        parent_issue_number: 200,
+      })
+      .execute();
+
+    // レコードを取得
+    const record = await db
+      .selectFrom('github_sync')
+      .selectAll()
+      .where('entity_type', '=', 'sub_issue')
+      .where('github_number', '=', issueNumber)
+      .executeTakeFirst();
+
+    expect(record).toBeDefined();
+    expect(record?.parent_spec_id).toBeNull();
+    expect(record?.entity_id).toBe(taskId);
+  });
+
+  it('存在しない Issue 番号では null が返される', async () => {
+    const record = await db
+      .selectFrom('github_sync')
+      .selectAll()
+      .where('entity_type', '=', 'sub_issue')
+      .where('github_number', '=', 99999)
+      .executeTakeFirst();
+
+    expect(record).toBeUndefined();
   });
 });

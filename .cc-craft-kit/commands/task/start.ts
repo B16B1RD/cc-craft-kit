@@ -1,14 +1,13 @@
 /**
- * タスク完了コマンド
+ * タスク開始コマンド
  *
- * Sub Issue に関連するタスクの完了を記録し、
- * task.completed イベントを発火します。
+ * Sub Issue に関連するタスクの開始を記録し、
+ * task.started イベントを発火します。
  *
- * このコマンドは /cft:task-done プロンプトから呼び出され、
+ * このコマンドは /cft:spec-phase impl の自動実行フローから呼び出され、
  * イベント駆動アーキテクチャを通じて以下の処理を自動実行します:
  *
- * 1. Sub Issue のクローズ（github-integration.ts のハンドラー）
- * 2. GitHub Projects のステータス更新（Done へ変更）
+ * 1. GitHub Projects のステータス更新（In Progress へ変更）
  */
 
 import '../../core/config/env.js';
@@ -29,7 +28,7 @@ const ArgsSchema = z.object({
 /**
  * コマンド出力（JSON形式）
  */
-interface TaskDoneOutput {
+interface TaskStartOutput {
   success: boolean;
   issueNumber: number;
   specId?: string;
@@ -67,13 +66,13 @@ async function getSubIssueInfo(
 }
 
 /**
- * タスク完了コマンドを実行
+ * タスク開始コマンドを実行
  */
-export async function executeTaskDone(
+export async function executeTaskStart(
   issueNumber: number,
   options: { specId?: string; taskId?: string } = {}
-): Promise<TaskDoneOutput> {
-  const output: TaskDoneOutput = {
+): Promise<TaskStartOutput> {
+  const output: TaskStartOutput = {
     success: false,
     issueNumber,
     eventEmitted: false,
@@ -116,9 +115,9 @@ export async function executeTaskDone(
     // イベントバスを取得（ハンドラー登録を待機）
     const eventBus = await getEventBusAsync();
 
-    // task.completed イベントを発火
+    // task.started イベントを発火
     const event = eventBus.createEvent<{ taskId: string }>(
-      'task.completed',
+      'task.started',
       specId || '',
       { taskId: taskId || '' },
       taskId
@@ -138,11 +137,11 @@ export async function executeTaskDone(
 /**
  * JSON 出力形式で実行（プロンプトからの呼び出し用）
  */
-export async function executeTaskDoneJson(
+export async function executeTaskStartJson(
   issueNumber: number,
   options: { specId?: string; taskId?: string } = {}
 ): Promise<void> {
-  const output = await executeTaskDone(issueNumber, options);
+  const output = await executeTaskStart(issueNumber, options);
   console.log(JSON.stringify(output, null, 2));
 }
 
@@ -154,11 +153,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
   if (isNaN(issueNumber)) {
     console.error('Error: issue-number is required and must be a number');
-    console.error('Usage: npx tsx done.ts <issue-number> [spec-id] [task-id]');
+    console.error('Usage: npx tsx start.ts <issue-number> [spec-id] [task-id]');
     process.exit(1);
   }
 
-  executeTaskDoneJson(issueNumber, { specId, taskId })
+  executeTaskStartJson(issueNumber, { specId, taskId })
     .catch((error) => handleCLIError(error))
     .finally(() => closeDatabase());
 }
