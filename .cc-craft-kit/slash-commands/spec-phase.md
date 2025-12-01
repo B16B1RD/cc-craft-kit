@@ -66,8 +66,7 @@ npx tsx .cc-craft-kit/commands/spec/resolve-id.ts "$1"
 Bash ツールで `.env` から `BASE_BRANCH` を取得:
 
 ```bash
-BASE_BRANCH=$(grep '^BASE_BRANCH=' .env 2>/dev/null | cut -d'=' -f2 | tr -d '"' || echo "develop")
-echo "ベースブランチ: $BASE_BRANCH"
+grep '^BASE_BRANCH=' .env 2>/dev/null | cut -d'=' -f2 | tr -d '"' || echo "develop"
 ```
 
 #### 3.2 ブランチ存在確認・自動作成
