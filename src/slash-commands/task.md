@@ -430,7 +430,7 @@ Sub Issue をクローズし、必要に応じて Pull Request を作成しま�
 
 - `$2` (必須): Sub Issue の番号（例: `123`）
 - `--no-pr` (任意): PR を作成しない
-- `--draft` (任意): ドラフト PR を作成
+- `--ready` (任意): Ready 状態で PR を作成（デフォルトはドラフト）
 
 ### 実行フロー
 
@@ -515,10 +515,10 @@ git push -u origin $(git branch --show-current)
 `--no-pr` フラグがない場合、PR を作成:
 
 ```bash
-gh pr create --title "$ISSUE_TITLE" --body "Closes #$ISSUE_NUMBER" --repo "$REPO"
+gh pr create --title "$ISSUE_TITLE" --body "Closes #$ISSUE_NUMBER" --repo "$REPO" --draft
 ```
 
-`--draft` フラグがある場合は `--draft` オプションを追加。
+`--ready` フラグがある場合は `--draft` オプションを削除し、Ready 状態で PR を作成。
 
 #### Step D9: Issue のクローズ
 
