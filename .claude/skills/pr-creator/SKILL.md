@@ -14,6 +14,7 @@ description: Pull Request 自動作成スキル。completed フェーズ移行�
 - completed フェーズ移行時に自動実行
 - 仕様書の内容を元に PR タイトルと本文を生成
 - GitHub CLI (`gh pr create`) で PR を作成
+- **PR はデフォルトでドラフト状態**で作成（レビュー準備完了後に Ready に変更可能）
 
 ### PR 本文の構成
 
@@ -110,11 +111,12 @@ GitHub CLI で PR を作成します。
 # ベースブランチ取得（環境変数または develop をデフォルト）
 BASE_BRANCH=${DEFAULT_BASE_BRANCH:-develop}
 
-# PR 作成
+# PR 作成（ドラフトとして作成）
 gh pr create \
   --title "<タイトル>" \
   --body "<本文>" \
-  --base "$BASE_BRANCH"
+  --base "$BASE_BRANCH" \
+  --draft
 
 # PR URL を取得
 PR_URL=$(gh pr view --json url -q .url)
