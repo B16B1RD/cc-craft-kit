@@ -59,10 +59,9 @@ async function getSubIssueInfo(
   }
 
   // entity_id は task_id として使用されている
-  // spec_id は直接取得できないため、別途取得が必要
-  // 現在の実装では task_id のみ返す
+  // parent_spec_id は Sub Issue 作成時に記録されている
   return {
-    specId: '', // 後で拡張可能
+    specId: syncRecord.parent_spec_id || '',
     taskId: syncRecord.entity_id,
   };
 }
