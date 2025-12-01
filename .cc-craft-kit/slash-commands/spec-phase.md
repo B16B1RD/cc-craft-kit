@@ -144,6 +144,40 @@ git checkout "$BRANCH_NAME"
 4. 再実行: /cft:spec-phase $SPEC_ID $NEW_PHASE
 ```
 
+#### 3.3 ブランチ切り替え成功確認
+
+Bash ツールで以下を実行:
+
+```bash
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+if [ "$CURRENT_BRANCH" = "$BRANCH_NAME" ]; then
+  echo "✓ ブランチを切り替えました: $CURRENT_BRANCH"
+  echo ""
+  echo "以下の仕様書ファイルを読み込みます:"
+  echo "  $SPEC_PATH"
+else
+  echo "❌ ブランチの切り替えに失敗しました"
+  echo ""
+  echo "期待するブランチ: $BRANCH_NAME"
+  echo "実際のブランチ: $CURRENT_BRANCH"
+  exit 1
+fi
+```
+
+**エラー時メッセージ:**
+
+```
+❌ ブランチ切り替え後の状態確認に失敗しました
+
+ブランチ: $BRANCH_NAME
+現在のブランチ: $CURRENT_BRANCH
+
+対処方法:
+1. 手動でブランチを確認: git branch -v
+2. 手動で切り替え: git checkout "$BRANCH_NAME"
+3. 再実行: /cft:spec-phase $SPEC_ID $NEW_PHASE
+```
+
 ### Step 3.5: GitHub Issue 連携状態確認
 
 `GITHUB_ISSUE_NUMBER` を確認し、GitHub Issue との連携状態を検証します。
