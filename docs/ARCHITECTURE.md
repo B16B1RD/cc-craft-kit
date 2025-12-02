@@ -42,7 +42,7 @@ cc-craft-kit は**モジュラーモノリス**パターンを採用した、拡
 │  │  • /cft:init                                          │  │
 │  │  • /cft:spec-create/list/get/phase                    │  │
 │  │  • /cft:github-init/issue-create/sync/project-add     │  │
-│  │  • /cft:knowledge-progress/error/tip                  │  │
+│  │  • /cft:knowledge progress/error/tip                   │  │
 │  └────────────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────────────┘
                                   │
@@ -359,4 +359,4 @@ cc-craft-kit Gateway
 ---
 
 **最終更新:** 2025-12-02
-**バージョン:** 0.1.3
+**バージョン:** 0.1.4

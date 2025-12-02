@@ -28,9 +28,10 @@ cc-craft-kit では、仕様書のフェーズ変更時に自動的に GitHub Pr
 |----------------|----------------|
 | requirements   | Todo           |
 | design         | In Progress    |
-| tasks          | In Progress    |
 | implementation | In Progress    |
 | completed      | Done           |
+
+> **注意**: `tasks` フェーズは非推奨です。4 フェーズモデル（requirements → design → implementation → completed）を使用してください。design フェーズでタスク分割が自動実行されます。
 
 この自動マッピングにより、仕様書のフェーズを更新するだけで Project ボード上のステータスも同期されます。
 
