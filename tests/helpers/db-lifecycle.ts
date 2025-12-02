@@ -75,13 +75,16 @@ export async function cleanupDatabase(db: Kysely<DatabaseSchema>): Promise<void>
   // 1. github_sync (specs へ外部キー参照)
   await db.deleteFrom('github_sync').execute();
 
-  // 2. tasks (specs へ外部キー参照)
+  // 2. workflow_state (specs へ外部キー参照)
+  await db.deleteFrom('workflow_state').execute();
+
+  // 3. tasks (specs へ外部キー参照)
   await db.deleteFrom('tasks').execute();
 
-  // 3. specs (親テーブル)
+  // 4. specs (親テーブル)
   await db.deleteFrom('specs').execute();
 
-  // 4. logs (独立したテーブル)
+  // 5. logs (独立したテーブル)
   await db.deleteFrom('logs').execute();
 }
 
