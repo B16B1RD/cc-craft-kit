@@ -299,13 +299,13 @@ design フェーズで自動生成された Sub Issue を使ったワークフ�
 
 ```bash
 # Sub Issue 一覧を確認
-/cft:task-list <spec-id>
+/cft:task list <spec-id>
 
 # タスク開始（ブランチ作成＆アサイン）
-/cft:task-start <issue-number>
+/cft:task start <issue-number>
 
 # タスク完了（Sub Issue クローズ＆ PR 作成）
-/cft:task-done <issue-number>
+/cft:task done <issue-number>
 
 # PR マージ後のブランチ削除
 /cft:pr-cleanup <spec-id>
@@ -315,13 +315,10 @@ design フェーズで自動生成された Sub Issue を使ったワークフ�
 
 ```bash
 # 同期状態チェック
-/cft:sync-check
+/cft:sync check
 
 # 同期修復
-/cft:sync-repair
-
-# データベース情報表示
-/cft:db-info
+/cft:sync repair
 ```
 
 ### ナレッジベース活用
@@ -330,13 +327,13 @@ GitHub Issue をナレッジベースとして活用します。
 
 ```bash
 # 進捗を記録
-/cft:knowledge-progress <spec-id> "認証機能の基本実装が完了"
+/cft:knowledge progress <spec-id> "認証機能の基本実装が完了"
 
 # エラー解決策を記録
-/cft:knowledge-error <spec-id> "CORSエラー" "Access-Control-Allow-Origin ヘッダーを追加"
+/cft:knowledge error <spec-id> "CORSエラー" "Access-Control-Allow-Origin ヘッダーを追加"
 
 # Tips を記録
-/cft:knowledge-tip <spec-id> "performance" "useMemo でレンダリングを最適化"
+/cft:knowledge tip <spec-id> "performance" "useMemo でレンダリングを最適化"
 ```
 
 ## さらに学ぶ
