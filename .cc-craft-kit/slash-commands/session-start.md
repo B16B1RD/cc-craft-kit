@@ -122,7 +122,7 @@ JSON を解析し、以下を記録:
 Bash ツールで以下を実行:
 
 ```bash
-npx tsx .cc-craft-kit/commands/workflow/restore-state.ts --json
+npx tsx .cc-craft-kit/commands/workflow/restore-state.ts json
 ```
 
 出力（JSON）が存在する場合、以下を記録:

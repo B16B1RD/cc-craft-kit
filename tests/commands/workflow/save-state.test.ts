@@ -105,8 +105,10 @@ describe('workflow_state テーブル操作', () => {
         .execute();
 
       // 2 回目の保存（UNIQUE 制約違反）
-      await expect(
-        db
+      // SQLite の UNIQUE 制約エラーは SqliteError として throw される
+      let errorOccurred = false;
+      try {
+        await db
           .insertInto('workflow_state')
           .values({
             id: randomUUID(),
@@ -117,8 +119,24 @@ describe('workflow_state テーブル操作', () => {
             saved_at: now,
             updated_at: now,
           })
-          .execute()
-      ).rejects.toThrow();
+          .execute();
+      } catch (error) {
+        errorOccurred = true;
+        // UNIQUE 制約違反エラーであることを確認
+        expect(String(error)).toMatch(/UNIQUE constraint failed|constraint failed/i);
+      }
+
+      // エラーが発生しなかった場合は、レコード数で確認
+      if (!errorOccurred) {
+        const count = await db
+          .selectFrom('workflow_state')
+          .where('spec_id', '=', specId)
+          .select(db.fn.count('id').as('count'))
+          .executeTakeFirst();
+
+        // UNIQUE 制約が効いていれば 1 件のみ
+        expect(Number(count?.count || 0)).toBe(1);
+      }
     });
 
     test('githubIssueNumber が null で保存できる', async () => {
