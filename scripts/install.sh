@@ -7,9 +7,9 @@ set -e
 # このスクリプトは、Git 操作なしで cc-craft-kit を任意のプロジェクトにインストールします。
 #
 # 使用方法:
-#   curl -fsSL https://cc-craft-kit.dev/install.sh | sh
-#   curl -fsSL https://cc-craft-kit.dev/install.sh | sh -s -- /path/to/project
-#   curl -fsSL https://cc-craft-kit.dev/install.sh | sh -s -- --project my-app
+#   curl -fsSL https://raw.githubusercontent.com/B16B1RD/cc-craft-kit/main/scripts/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/B16B1RD/cc-craft-kit/main/scripts/install.sh | sh -s -- /path/to/project
+#   curl -fsSL https://raw.githubusercontent.com/B16B1RD/cc-craft-kit/main/scripts/install.sh | sh -s -- --project my-app
 #
 # ========================================
 
@@ -334,8 +334,8 @@ show_help() {
 cc-craft-kit インストールスクリプト
 
 使用方法:
-  curl -fsSL https://cc-craft-kit.dev/install.sh | sh
-  curl -fsSL https://cc-craft-kit.dev/install.sh | sh -s -- [オプション]
+  curl -fsSL https://raw.githubusercontent.com/B16B1RD/cc-craft-kit/main/scripts/install.sh | sh
+  curl -fsSL https://raw.githubusercontent.com/B16B1RD/cc-craft-kit/main/scripts/install.sh | sh -s -- [オプション]
 
 オプション:
   (引数なし)              カレントディレクトリにインストール
@@ -346,16 +346,16 @@ cc-craft-kit インストールスクリプト
 
 例:
   # カレントディレクトリにインストール
-  curl -fsSL https://cc-craft-kit.dev/install.sh | sh
+  curl -fsSL https://raw.githubusercontent.com/B16B1RD/cc-craft-kit/main/scripts/install.sh | sh
 
   # 指定したディレクトリにインストール
-  curl -fsSL https://cc-craft-kit.dev/install.sh | sh -s -- /path/to/my-project
+  curl -fsSL https://raw.githubusercontent.com/B16B1RD/cc-craft-kit/main/scripts/install.sh | sh -s -- /path/to/my-project
 
   # 新規ディレクトリを作成してインストール
-  curl -fsSL https://cc-craft-kit.dev/install.sh | sh -s -- --project my-new-project
+  curl -fsSL https://raw.githubusercontent.com/B16B1RD/cc-craft-kit/main/scripts/install.sh | sh -s -- --project my-new-project
 
   # 特定バージョンをインストール
-  curl -fsSL https://cc-craft-kit.dev/install.sh | sh -s -- --version v1.0.0
+  curl -fsSL https://raw.githubusercontent.com/B16B1RD/cc-craft-kit/main/scripts/install.sh | sh -s -- --version v1.0.0
 
 詳細: $TAKUMI_BASE_URL
 EOF
