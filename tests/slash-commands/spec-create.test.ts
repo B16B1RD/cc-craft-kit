@@ -338,6 +338,73 @@ describe('Slash Command: /cft:spec-create', () => {
     });
   });
 
+  describe('Step 4.6 Auto-Continue Tests', () => {
+    let content: string;
+
+    beforeEach(() => {
+      // Arrange
+      content = readFileSync(commandFilePath, 'utf-8');
+    });
+
+    it('should NOT contain AskUserQuestion in Step 4.6', () => {
+      // Act
+      const step46Section = content.match(
+        /### Step 4\.6:[\s\S]*?(?=### Step 5:)/
+      );
+
+      // Assert
+      expect(step46Section).not.toBeNull();
+      expect(step46Section![0]).not.toContain('AskUserQuestion');
+    });
+
+    it('should have informational message format in Step 4.6', () => {
+      // Act
+      const step46Section = content.match(
+        /### Step 4\.6:[\s\S]*?(?=### Step 5:)/
+      );
+
+      // Assert
+      expect(step46Section).not.toBeNull();
+      expect(step46Section![0]).toContain('情報');
+      expect(step46Section![0]).toContain('自動続行');
+    });
+
+    it('should NOT have abort option in Step 4.6', () => {
+      // Act
+      const step46Section = content.match(
+        /### Step 4\.6:[\s\S]*?(?=### Step 5:)/
+      );
+
+      // Assert
+      expect(step46Section).not.toBeNull();
+      expect(step46Section![0]).not.toContain('中断');
+      expect(step46Section![0]).not.toContain('処理を中断');
+    });
+
+    it('should NOT have abort entry in error handling summary', () => {
+      // Act
+      const errorHandlingSection = content.match(
+        /## エラーハンドリングまとめ[\s\S]*?(?=###|$)/
+      );
+
+      // Assert
+      expect(errorHandlingSection).not.toBeNull();
+      expect(errorHandlingSection![0]).not.toContain('中断を選択');
+    });
+
+    it('should indicate auto-return to original branch', () => {
+      // Act
+      const step46Section = content.match(
+        /### Step 4\.6:[\s\S]*?(?=### Step 5:)/
+      );
+
+      // Assert
+      expect(step46Section).not.toBeNull();
+      expect(step46Section![0]).toContain('ORIGINAL_BRANCH');
+      expect(step46Section![0]).toContain('自動復帰');
+    });
+  });
+
   describe('BASE_BRANCH Feature Tests', () => {
     let content: string;
 
