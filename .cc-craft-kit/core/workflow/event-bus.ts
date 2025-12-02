@@ -11,6 +11,7 @@ export type WorkflowEventType =
   | 'spec.phase_changed'
   | 'spec.pr_merged'
   | 'task.created'
+  | 'task.started'
   | 'task.status_changed'
   | 'task.completed'
   | 'github.issue_created'

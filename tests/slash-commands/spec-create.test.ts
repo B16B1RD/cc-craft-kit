@@ -112,11 +112,11 @@ describe('Slash Command: /cft:spec-create', () => {
       expect(content).toContain('git branch --show-current');
     });
 
-    it('should have Step 4: 保護ブランチ判定', () => {
+    it('should have Step 4: ブランチプレフィックス判定とブランチ名決定', () => {
       // Assert
-      expect(content).toContain('### Step 4: 保護ブランチ判定');
-      expect(content).toContain('main');
-      expect(content).toContain('develop');
+      expect(content).toContain('### Step 4: ブランチプレフィックス判定とブランチ名決定');
+      expect(content).toContain('feature/');
+      expect(content).toContain('fix/');
     });
 
     it('should have Step 5: ブランチ作成・切り替え', () => {
@@ -247,12 +247,14 @@ describe('Slash Command: /cft:spec-create', () => {
       expect(content).toContain('add-user-authentication');
     });
 
-    it('should have branch naming table', () => {
+    it('should have branch prefix table', () => {
       // Assert
-      expect(content).toMatch(/\|\s*実行元ブランチ\s*\|/);
-      expect(content).toMatch(/\|\s*生成されるブランチ名\s*\|/);
-      expect(content).toContain('develop');
-      expect(content).toContain('main');
+      expect(content).toMatch(/\|\s*キーワード\s*\|/);
+      expect(content).toMatch(/\|\s*プレフィックス\s*\|/);
+      expect(content).toContain('feature/');
+      expect(content).toContain('fix/');
+      expect(content).toContain('docs/');
+      expect(content).toContain('refactor/');
     });
   });
 
@@ -336,6 +338,73 @@ describe('Slash Command: /cft:spec-create', () => {
     });
   });
 
+  describe('Step 4.6 Auto-Continue Tests', () => {
+    let content: string;
+
+    beforeEach(() => {
+      // Arrange
+      content = readFileSync(commandFilePath, 'utf-8');
+    });
+
+    it('should NOT contain AskUserQuestion in Step 4.6', () => {
+      // Act
+      const step46Section = content.match(
+        /### Step 4\.6:[\s\S]*?(?=### Step 5:)/
+      );
+
+      // Assert
+      expect(step46Section).not.toBeNull();
+      expect(step46Section![0]).not.toContain('AskUserQuestion');
+    });
+
+    it('should have informational message format in Step 4.6', () => {
+      // Act
+      const step46Section = content.match(
+        /### Step 4\.6:[\s\S]*?(?=### Step 5:)/
+      );
+
+      // Assert
+      expect(step46Section).not.toBeNull();
+      expect(step46Section![0]).toContain('情報');
+      expect(step46Section![0]).toContain('自動続行');
+    });
+
+    it('should NOT have abort option in Step 4.6', () => {
+      // Act
+      const step46Section = content.match(
+        /### Step 4\.6:[\s\S]*?(?=### Step 5:)/
+      );
+
+      // Assert
+      expect(step46Section).not.toBeNull();
+      expect(step46Section![0]).not.toContain('中断');
+      expect(step46Section![0]).not.toContain('処理を中断');
+    });
+
+    it('should NOT have abort entry in error handling summary', () => {
+      // Act
+      const errorHandlingSection = content.match(
+        /## エラーハンドリングまとめ[\s\S]*?(?=###|$)/
+      );
+
+      // Assert
+      expect(errorHandlingSection).not.toBeNull();
+      expect(errorHandlingSection![0]).not.toContain('中断を選択');
+    });
+
+    it('should indicate auto-return to original branch', () => {
+      // Act
+      const step46Section = content.match(
+        /### Step 4\.6:[\s\S]*?(?=### Step 5:)/
+      );
+
+      // Assert
+      expect(step46Section).not.toBeNull();
+      expect(step46Section![0]).toContain('ORIGINAL_BRANCH');
+      expect(step46Section![0]).toContain('自動復帰');
+    });
+  });
+
   describe('BASE_BRANCH Feature Tests', () => {
     let content: string;
 
@@ -357,7 +426,8 @@ describe('Slash Command: /cft:spec-create', () => {
 
     it('should have default value for BASE_BRANCH', () => {
       // Assert
-      expect(content).toContain('BASE_BRANCH=${BASE_BRANCH:-develop}');
+      // 単一パイプライン + フォールバック形式に変更（Claude Code Bash ツール互換）
+      expect(content).toContain('|| echo "develop"');
     });
 
     it('should verify BASE_BRANCH existence before branch creation', () => {
