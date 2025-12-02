@@ -446,7 +446,6 @@ git checkout "$ORIGINAL_BRANCH"
 |---|---|---|
 | Step 1 | UUID 生成失敗 | `crypto.randomUUID()` にフォールバック |
 | Step 4.5 | BASE_BRANCH 読み込み失敗 | デフォルト値 `develop` を使用 |
-| Step 4.6 | ユーザーが中断を選択 | 処理中断、ベースブランチ切り替えを案内 |
 | Step 5 | BASE_BRANCH が存在しない | 処理中断、.env の設定確認を案内 |
 | Step 5 | ブランチ作成失敗 | 処理中断、エラーメッセージ表示 |
 | Step 6 | ファイル作成失敗 | 処理中断、エラーメッセージ表示 |
