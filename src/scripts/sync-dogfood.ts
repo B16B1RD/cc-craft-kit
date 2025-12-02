@@ -154,7 +154,7 @@ export async function syncSourceToCcCraftKit(options: SyncOptions = {}): Promise
     }
 
     // src/ から .cc-craft-kit/ へコピーするディレクトリ
-    const directories = ['commands', 'core', 'integrations', 'plugins', 'scripts'];
+    const directories = ['commands', 'core', 'hooks', 'integrations', 'plugins', 'scripts'];
 
     // 古い .js と .d.ts ファイルを削除
     if (verbose) {
