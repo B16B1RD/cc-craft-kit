@@ -32,13 +32,13 @@ cc-craft-kit は、Claude Code 上のカスタムスラッシュコマンドで�
 
 ```bash
 # カレントディレクトリにインストール
-curl -fsSL https://cc-craft-kit.dev/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/B16B1RD/cc-craft-kit/main/scripts/install.sh | sh
 
 # 指定したディレクトリにインストール
-curl -fsSL https://cc-craft-kit.dev/install.sh | sh -s -- /path/to/project
+curl -fsSL https://raw.githubusercontent.com/B16B1RD/cc-craft-kit/main/scripts/install.sh | sh -s -- /path/to/project
 
 # 新規ディレクトリを作成してインストール
-curl -fsSL https://cc-craft-kit.dev/install.sh | sh -s -- --project my-new-project
+curl -fsSL https://raw.githubusercontent.com/B16B1RD/cc-craft-kit/main/scripts/install.sh | sh -s -- --project my-new-project
 ```
 
 インストール後、Claude Code で `/cft:init` を実行してプロジェクトを初期化します。
