@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Takumiドッグフーディング用の初期化スクリプト
+ * cc-craft-kitドッグフーディング用の初期化スクリプト
  */
 import fs from 'fs/promises';
 import path from 'path';
@@ -116,7 +116,7 @@ async function initProject() {
 
   console.log('✅ データベース初期化完了');
 
-  console.log('\n🎉 Takumiプロジェクトの初期化が完了しました！\n');
+  console.log('\n🎉 cc-craft-kitプロジェクトの初期化が完了しました！\n');
   console.log('📁 作成されたファイル:');
   console.log(`  - ${configFile}`);
   console.log(`  - ${dbPath}`);

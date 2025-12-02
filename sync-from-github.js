@@ -22,7 +22,7 @@ console.log(`GitHub Issue #${issueNumber} から Spec ID: ${specId} に同期中
 
 // GitHub CLIでIssue取得
 const issueJson = execSync(
-  `gh issue view ${issueNumber} --repo B16B1RD/takumi --json number,title,body,state,labels,createdAt,updatedAt`,
+  `gh issue view ${issueNumber} --repo B16B1RD/cc-craft-kit --json number,title,body,state,labels,createdAt,updatedAt`,
   { encoding: 'utf-8' }
 );
 

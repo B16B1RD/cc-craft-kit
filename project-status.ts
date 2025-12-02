@@ -85,8 +85,8 @@ async function showProjectStatus() {
 
   const syncStats = {
     total: syncRecords.length,
-    takumiToGithub: syncRecords.filter((s) => s.sync_direction === 'takumi_to_github').length,
-    githubToTakumi: syncRecords.filter((s) => s.sync_direction === 'github_to_takumi').length,
+    ccCraftKitToGithub: syncRecords.filter((s) => s.sync_direction === 'cc-craft-kit_to_github').length,
+    githubToCcCraftKit: syncRecords.filter((s) => s.sync_direction === 'github_to_cc-craft-kit').length,
   };
 
   // 最近の活動（最新5件の仕様書）
@@ -98,7 +98,7 @@ async function showProjectStatus() {
     .execute();
 
   // 出力
-  console.log('\n## 📊 Takumiプロジェクト状況\n');
+  console.log('\n## 📊 cc-craft-kitプロジェクト状況\n');
 
   console.log('### プロジェクト情報\n');
   console.log(`- **プロジェクト名:** ${config.name}`);
@@ -125,8 +125,8 @@ async function showProjectStatus() {
 
   console.log('### GitHub連携統計\n');
   console.log(`- **同期総数:** ${syncStats.total} 件`);
-  console.log(`- **Takumi → GitHub:** ${syncStats.cc-craft-kitToGithub} 件`);
-  console.log(`- **GitHub → Takumi:** ${syncStats.githubToTakumi} 件\n`);
+  console.log(`- **cc-craft-kit → GitHub:** ${syncStats.ccCraftKitToGithub} 件`);
+  console.log(`- **GitHub → cc-craft-kit:** ${syncStats.githubToCcCraftKit} 件\n`);
 
   if (recentSpecs.length > 0) {
     console.log('### 最近の活動\n');
