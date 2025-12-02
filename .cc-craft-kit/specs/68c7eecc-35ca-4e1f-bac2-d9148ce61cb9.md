@@ -11,7 +11,7 @@
 
 ### 背景
 
-Takumi CLI で GitHub 統合機能を使用する際、プロジェクトルートの `.env` ファイルに `GITHUB_TOKEN` を設定しているにもかかわらず、CLI 実行時に環境変数として認識されず、`process.env.GITHUB_TOKEN` が `undefined` になる問題が発生している。
+cc-craft-kit CLI で GitHub 統合機能を使用する際、プロジェクトルートの `.env` ファイルに `GITHUB_TOKEN` を設定しているにもかかわらず、CLI 実行時に環境変数として認識されず、`process.env.GITHUB_TOKEN` が `undefined` になる問題が発生している。
 
 調査の結果、以下が判明:
 
@@ -27,7 +27,7 @@ CLI のエントリーポイントで dotenv を適切に初期化し、`.env` �
 
 ## 2. 対象ユーザー
 
-- Takumi CLI を使用して GitHub 統合機能を利用する開発者
+- cc-craft-kit CLI を使用して GitHub 統合機能を利用する開発者
 - ローカル環境で `.env` ファイルによる環境変数管理を行っている開発者
 
 ---

@@ -39,12 +39,12 @@ async function createFirstSpec() {
   const specData = {
     id: specId,
     name: 'WebUIダッシュボード',
-    description: 'Takumiの状態を可視化するWebダッシュボードの実装',
+    description: 'cc-craft-kitの状態を可視化するWebダッシュボードの実装',
     phase: 'requirements' as const,
     content: `# WebUIダッシュボード仕様書
 
 ## 概要
-Takumiプロジェクトの状態を視覚的に把握できるWebダッシュボードを実装する。
+cc-craft-kitプロジェクトの状態を視覚的に把握できるWebダッシュボードを実装する。
 
 ## 目的
 - プロジェクトの進捗状況を一目で確認できるようにする
@@ -87,11 +87,11 @@ Takumiプロジェクトの状態を視覚的に把握できるWebダッシュ�
 
 #### 4. GitHub連携ページ
 - **同期履歴表示**
-  - 同期日時、方向（Takumi→GitHub / GitHub→Takumi）
+  - 同期日時、方向（cc-craft-kit→GitHub / GitHub→cc-craft-kit）
   - 同期エンティティ（Spec / Task）
 - **手動同期ボタン**
   - Spec→GitHub Issue作成
-  - GitHub→Takumi同期
+  - GitHub→cc-craft-kit同期
 
 #### 5. ナレッジベースページ
 - **進捗記録一覧**
@@ -131,7 +131,7 @@ Takumiプロジェクトの状態を視覚的に把握できるWebダッシュ�
 - **型チェック**: tsc --noEmit
 
 ### 制約条件
-- 既存のTakumiアーキテクチャを破壊しない
+- 既存のcc-craft-kitアーキテクチャを破壊しない
 - MCPサーバーと並行動作可能
 - データベーススキーマ変更なし（既存のspecs/tasksテーブルを使用）
 

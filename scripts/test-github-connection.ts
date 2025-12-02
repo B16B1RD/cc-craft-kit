@@ -32,7 +32,7 @@ async function testGitHubConnection() {
     console.log(`   タイプ: ${user.type}\n`);
 
     // リポジトリ情報取得
-    const repo = 'takumi';
+    const repo = 'cc-craft-kit';
     const { data: repository } = await octokit.repos.get({ owner, repo });
     console.log('✅ リポジトリアクセス成功');
     console.log(`   リポジトリ: ${repository.full_name}`);

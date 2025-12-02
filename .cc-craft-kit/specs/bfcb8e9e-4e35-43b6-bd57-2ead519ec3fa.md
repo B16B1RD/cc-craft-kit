@@ -9,7 +9,7 @@
 
 ## 概要
 
-Takumi プロジェクトの状態を視覚的に把握できる Web ダッシュボードを実装する。
+cc-craft-kit プロジェクトの状態を視覚的に把握できる Web ダッシュボードを実装する。
 
 ## 目的
 
@@ -57,11 +57,11 @@ Takumi プロジェクトの状態を視覚的に把握できる Web ダッシ�
 #### 4. GitHub連携ページ
 
 - **同期履歴表示**
-  - 同期日時、方向（Takumi→GitHub / GitHub→Takumi）
+  - 同期日時、方向（cc-craft-kit→GitHub / GitHub→cc-craft-kit）
   - 同期エンティティ（Spec / Task）
 - **手動同期ボタン**
   - Spec→GitHub Issue 作成
-  - GitHub→Takumi 同期
+  - GitHub→cc-craft-kit 同期
 
 #### 5. ナレッジベースページ
 
@@ -109,7 +109,7 @@ Takumi プロジェクトの状態を視覚的に把握できる Web ダッシ�
 
 ### 制約条件
 
-- 既存の Takumi アーキテクチャを破壊しない
+- 既存の cc-craft-kit アーキテクチャを破壊しない
 - MCP サーバーと並行動作可能
 - データベーススキーマ変更なし（既存の specs/tasks テーブルを使用）
 
