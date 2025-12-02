@@ -38,10 +38,10 @@ async function createSpec() {
 
   const specData = {
     id: specId,
-    name: 'Takumi MCPサーバーが起動しない原因の調査と解決',
+    name: 'cc-craft-kit MCPサーバーが起動しない原因の調査と解決',
     description: 'MCPサーバー起動時のマイグレーションエラー（table "specs" already exists）を修正する',
     phase: 'requirements' as const,
-    content: `# Takumi MCPサーバー起動エラー修正仕様書
+    content: `# cc-craft-kit MCPサーバー起動エラー修正仕様書
 
 ## 問題の概要
 
@@ -153,11 +153,11 @@ npm run mcp:dev
    - マイグレーションエラーが発生しないこと
 
 2. **MCPツール動作テスト**
-   - \`takumi:list_specs\`が動作すること
+   - \`cft:list_specs\`が動作すること
    - 既存のSpec（WebUIダッシュボード）が取得できること
 
 3. **新規Spec作成テスト**
-   - \`takumi:create_spec\`でSpecが作成できること
+   - \`cft:create_spec\`でSpecが作成できること
    - データベースに正しく保存されること
 
 ## 受け入れ基準

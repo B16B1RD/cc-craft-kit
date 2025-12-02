@@ -139,8 +139,8 @@ describe('sync-dogfood', () => {
 
   describe('syncSlashCommands', () => {
     it('should copy slash command files', async () => {
-      // .claude/commands/takumi/ を作成
-      const commandsDir = path.join(testDir, '.claude', 'commands', 'takumi');
+      // .claude/commands/cft/ を作成
+      const commandsDir = path.join(testDir, '.claude', 'commands', 'cft');
       await fs.mkdir(commandsDir, { recursive: true });
 
       await fs.writeFile(path.join(commandsDir, 'test-command.md'), '# Test Command');
@@ -159,7 +159,7 @@ describe('sync-dogfood', () => {
     });
 
     it('should skip if source directory does not exist', async () => {
-      // .claude/commands/takumi/ が存在しない状態で実行
+      // .claude/commands/cft/ が存在しない状態で実行
 
       const result = await syncSlashCommands({ baseDir: testDir, verbose: false });
 
@@ -169,8 +169,8 @@ describe('sync-dogfood', () => {
     });
 
     it('should only copy .md files', async () => {
-      // .claude/commands/takumi/ に複数のファイルを作成
-      const commandsDir = path.join(testDir, '.claude', 'commands', 'takumi');
+      // .claude/commands/cft/ に複数のファイルを作成
+      const commandsDir = path.join(testDir, '.claude', 'commands', 'cft');
       await fs.mkdir(commandsDir, { recursive: true });
 
       await fs.writeFile(path.join(commandsDir, 'command1.md'), '# Command 1');
@@ -200,8 +200,8 @@ describe('sync-dogfood', () => {
       await fs.mkdir(srcDir, { recursive: true });
       await fs.writeFile(path.join(srcDir, 'file.ts'), 'content');
 
-      // .claude/commands/takumi/ を作成
-      const commandsDir = path.join(testDir, '.claude', 'commands', 'takumi');
+      // .claude/commands/cft/ を作成
+      const commandsDir = path.join(testDir, '.claude', 'commands', 'cft');
       await fs.mkdir(commandsDir, { recursive: true });
       await fs.writeFile(path.join(commandsDir, 'command.md'), '# Command');
 
