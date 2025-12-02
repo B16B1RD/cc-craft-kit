@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.5] - 2025-12-02
+
+### Added
+
+- セッション再開時にワークフロー状態を引き継ぐ `workflow_state` テーブル追加
+- session-start/session-end フェーズにおけるワークフロー状態の自動保存・復元機能
+- プロジェクト名完全置換（旧名称 Takumi → cc-craft-kit）
+- インストールスクリプトの URL 修正
+
+### Changed
+
+- データベースマイグレーション 012: `workflow_state` テーブル追加
+
+### Fixed
+
+- なし
+
 ## [0.1.4] - 2025-11-30
 
 ### Added
@@ -107,6 +124,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - なし（初回リリース）
 
+[0.1.5]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.5
 [0.1.4]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.4
 [0.1.3]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.3
 [0.1.2]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.2
