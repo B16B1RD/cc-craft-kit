@@ -117,6 +117,25 @@ JSON を解析し、以下を記録:
 ℹ️ 初回セッションです。進捗ファイルを作成します。
 ```
 
+### Step 3.5: ワークフロー状態の復元
+
+Bash ツールで以下を実行:
+
+```bash
+npx tsx .cc-craft-kit/commands/workflow/restore-state.ts json
+```
+
+出力（JSON）が存在する場合、以下を記録:
+- `WORKFLOW_STATE`: ワークフロー状態情報
+  - `specId`: 仕様書 ID
+  - `specName`: 仕様書名
+  - `currentTaskNumber`: 現在のタスク番号
+  - `currentTaskTitle`: タスクタイトル
+  - `nextAction`: 次のアクション（`task_start` | `task_done` | `none`）
+  - `githubIssueNumber`: Sub Issue 番号（存在する場合）
+
+**重要**: ワークフロー状態が存在し、`nextAction` が `task_start` または `task_done` の場合、Step 8 の「推奨アクション」に該当するコマンドを追加してください。
+
 ### Step 4: GitHub Issue の確認
 
 `GITHUB_ISSUE_NUMBER` が存在する場合、Bash ツールで以下を実行:
@@ -237,6 +256,17 @@ Read ツールで仕様書ファイル（`SPEC_PATH`）を読み込み:
 {RECENT_COMMENTS を表示}
 
 ## 推奨アクション
+
+{WORKFLOW_STATE が存在し、nextAction が 'task_start' の場合}
+⚠️ **前回セッションの継続タスク**:
+- タスク開始: `npx tsx .cc-craft-kit/commands/task/start.ts {WORKFLOW_STATE.githubIssueNumber}`
+- その後、タスク「{WORKFLOW_STATE.currentTaskTitle}」の実装を続行
+
+{WORKFLOW_STATE が存在し、nextAction が 'task_done' の場合}
+⚠️ **前回セッションの継続タスク**:
+- タスク「{WORKFLOW_STATE.currentTaskTitle}」の実装が完了している場合:
+  `npx tsx .cc-craft-kit/commands/task/done.ts {WORKFLOW_STATE.githubIssueNumber}`
+- 実装が未完了の場合、実装を続行してから上記コマンドを実行
 
 {タスクが残っている場合}
 1. 次のタスクを開始: `/cft:task-start <issue-number>`

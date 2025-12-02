@@ -1,6 +1,6 @@
 {
   "name": "cc-craft-kit",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "統合開発キット - Claude Code上でTDD/SDD/GitHub完全連携を実現",
   "keywords": [
     "claude-code",
@@ -42,10 +42,6 @@
     "sync:dogfood:dry": "tsx src/scripts/sync-dogfood.ts --dry-run --verbose",
     "migrate:structure": "tsx src/scripts/migrate-structure.ts",
     "migrate:structure:dry": "tsx src/scripts/migrate-structure.ts --dry-run --verbose",
-    "replace:takumi": "tsx src/scripts/replace-takumi-references.ts",
-    "replace:takumi:dry": "tsx src/scripts/replace-takumi-references.ts --dry-run",
-    "migrate:takumi": "tsx src/scripts/migrate-takumi-to-cc-craft-kit.ts",
-    "migrate:takumi:dry": "tsx src/scripts/migrate-takumi-to-cc-craft-kit.ts --dry-run",
     "prepare": "husky"
   },
   "dependencies": {

@@ -174,7 +174,7 @@ describe('check-sync', () => {
       expect(diffs[0]).toEqual({
         path: 'file2.ts',
         srcHash: 'hash2_modified',
-        takumiHash: 'hash2_original',
+        ccCraftKitHash: 'hash2_original',
         status: 'modified',
       });
     });
@@ -195,7 +195,7 @@ describe('check-sync', () => {
       expect(diffs[0]).toEqual({
         path: 'file2.ts',
         srcHash: 'hash2',
-        takumiHash: null,
+        ccCraftKitHash: null,
         status: 'missing_in_cc_craft_kit',
       });
     });
@@ -216,7 +216,7 @@ describe('check-sync', () => {
       expect(diffs[0]).toEqual({
         path: 'file2.ts',
         srcHash: null,
-        takumiHash: 'hash2',
+        ccCraftKitHash: 'hash2',
         status: 'extra_in_cc_craft_kit',
       });
     });

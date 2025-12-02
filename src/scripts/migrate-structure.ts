@@ -222,7 +222,7 @@ async function migrateCommands(config: MigrationConfig): Promise<{
 }
 
 /**
- * .claude/commands/takumi/ → src/slash-commands/ へ移動
+ * .claude/commands/cft/ → src/slash-commands/ へ移動
  */
 async function migrateSlashCommands(config: MigrationConfig): Promise<{
   movedFiles: string[];
@@ -232,11 +232,11 @@ async function migrateSlashCommands(config: MigrationConfig): Promise<{
   const movedFiles: string[] = [];
   const errors: Array<{ file: string; error: string }> = [];
 
-  const sourceDir = path.join(baseDir, '.claude', 'commands', 'takumi');
+  const sourceDir = path.join(baseDir, '.claude', 'commands', 'cft');
   const destDir = path.join(baseDir, 'src', 'slash-commands');
 
   if (verbose) {
-    console.log('📦 Migrating .claude/commands/takumi/ → src/slash-commands/...\n');
+    console.log('📦 Migrating .claude/commands/cft/ → src/slash-commands/...\n');
   }
 
   // ソースディレクトリが存在するか確認
@@ -244,7 +244,7 @@ async function migrateSlashCommands(config: MigrationConfig): Promise<{
     await fs.access(sourceDir);
   } catch {
     if (verbose) {
-      console.log('⚠️  .claude/commands/takumi/ does not exist, skipping...\n');
+      console.log('⚠️  .claude/commands/cft/ does not exist, skipping...\n');
     }
     return { movedFiles, errors };
   }
@@ -268,14 +268,14 @@ async function migrateSlashCommands(config: MigrationConfig): Promise<{
   }
 
   if (verbose) {
-    console.log(`\n✓ Migrated ${movedFiles.length} files from .claude/commands/takumi/\n`);
+    console.log(`\n✓ Migrated ${movedFiles.length} files from .claude/commands/cft/\n`);
   }
 
   return { movedFiles, errors };
 }
 
 /**
- * シンボリックリンク作成: .claude/commands/takumi/ → src/slash-commands/
+ * シンボリックリンク作成: .claude/commands/cft/ → src/slash-commands/
  */
 async function createSlashCommandsSymlink(config: MigrationConfig): Promise<{
   created: boolean;
@@ -284,11 +284,11 @@ async function createSlashCommandsSymlink(config: MigrationConfig): Promise<{
   const { baseDir, dryRun, verbose } = config;
 
   if (verbose) {
-    console.log('🔗 Creating symlink: .claude/commands/takumi/ → src/slash-commands/...\n');
+    console.log('🔗 Creating symlink: .claude/commands/cft/ → src/slash-commands/...\n');
   }
 
   const targetPath = path.join('..', '..', '..', 'src', 'slash-commands');
-  const linkPath = path.join(baseDir, '.claude', 'commands', 'takumi');
+  const linkPath = path.join(baseDir, '.claude', 'commands', 'cft');
 
   try {
     await createSymlink(targetPath, linkPath, { dryRun, verbose });
@@ -339,7 +339,7 @@ export async function migrate(config: MigrationConfig): Promise<MigrationResult>
     result.movedFiles.push(...commandsResult.movedFiles);
     result.errors.push(...commandsResult.errors);
 
-    // .claude/commands/takumi/ → src/slash-commands/
+    // .claude/commands/cft/ → src/slash-commands/
     const slashCommandsResult = await migrateSlashCommands(config);
     result.movedFiles.push(...slashCommandsResult.movedFiles);
     result.errors.push(...slashCommandsResult.errors);
@@ -347,7 +347,7 @@ export async function migrate(config: MigrationConfig): Promise<MigrationResult>
     // シンボリックリンク作成
     const symlinkResult = await createSlashCommandsSymlink(config);
     if (symlinkResult.created) {
-      result.createdSymlinks.push('.claude/commands/takumi → src/slash-commands');
+      result.createdSymlinks.push('.claude/commands/cft → src/slash-commands');
     } else if (symlinkResult.error) {
       result.errors.push({ file: 'symlink', error: symlinkResult.error });
     }

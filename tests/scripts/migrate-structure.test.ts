@@ -80,9 +80,9 @@ describe('migrate-structure', () => {
   describe('migrate', () => {
     it('should migrate .cc-craft-kit/commands/ to src/commands/', async () => {
       // .cc-craft-kit/commands/ を作成
-      const takumiCommands = path.join(testDir, '.cc-craft-kit', 'commands');
-      await fs.mkdir(takumiCommands, { recursive: true });
-      await fs.writeFile(path.join(takumiCommands, 'test.ts'), 'export {}');
+      const ccCraftKitCommands = path.join(testDir, '.cc-craft-kit', 'commands');
+      await fs.mkdir(ccCraftKitCommands, { recursive: true });
+      await fs.writeFile(path.join(ccCraftKitCommands, 'test.ts'), 'export {}');
 
       const config: MigrationConfig = {
         dryRun: false,
@@ -105,9 +105,9 @@ describe('migrate-structure', () => {
       expect(exists).toBe(true);
     });
 
-    it('should migrate .claude/commands/takumi/ to src/slash-commands/', async () => {
-      // .claude/commands/takumi/ を作成
-      const claudeCommands = path.join(testDir, '.claude', 'commands', 'takumi');
+    it('should migrate .claude/commands/cft/ to src/slash-commands/', async () => {
+      // .claude/commands/cft/ を作成
+      const claudeCommands = path.join(testDir, '.claude', 'commands', 'cft');
       await fs.mkdir(claudeCommands, { recursive: true });
       await fs.writeFile(path.join(claudeCommands, 'test-command.md'), '# Test');
 
@@ -132,9 +132,9 @@ describe('migrate-structure', () => {
       expect(exists).toBe(true);
     });
 
-    it('should create symlink from .claude/commands/takumi/ to src/slash-commands/', async () => {
-      // .claude/commands/takumi/ を作成（移動元）
-      const claudeCommands = path.join(testDir, '.claude', 'commands', 'takumi');
+    it('should create symlink from .claude/commands/cft/ to src/slash-commands/', async () => {
+      // .claude/commands/cft/ を作成（移動元）
+      const claudeCommands = path.join(testDir, '.claude', 'commands', 'cft');
       await fs.mkdir(claudeCommands, { recursive: true });
       await fs.writeFile(path.join(claudeCommands, 'test.md'), '# Test');
 
@@ -148,10 +148,10 @@ describe('migrate-structure', () => {
       const result = await migrate(config);
 
       expect(result.success).toBe(true);
-      expect(result.createdSymlinks).toContain('.claude/commands/takumi → src/slash-commands');
+      expect(result.createdSymlinks).toContain('.claude/commands/cft → src/slash-commands');
 
       // シンボリックリンクが作成されたか確認
-      const linkPath = path.join(testDir, '.claude', 'commands', 'takumi');
+      const linkPath = path.join(testDir, '.claude', 'commands', 'cft');
       const stats = await fs.lstat(linkPath);
       expect(stats.isSymbolicLink()).toBe(true);
     });
@@ -195,9 +195,9 @@ describe('migrate-structure', () => {
 
     it('should support dry-run mode', async () => {
       // .cc-craft-kit/commands/ を作成
-      const takumiCommands = path.join(testDir, '.cc-craft-kit', 'commands');
-      await fs.mkdir(takumiCommands, { recursive: true });
-      await fs.writeFile(path.join(takumiCommands, 'test.ts'), 'export {}');
+      const ccCraftKitCommands = path.join(testDir, '.cc-craft-kit', 'commands');
+      await fs.mkdir(ccCraftKitCommands, { recursive: true });
+      await fs.writeFile(path.join(ccCraftKitCommands, 'test.ts'), 'export {}');
 
       const config: MigrationConfig = {
         dryRun: true,
@@ -212,7 +212,7 @@ describe('migrate-structure', () => {
       expect(result.movedFiles).toContain('test.ts');
 
       // ファイルが実際には移動されていないか確認
-      const sourcePath = path.join(takumiCommands, 'test.ts');
+      const sourcePath = path.join(ccCraftKitCommands, 'test.ts');
       const destPath = path.join(testDir, 'src', 'commands', 'test.ts');
 
       const sourceExists = await fs
@@ -250,9 +250,9 @@ describe('migrate-structure', () => {
       await fs.mkdir(srcCommands, { recursive: true });
 
       // .cc-craft-kit/commands/ も作成
-      const takumiCommands = path.join(testDir, '.cc-craft-kit', 'commands');
-      await fs.mkdir(takumiCommands, { recursive: true });
-      await fs.writeFile(path.join(takumiCommands, 'test.ts'), 'export {}');
+      const ccCraftKitCommands = path.join(testDir, '.cc-craft-kit', 'commands');
+      await fs.mkdir(ccCraftKitCommands, { recursive: true });
+      await fs.writeFile(path.join(ccCraftKitCommands, 'test.ts'), 'export {}');
 
       const config: MigrationConfig = {
         dryRun: false,
