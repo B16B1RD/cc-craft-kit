@@ -102,56 +102,41 @@ grep '^BASE_BRANCH=' .env 2>/dev/null | cut -d'=' -f2 | tr -d '"' || echo "devel
 
 出力を `BASE_BRANCH` として記録してください。
 
-### Step 4.6: 実行元ブランチの確認と警告
+### Step 4.6: 実行元ブランチの確認と情報表示
 
-現在のブランチ（`ORIGINAL_BRANCH`）がベースブランチ（`BASE_BRANCH`）以外の場合、警告を表示します。
+現在のブランチ（`ORIGINAL_BRANCH`）がベースブランチ（`BASE_BRANCH`）と異なる場合、情報メッセージを表示して自動続行します。
 
 **判定ロジック:**
 
 ```
 ORIGINAL_BRANCH == BASE_BRANCH の場合:
-  → 警告なし、Step 5 へ進む
+  → 「ベースブランチから実行しています」と表示 → Step 5 へ進む
 
 ORIGINAL_BRANCH != BASE_BRANCH の場合:
-  → 警告を表示し、AskUserQuestion ツールで確認
+  → 情報メッセージを表示 → 自動的に Step 5 へ進む
 ```
 
-**警告メッセージ:**
+**ORIGINAL_BRANCH == BASE_BRANCH の場合:**
 
 ```
-⚠️ 警告: 現在のブランチは '$ORIGINAL_BRANCH' です
-
-仕様書作成時は通常、ベースブランチ（$BASE_BRANCH）から実行することを推奨します。
-現在のブランチから実行すると、作業ブランチが $BASE_BRANCH ではなく $ORIGINAL_BRANCH から派生します。
-
-選択肢:
-1. このまま続行（$ORIGINAL_BRANCH から派生）
-2. ベースブランチに切り替えてから再実行
+✓ ベースブランチ '$BASE_BRANCH' から実行しています
 ```
 
-**AskUserQuestion:**
-
-- question: "現在のブランチ '$ORIGINAL_BRANCH' から仕様書を作成しますか？"
-- header: "Branch"
-- options:
-  - label: "このまま続行"
-    description: "$ORIGINAL_BRANCH から派生してブランチを作成します"
-  - label: "中断"
-    description: "先にベースブランチに切り替えてから再実行します"
-- multiSelect: false
-
-**ユーザー選択:**
-
-- 「このまま続行」: Step 5 へ進む
-- 「中断」: 処理を中断し、以下のメッセージを表示:
+**ORIGINAL_BRANCH != BASE_BRANCH の場合:**
 
 ```
-処理を中断しました。
+ℹ️ 情報: 現在のブランチは '$ORIGINAL_BRANCH' です
 
-ベースブランチに切り替えてから再実行してください:
-  git checkout $BASE_BRANCH
-  /cft:spec-create "$1" "$2"
+仕様書ブランチは常にベースブランチ（$BASE_BRANCH）から派生します。
+処理完了後、自動的に元のブランチ '$ORIGINAL_BRANCH' に復帰します。
+
+→ 処理を自動続行します...
 ```
+
+**備考:**
+- ユーザー確認（AskUserQuestion）は不要です
+- 仕様書ブランチは常に `BASE_BRANCH` から派生するため、作業ブランチには影響しません
+- Step 10 で `ORIGINAL_BRANCH` に自動復帰するため、作業状態は保持されます
 
 ### Step 5: ブランチ作成・切り替え
 
