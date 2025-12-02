@@ -134,7 +134,7 @@ ORIGINAL_BRANCH != BASE_BRANCH の場合:
 ```
 
 **備考:**
-- ユーザー確認（AskUserQuestion）は不要です
+- ユーザー確認は不要です（自動続行）
 - 仕様書ブランチは常に `BASE_BRANCH` から派生するため、作業ブランチには影響しません
 - Step 10 で `ORIGINAL_BRANCH` に自動復帰するため、作業状態は保持されます
 
