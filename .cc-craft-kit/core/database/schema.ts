@@ -109,6 +109,32 @@ export type NewGitHubSync = Insertable<GitHubSyncTable>;
 export type GitHubSyncUpdate = Updateable<GitHubSyncTable>;
 
 /**
+ * ワークフロー次アクション
+ */
+export type WorkflowNextAction = 'task_start' | 'task_done' | 'none';
+
+/**
+ * WorkflowState テーブル - セッション間でのワークフロー状態管理
+ *
+ * Claude Code セッションが終了・再開した際に、
+ * 実行中のワークフロー（タスク実行状態など）を引き継ぐための状態を保持します。
+ */
+export interface WorkflowStateTable {
+  id: Generated<string>; // UUID
+  spec_id: string; // FK to specs.id（ユニーク制約）
+  current_task_number: number; // 実行中のタスク番号（1-based）
+  current_task_title: string; // タスクのタイトル
+  next_action: WorkflowNextAction; // 次に実行すべきアクション
+  github_issue_number: number | null; // 現在の Sub Issue 番号
+  saved_at: ColumnType<Date, string | undefined, string>;
+  updated_at: ColumnType<Date, string | undefined, string>;
+}
+
+export type WorkflowState = Selectable<WorkflowStateTable>;
+export type NewWorkflowState = Insertable<WorkflowStateTable>;
+export type WorkflowStateUpdate = Updateable<WorkflowStateTable>;
+
+/**
  * Database型定義 - すべてのテーブルを含む
  */
 export interface Database {
@@ -116,4 +142,5 @@ export interface Database {
   tasks: TasksTable;
   logs: LogsTable;
   github_sync: GitHubSyncTable;
+  workflow_state: WorkflowStateTable;
 }

@@ -162,6 +162,36 @@ REPO=$(git remote get-url origin | sed 's/.*github.com[:/]\(.*\)\.git/\1/')
 npx tsx .cc-craft-kit/commands/knowledge/progress.ts "$SPEC_ID" "セッション終了サマリー: $SESSION_SUMMARY"
 ```
 
+### Step 5.5: ワークフロー状態の保存
+
+フェーズが `implementation` の場合、Bash ツールで以下を実行:
+
+```bash
+npx tsx .cc-craft-kit/commands/workflow/save-state.ts \
+  --spec-id "$SPEC_ID" \
+  --task-number "{現在進行中のタスク番号}" \
+  --task-title "{現在進行中のタスクタイトル}" \
+  --next-action "task_done" \
+  --github-issue-number "{Sub Issue 番号（存在する場合）}"
+```
+
+**注意**:
+- `--next-action` は以下のいずれかを指定:
+  - `task_start`: タスクが開始前の場合
+  - `task_done`: タスクが進行中の場合
+  - `none`: 特定のアクションが不要な場合
+- `--github-issue-number` は Sub Issue 番号で、親 Issue の番号ではない
+
+保存成功時:
+```
+✓ ワークフロー状態を保存しました
+  - 仕様書: {SPEC_NAME}
+  - タスク: {タスク番号}. {タスクタイトル}
+  - 次のアクション: {next_action}
+```
+
+これにより、セッション再開時に自動的にワークフロー状態が復元されます。
+
 ### Step 6: 進捗ファイルの更新
 
 Write ツールで進捗ファイルを更新:
