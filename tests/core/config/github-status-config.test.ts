@@ -34,8 +34,8 @@ describe('github-status-config', () => {
         requirements: 'Todo',
         design: 'In Progress',
         tasks: 'In Progress',
-        implementation: 'In Review',
-        completed: 'Done',
+        implementation: 'In Progress',
+        completed: 'In Review',
       });
     });
 
@@ -269,8 +269,8 @@ describe('github-status-config', () => {
     it('デフォルト設定でフェーズからステータスを取得', () => {
       expect(getStatusForPhase('requirements')).toBe('Todo');
       expect(getStatusForPhase('design')).toBe('In Progress');
-      expect(getStatusForPhase('implementation')).toBe('In Review');
-      expect(getStatusForPhase('completed')).toBe('Done');
+      expect(getStatusForPhase('implementation')).toBe('In Progress');
+      expect(getStatusForPhase('completed')).toBe('In Review');
     });
 
     it('カスタム設定でフェーズからステータスを取得', () => {
@@ -304,7 +304,7 @@ describe('github-status-config', () => {
   describe('getStatusWithFallback', () => {
     it('ステータスが利用可能な場合はそのまま返す', () => {
       expect(getStatusWithFallback('requirements', DEFAULT_STATUS_CONFIG)).toBe('Todo');
-      expect(getStatusWithFallback('implementation', DEFAULT_STATUS_CONFIG)).toBe('In Review');
+      expect(getStatusWithFallback('implementation', DEFAULT_STATUS_CONFIG)).toBe('In Progress');
     });
 
     it('ステータスが利用不可能な場合はフォールバックを返す', () => {
