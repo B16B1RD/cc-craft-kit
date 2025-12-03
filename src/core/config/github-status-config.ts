@@ -6,6 +6,8 @@
  * マッピングを管理します。
  */
 
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { SpecPhase } from '../../database/types.js';
 
 // ============================================================================
@@ -107,6 +109,80 @@ export const LEGACY_3_STAGE_STATUS_CONFIG: GitHubStatusConfig = {
   autoDetect: true,
   cachedAt: null,
 };
+
+// ============================================================================
+// 設定読み込み
+// ============================================================================
+
+/**
+ * config.json の型定義（statusConfig 部分のみ）
+ */
+interface ConfigJson {
+  github?: {
+    statusConfig?: Partial<GitHubStatusConfig>;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+/**
+ * config.json からステータス設定を読み込む
+ *
+ * - config.json が存在しない場合はデフォルト設定を返す
+ * - statusConfig セクションが存在しない場合はデフォルト設定を返す
+ * - 部分的な設定はデフォルト設定とマージして返す
+ *
+ * @param basePath プロジェクトのベースパス（デフォルト: process.cwd()）
+ * @returns ステータス設定
+ */
+export function loadStatusConfig(basePath: string = process.cwd()): GitHubStatusConfig {
+  const configPath = join(basePath, '.cc-craft-kit', 'config.json');
+
+  // config.json が存在しない場合はデフォルト設定を返す
+  if (!existsSync(configPath)) {
+    return { ...DEFAULT_STATUS_CONFIG };
+  }
+
+  try {
+    const configContent = readFileSync(configPath, 'utf-8');
+    const config: ConfigJson = JSON.parse(configContent);
+
+    // github.statusConfig が存在しない場合はデフォルト設定を返す
+    const statusConfig = config.github?.statusConfig;
+    if (!statusConfig) {
+      return { ...DEFAULT_STATUS_CONFIG };
+    }
+
+    // 部分的な設定をデフォルトとマージ
+    return mergeStatusConfig(statusConfig);
+  } catch {
+    // パースエラー時はデフォルト設定を返す
+    return { ...DEFAULT_STATUS_CONFIG };
+  }
+}
+
+/**
+ * 部分的なステータス設定をデフォルト設定とマージ
+ *
+ * @param partial 部分的なステータス設定
+ * @returns 完全なステータス設定
+ */
+export function mergeStatusConfig(partial: Partial<GitHubStatusConfig>): GitHubStatusConfig {
+  // statusMapping のマージ
+  const statusMapping: StatusMapping = {
+    ...DEFAULT_STATUS_MAPPING,
+    ...(partial.statusMapping ?? {}),
+  };
+
+  return {
+    statusFieldName: partial.statusFieldName ?? DEFAULT_STATUS_CONFIG.statusFieldName,
+    statusMapping,
+    availableStatuses: partial.availableStatuses ?? DEFAULT_STATUS_CONFIG.availableStatuses,
+    fallbackStatus: partial.fallbackStatus ?? DEFAULT_STATUS_CONFIG.fallbackStatus,
+    autoDetect: partial.autoDetect ?? DEFAULT_STATUS_CONFIG.autoDetect,
+    cachedAt: partial.cachedAt ?? DEFAULT_STATUS_CONFIG.cachedAt,
+  };
+}
 
 // ============================================================================
 // 型ガード・ユーティリティ
