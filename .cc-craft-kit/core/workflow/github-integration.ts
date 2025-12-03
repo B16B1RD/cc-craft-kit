@@ -960,6 +960,92 @@ ${data.content}
     }
   });
 
+  // spec.pr_merged → GitHub Projects ステータスを Done に更新
+  eventBus.on<{ prNumber: number; branchName: string; mergedAt: string | null }>(
+    'spec.pr_merged',
+    async (
+      event: WorkflowEvent<{ prNumber: number; branchName: string; mergedAt: string | null }>
+    ) => {
+      try {
+        const githubToken = process.env.GITHUB_TOKEN;
+        if (!githubToken) {
+          return;
+        }
+
+        const cwd = process.cwd();
+        const ccCraftKitDir = join(cwd, '.cc-craft-kit');
+        const githubConfig = getGitHubConfig(ccCraftKitDir);
+
+        if (!githubConfig) {
+          return;
+        }
+
+        // Project 同期情報を取得
+        const projectSync = await db
+          .selectFrom('github_sync')
+          .where('entity_id', '=', event.specId)
+          .where('entity_type', '=', 'project')
+          .selectAll()
+          .executeTakeFirst();
+
+        if (!projectSync) {
+          // Project に追加されていない場合はスキップ
+          return;
+        }
+
+        // Project 番号を解決
+        const projectNumber = await resolveProjectId(ccCraftKitDir, githubToken);
+        if (!projectNumber) {
+          return;
+        }
+
+        // GitHub API クライアント作成
+        const client = new GitHubClient({ token: githubToken });
+        const projects = new GitHubProjects(client);
+
+        // ステータスを 'Done' に更新
+        await projects.updateProjectStatus({
+          owner: githubConfig.owner,
+          projectNumber,
+          itemId: projectSync.github_id,
+          status: 'Done',
+        });
+
+        // ステータス更新を検証＋リトライ
+        try {
+          const verification = await projects.verifyProjectStatusUpdate({
+            owner: githubConfig.owner,
+            projectNumber,
+            itemId: projectSync.github_id,
+            expectedStatus: 'Done',
+            maxRetries: 3,
+          });
+
+          if (verification.success) {
+            console.log(
+              `✓ Updated project status to "Done" after PR merge` +
+                (verification.attempts > 1 ? ` (${verification.attempts} attempts)` : '')
+            );
+          } else {
+            console.warn(
+              `⚠ Failed to verify project status update after ${verification.attempts} retries.`
+            );
+          }
+        } catch (verifyError) {
+          // 検証失敗は警告のみ
+          console.warn(`⚠ Project status verification failed: ${verifyError}`);
+        }
+      } catch (error) {
+        await logError('warn', 'Failed to update GitHub Project status on PR merge', error, {
+          event: 'spec.pr_merged',
+          specId: event.specId,
+          prNumber: event.data.prNumber,
+          action: 'update_project_status',
+        });
+      }
+    }
+  );
+
   // task.completed → Sub Issue ステータス更新 + 親 Issue 連携 + Projects ステータス更新
   eventBus.on<{ taskId: string }>(
     'task.completed',

@@ -26,9 +26,9 @@ export interface StatusMapping {
   design: string;
   /** tasks フェーズのステータス（デフォルト: "In Progress"、非推奨） */
   tasks: string;
-  /** implementation フェーズのステータス（デフォルト: "In Review"） */
+  /** implementation フェーズのステータス（デフォルト: "In Progress"） */
   implementation: string;
-  /** completed フェーズのステータス（デフォルト: "Done"） */
+  /** completed フェーズのステータス（デフォルト: "In Review"） */
   completed: string;
 }
 
@@ -65,8 +65,8 @@ export const DEFAULT_STATUS_MAPPING: StatusMapping = {
   requirements: 'Todo',
   design: 'In Progress',
   tasks: 'In Progress', // 非推奨フェーズ
-  implementation: 'In Review',
-  completed: 'Done',
+  implementation: 'In Progress', // 実装中は In Progress
+  completed: 'In Review', // 完了・PR作成後は In Review（Done は pr-cleanup で設定）
 };
 
 /**
