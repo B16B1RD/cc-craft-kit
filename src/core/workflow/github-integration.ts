@@ -12,7 +12,8 @@ import { GitHubIssues } from '../../integrations/github/issues.js';
 import { GitHubProjects } from '../../integrations/github/projects.js';
 import { GitHubSyncService } from '../../integrations/github/sync.js';
 import { resolveProjectId } from '../../integrations/github/project-resolver.js';
-import { mapPhaseToStatus, type Phase } from '../../integrations/github/phase-status-mapper.js';
+import { DynamicStatusMapper } from '../../integrations/github/phase-status-mapper.js';
+import type { SpecPhase } from '../database/schema.js';
 import { SubIssueManager } from '../../integrations/github/sub-issues.js';
 import { parseTaskListFromSpec } from '../utils/task-parser.js';
 import { getErrorHandler } from '../errors/error-handler.js';
@@ -382,7 +383,11 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
               return;
             }
 
-            const newStatus = mapPhaseToStatus(event.data.newPhase as Phase);
+            // DynamicStatusMapper でフェーズからステータスをマッピング（フォールバック対応）
+            const statusMapper = DynamicStatusMapper.create(ccCraftKitDir);
+            const newStatus = statusMapper.mapPhaseToStatusWithFallback(
+              event.data.newPhase as SpecPhase
+            );
 
             await projects.updateProjectStatus({
               owner: githubConfig.owner,

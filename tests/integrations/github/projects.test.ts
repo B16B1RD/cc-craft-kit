@@ -529,7 +529,7 @@ describe('GitHubProjects', () => {
         owner: 'testuser',
         projectNumber: 1,
         itemId: 'PVTI_lADOABCDEF4Aa1b2zgABCDE',
-        status: 'In Progress' as const,
+        status: 'In Progress',
       };
 
       const fields: ProjectFieldResponse[] = [
@@ -599,7 +599,7 @@ describe('GitHubProjects', () => {
         owner: 'testuser',
         projectNumber: 1,
         itemId: 'PVTI_lADOABCDEF4Aa1b2zgABCDE',
-        status: 'In Progress' as const,
+        status: 'In Progress',
       };
 
       mockClient.query
@@ -616,17 +616,122 @@ describe('GitHubProjects', () => {
 
       // Act & Assert
       await expect(projects.updateProjectStatus(params)).rejects.toThrow(
-        'Status field not found in project'
+        'Status field "Status" not found in project'
       );
     });
 
-    it('should throw error when status option not found', async () => {
+    it('should use custom statusFieldName when provided', async () => {
       // Arrange
       const params = {
         owner: 'testuser',
         projectNumber: 1,
         itemId: 'PVTI_lADOABCDEF4Aa1b2zgABCDE',
-        status: 'Invalid Status' as any,
+        status: 'Open',
+        statusFieldName: 'CustomStatus',
+      };
+
+      mockClient.query
+        .mockResolvedValueOnce({ user: { type: 'User' } })
+        .mockResolvedValueOnce({
+          user: {
+            projectV2: {
+              fields: {
+                nodes: [],
+              },
+            },
+          },
+        });
+
+      // Act & Assert
+      await expect(projects.updateProjectStatus(params)).rejects.toThrow(
+        'Status field "CustomStatus" not found in project'
+      );
+    });
+
+    it('should fallback to fallbackStatus when status option not found', async () => {
+      // Arrange
+      const params = {
+        owner: 'testuser',
+        projectNumber: 1,
+        itemId: 'PVTI_lADOABCDEF4Aa1b2zgABCDE',
+        status: 'In Review', // このステータスは存在しない
+        fallbackStatus: 'In Progress',
+      };
+
+      const fields: ProjectFieldResponse[] = [
+        {
+          id: 'PVTF_lADOABCDEF4Aa1b2zgABCDE',
+          name: 'Status',
+          options: [
+            { id: 'PVTFO_todo', name: 'Todo' },
+            { id: 'PVTFO_inprogress', name: 'In Progress' },
+            { id: 'PVTFO_done', name: 'Done' },
+          ],
+        },
+      ];
+
+      const project: ProjectResponse = {
+        id: 'PVT_kwDOABCDEF4Aa1b2',
+        number: 1,
+        title: 'Test Project',
+        url: 'https://github.com/users/testuser/projects/1',
+        shortDescription: null,
+        public: true,
+        closed: false,
+        createdAt: '2025-11-21T00:00:00Z',
+        updatedAt: '2025-11-21T00:00:00Z',
+      };
+
+      // getOwnerType のモック
+      mockClient.query
+        .mockResolvedValueOnce({ user: { type: 'User' } })
+        .mockResolvedValueOnce({
+          user: {
+            projectV2: {
+              fields: {
+                nodes: fields,
+              },
+            },
+          },
+        })
+        .mockResolvedValueOnce({ user: { type: 'User' } })
+        .mockResolvedValueOnce({
+          user: { projectV2: project },
+        })
+        .mockResolvedValueOnce({
+          updateProjectV2ItemFieldValue: {
+            projectV2Item: { id: params.itemId },
+          },
+        });
+
+      // console.warn をスパイ
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+      // Act
+      await projects.updateProjectStatus(params);
+
+      // Assert - フォールバックが適用されて In Progress の option ID が使われる
+      expect(mockClient.query).toHaveBeenLastCalledWith(
+        expect.stringContaining('updateProjectV2ItemFieldValue'),
+        expect.objectContaining({
+          value: { singleSelectOptionId: 'PVTFO_inprogress' },
+        })
+      );
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Status "In Review" not found, falling back to "In Progress"'
+      );
+
+      warnSpy.mockRestore();
+    });
+
+    it('should throw error when both status and fallback not found', async () => {
+      // Arrange
+      const params = {
+        owner: 'testuser',
+        projectNumber: 1,
+        itemId: 'PVTI_lADOABCDEF4Aa1b2zgABCDE',
+        status: 'Unknown',
+        fallbackStatus: 'AlsoUnknown',
       };
 
       const fields: ProjectFieldResponse[] = [
@@ -654,8 +759,196 @@ describe('GitHubProjects', () => {
 
       // Act & Assert
       await expect(projects.updateProjectStatus(params)).rejects.toThrow(
-        'Status option "Invalid Status" not found'
+        'Status option "Unknown" not found, and fallback "AlsoUnknown" also not available'
       );
+    });
+
+    it('should throw error when status option not found (legacy test)', async () => {
+      // Arrange - fallbackStatus が指定されていない場合、デフォルトの "In Progress" が使われる
+      // In Progress が存在しない場合はエラーになる
+      const params = {
+        owner: 'testuser',
+        projectNumber: 1,
+        itemId: 'PVTI_lADOABCDEF4Aa1b2zgABCDE',
+        status: 'Invalid Status',
+        fallbackStatus: 'Also Invalid', // 明示的に無効なフォールバックを指定
+      };
+
+      const fields: ProjectFieldResponse[] = [
+        {
+          id: 'PVTF_lADOABCDEF4Aa1b2zgABCDE',
+          name: 'Status',
+          options: [
+            { id: 'PVTFO_todo', name: 'Todo' },
+            { id: 'PVTFO_done', name: 'Done' },
+          ],
+        },
+      ];
+
+      mockClient.query
+        .mockResolvedValueOnce({ user: { type: 'User' } })
+        .mockResolvedValueOnce({
+          user: {
+            projectV2: {
+              fields: {
+                nodes: fields,
+              },
+            },
+          },
+        });
+
+      // Act & Assert
+      await expect(projects.updateProjectStatus(params)).rejects.toThrow(
+        'Status option "Invalid Status" not found, and fallback "Also Invalid" also not available'
+      );
+    });
+  });
+
+  describe('detectAvailableStatuses', () => {
+    it('should return available statuses for a project', async () => {
+      // Arrange
+      const owner = 'testuser';
+      const projectNumber = 1;
+
+      const fields: ProjectFieldResponse[] = [
+        {
+          id: 'PVTF_lADOABCDEF4Aa1b2zgABCDE',
+          name: 'Status',
+          options: [
+            { id: 'PVTFO_todo', name: 'Todo' },
+            { id: 'PVTFO_inprogress', name: 'In Progress' },
+            { id: 'PVTFO_inreview', name: 'In Review' },
+            { id: 'PVTFO_done', name: 'Done' },
+          ],
+        },
+      ];
+
+      // getOwnerType のモック
+      mockClient.query
+        .mockResolvedValueOnce({ user: { type: 'User' } })
+        .mockResolvedValueOnce({
+          user: {
+            projectV2: {
+              fields: {
+                nodes: fields,
+              },
+            },
+          },
+        });
+
+      // Act
+      const result = await projects.detectAvailableStatuses(owner, projectNumber);
+
+      // Assert
+      expect(result).toEqual(['Todo', 'In Progress', 'In Review', 'Done']);
+    });
+
+    it('should return empty array when Status field not found', async () => {
+      // Arrange
+      const owner = 'testuser';
+      const projectNumber = 1;
+
+      // getOwnerType のモック
+      mockClient.query
+        .mockResolvedValueOnce({ user: { type: 'User' } })
+        .mockResolvedValueOnce({
+          user: {
+            projectV2: {
+              fields: {
+                nodes: [],
+              },
+            },
+          },
+        });
+
+      // Act
+      const result = await projects.detectAvailableStatuses(owner, projectNumber);
+
+      // Assert
+      expect(result).toEqual([]);
+    });
+
+    it('should use custom statusFieldName when provided', async () => {
+      // Arrange
+      const owner = 'testuser';
+      const projectNumber = 1;
+      const statusFieldName = 'CustomStatus';
+
+      const fields: ProjectFieldResponse[] = [
+        {
+          id: 'PVTF_custom',
+          name: 'CustomStatus',
+          options: [
+            { id: 'PVTFO_open', name: 'Open' },
+            { id: 'PVTFO_closed', name: 'Closed' },
+          ],
+        },
+        {
+          id: 'PVTF_status',
+          name: 'Status',
+          options: [
+            { id: 'PVTFO_todo', name: 'Todo' },
+            { id: 'PVTFO_done', name: 'Done' },
+          ],
+        },
+      ];
+
+      // getOwnerType のモック
+      mockClient.query
+        .mockResolvedValueOnce({ user: { type: 'User' } })
+        .mockResolvedValueOnce({
+          user: {
+            projectV2: {
+              fields: {
+                nodes: fields,
+              },
+            },
+          },
+        });
+
+      // Act
+      const result = await projects.detectAvailableStatuses(owner, projectNumber, statusFieldName);
+
+      // Assert
+      expect(result).toEqual(['Open', 'Closed']);
+    });
+
+    it('should return 3-stage statuses (backward compatibility)', async () => {
+      // Arrange
+      const owner = 'testuser';
+      const projectNumber = 1;
+
+      const fields: ProjectFieldResponse[] = [
+        {
+          id: 'PVTF_lADOABCDEF4Aa1b2zgABCDE',
+          name: 'Status',
+          options: [
+            { id: 'PVTFO_todo', name: 'Todo' },
+            { id: 'PVTFO_inprogress', name: 'In Progress' },
+            { id: 'PVTFO_done', name: 'Done' },
+          ],
+        },
+      ];
+
+      // getOwnerType のモック
+      mockClient.query
+        .mockResolvedValueOnce({ user: { type: 'User' } })
+        .mockResolvedValueOnce({
+          user: {
+            projectV2: {
+              fields: {
+                nodes: fields,
+              },
+            },
+          },
+        });
+
+      // Act
+      const result = await projects.detectAvailableStatuses(owner, projectNumber);
+
+      // Assert - In Review がない 3 段階ステータス
+      expect(result).toEqual(['Todo', 'In Progress', 'Done']);
+      expect(result).not.toContain('In Review');
     });
   });
 });
