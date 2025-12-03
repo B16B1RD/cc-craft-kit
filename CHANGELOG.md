@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.6] - 2025-12-03
+
+### Added
+
+- GitHub Projects ステータスマッピング設定の自動検出機能（config.json statusConfig）
+- 複数ステータスパターンへの対応（3段階、4段階ステータスなど）
+- phase 変更時の Projects ステータス自動更新（PR merge で Done に更新）
+
+### Changed
+
+- GitHub status-config.ts を設定駆動型アーキテクチャに統一
+- DynamicStatusMapper による後方互換性の維持
+- phase-status-mapper.ts でフォールバック処理を実装
+
+### Fixed
+
+- MCP_PORT サンプル設定を削除（不要な環境変数設定を削除）
+
 ## [0.1.5] - 2025-12-02
 
 ### Added
@@ -124,6 +142,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - なし（初回リリース）
 
+[0.1.6]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.6
 [0.1.5]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.5
 [0.1.4]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.4
 [0.1.3]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.3

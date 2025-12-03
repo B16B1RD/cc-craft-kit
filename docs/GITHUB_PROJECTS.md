@@ -24,14 +24,17 @@ GitHub Projects v2 では、Status フィールドは **デフォルトで Hidde
 
 cc-craft-kit では、仕様書のフェーズ変更時に自動的に GitHub Project の Status フィールドが更新されます。
 
-| cc-craft-kit Phase | Project Status |
-|----------------|----------------|
-| requirements   | Todo           |
-| design         | In Progress    |
-| implementation | In Progress    |
-| completed      | Done           |
+| cc-craft-kit Phase/トリガー | Project Status | 説明 |
+|----------------------------|----------------|------|
+| requirements               | Todo           | 要件定義中 |
+| design                     | In Progress    | 設計・タスク分割中 |
+| implementation             | In Progress    | 実装作業中 |
+| completed                  | In Review      | PR 作成・レビュー待ち |
+| `/cft:pr-cleanup`          | Done           | PR マージ完了 |
 
 > **注意**: `tasks` フェーズは非推奨です。4 フェーズモデル（requirements → design → implementation → completed）を使用してください。design フェーズでタスク分割が自動実行されます。
+
+> **ワークフロー**: `completed` フェーズでは PR が作成され `In Review` になります。PR がマージされ `/cft:pr-cleanup` を実行すると `Done` に更新されます。
 
 この自動マッピングにより、仕様書のフェーズを更新するだけで Project ボード上のステータスも同期されます。
 
@@ -57,7 +60,7 @@ cc-craft-kit プロジェクトでは、以下の 3 つのビューを設定す�
 2. **「Board」** を選択
 3. ビュー名を **「Status Board」** に設定
 4. **「Column by」** で **「Status」** フィールドを選択
-5. 列の順序を調整: **Todo → In Progress → Done**
+5. 列の順序を調整: **Todo → In Progress → In Review → Done**
 
 ### 推奨カスタマイズ
 

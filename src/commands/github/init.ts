@@ -11,6 +11,7 @@ import {
   formatKeyValue,
   formatInfo,
   formatError,
+  formatWarning,
 } from '../utils/output.js';
 import {
   createProjectNotInitializedError,
@@ -18,6 +19,20 @@ import {
   handleCLIError,
 } from '../utils/error-handler.js';
 import { validateGitHubRepo } from '../utils/validation.js';
+import { GitHubClient } from '../../integrations/github/client.js';
+import { GitHubProjects } from '../../integrations/github/projects.js';
+import {
+  DEFAULT_STATUS_CONFIG,
+  type GitHubStatusConfig,
+} from '../../core/config/github-status-config.js';
+
+/**
+ * GitHub初期化オプション
+ */
+export interface InitGitHubOptions {
+  color: boolean;
+  projectNumber?: number;
+}
 
 /**
  * GitHub初期化
@@ -25,7 +40,7 @@ import { validateGitHubRepo } from '../utils/validation.js';
 export async function initGitHub(
   owner: string,
   repo: string,
-  options: { color: boolean } = { color: true }
+  options: InitGitHubOptions = { color: true }
 ): Promise<void> {
   const cwd = process.cwd();
   const ccCraftKitDir = join(cwd, '.cc-craft-kit');
@@ -54,10 +69,25 @@ export async function initGitHub(
 
   // GitHub設定を追加
   console.log(formatInfo('Updating configuration...', options.color));
+
+  // 既存の statusConfig を取得（あれば）
+  const existingGitHub = config.github as Record<string, unknown> | undefined;
+  const existingStatusConfig = existingGitHub?.statusConfig as
+    | Partial<GitHubStatusConfig>
+    | undefined;
+
+  // デフォルトの statusConfig を設定
+  let statusConfig: GitHubStatusConfig = {
+    ...DEFAULT_STATUS_CONFIG,
+    ...existingStatusConfig,
+    cachedAt: null,
+  };
+
   config.github = {
     owner,
     repo,
     initialized_at: new Date().toISOString(),
+    statusConfig,
   };
 
   // 設定を保存
@@ -98,6 +128,79 @@ export async function initGitHub(
   } else {
     console.log(formatSuccess('✓ GITHUB_TOKEN is set', options.color));
     console.log('');
+
+    // Projects からステータスを自動検出（projectNumber が指定されている場合）
+    if (options.projectNumber) {
+      console.log(formatHeading('Status Detection', 2, options.color));
+      console.log('');
+      console.log(
+        formatInfo(
+          `Detecting available statuses from Project #${options.projectNumber}...`,
+          options.color
+        )
+      );
+
+      try {
+        const client = new GitHubClient({ token: githubToken });
+        const projects = new GitHubProjects(client);
+
+        const detectedStatuses = await projects.detectAvailableStatuses(
+          owner,
+          options.projectNumber
+        );
+
+        if (detectedStatuses.length > 0) {
+          console.log(
+            formatSuccess(`Found ${detectedStatuses.length} status options:`, options.color)
+          );
+          detectedStatuses.forEach((status) => {
+            console.log(`    • ${status}`);
+          });
+          console.log('');
+
+          // statusConfig を更新
+          statusConfig = {
+            ...statusConfig,
+            availableStatuses: detectedStatuses,
+            cachedAt: new Date().toISOString(),
+          };
+
+          // In Review の有無をチェックしてマッピングを調整
+          if (!detectedStatuses.includes('In Review')) {
+            console.log(
+              formatWarning(
+                'Note: "In Review" status not found. Using "In Progress" as fallback for implementation phase.',
+                options.color
+              )
+            );
+            statusConfig.statusMapping = {
+              ...statusConfig.statusMapping,
+              implementation: 'In Progress',
+            };
+          }
+
+          // config.json を再保存
+          config.github = {
+            ...(config.github as Record<string, unknown>),
+            statusConfig,
+          };
+          writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+
+          console.log(formatSuccess('Status configuration saved to config.json', options.color));
+          console.log('');
+        } else {
+          console.log(
+            formatWarning('No status options found. Using default configuration.', options.color)
+          );
+          console.log('');
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.log(formatWarning(`Failed to detect statuses: ${errorMessage}`, options.color));
+        console.log(formatInfo('Using default status configuration.', options.color));
+        console.log('');
+      }
+    }
   }
 
   // 次のアクション
@@ -122,12 +225,26 @@ export async function initGitHub(
 if (import.meta.url === `file://${process.argv[1]}`) {
   const owner = process.argv[2];
   const repo = process.argv[3];
+  const projectNumberArg = process.argv[4];
 
   if (!owner || !repo) {
     console.error('Error: owner and repo are required');
-    console.error('Usage: npx tsx init.ts <owner> <repo>');
+    console.error('Usage: npx tsx init.ts <owner> <repo> [project-number]');
+    console.error('');
+    console.error('Options:');
+    console.error('  project-number  GitHub Project number for status detection');
     process.exit(1);
   }
 
-  initGitHub(owner, repo).catch((error) => handleCLIError(error));
+  const options: InitGitHubOptions = { color: true };
+  if (projectNumberArg) {
+    const projectNumber = parseInt(projectNumberArg, 10);
+    if (isNaN(projectNumber) || projectNumber <= 0) {
+      console.error(`Error: Invalid project number: ${projectNumberArg}`);
+      process.exit(1);
+    }
+    options.projectNumber = projectNumber;
+  }
+
+  initGitHub(owner, repo, options).catch((error) => handleCLIError(error));
 }

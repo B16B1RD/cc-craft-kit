@@ -1086,4 +1086,275 @@ describe.skip('GitHub Integration Event Handlers', () => {
       expect(mockGitHubProjects.updateProjectStatus).toHaveBeenCalled();
     });
   });
+
+  describe('spec.pr_merged イベント - GitHub Projects ステータスを Done に更新', () => {
+    test('PR マージ時に GitHub Projects のステータスが "Done" に更新される', async () => {
+      mockGitHubProjects.updateProjectStatus.mockResolvedValue(undefined);
+      mockGitHubProjects.verifyProjectStatusUpdate.mockResolvedValue({
+        success: true,
+        actualStatus: 'Done',
+        attempts: 1,
+      });
+      mockResolveProjectId.mockResolvedValue(1);
+
+      // 仕様書をデータベースに追加
+      const specId = 'spec-test-pr-merged';
+      await lifecycle.db
+        .insertInto('specs')
+        .values({
+          id: specId,
+          name: 'Test Spec PR Merged',
+          description: 'Test description',
+          phase: 'completed',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成（project）
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'project',
+          entity_id: specId,
+          github_id: 'PVTI_pr_merged_item_id',
+          github_number: null,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
+        })
+        .execute();
+
+      // console.logをモック
+      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+
+      // イベント発行
+      const event = eventBus.createEvent('spec.pr_merged', specId, {
+        prNumber: 42,
+        branchName: 'feature/test',
+        mergedAt: new Date().toISOString(),
+      });
+      await eventBus.emit(event);
+
+      // 少し待つ（非同期処理完了待ち）
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Project ステータス更新が呼ばれたことを確認
+      expect(mockGitHubProjects.updateProjectStatus).toHaveBeenCalledWith({
+        owner: 'test-owner',
+        projectNumber: 1,
+        itemId: 'PVTI_pr_merged_item_id',
+        status: 'Done',
+      });
+
+      // ステータス更新検証が呼ばれたことを確認
+      expect(mockGitHubProjects.verifyProjectStatusUpdate).toHaveBeenCalledWith({
+        owner: 'test-owner',
+        projectNumber: 1,
+        itemId: 'PVTI_pr_merged_item_id',
+        expectedStatus: 'Done',
+        maxRetries: 3,
+      });
+
+      consoleLogSpy.mockRestore();
+    });
+
+    test('GitHub Project に追加されていない場合はスキップ', async () => {
+      mockGitHubProjects.updateProjectStatus.mockClear();
+      mockGitHubProjects.verifyProjectStatusUpdate.mockClear();
+
+      // 仕様書をデータベースに追加（Project なし）
+      const specId = 'spec-test-pr-merged-no-project';
+      await lifecycle.db
+        .insertInto('specs')
+        .values({
+          id: specId,
+          name: 'Test Spec PR Merged No Project',
+          description: 'Test description',
+          phase: 'completed',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // イベント発行
+      const event = eventBus.createEvent('spec.pr_merged', specId, {
+        prNumber: 43,
+        branchName: 'feature/test-no-project',
+        mergedAt: new Date().toISOString(),
+      });
+      await eventBus.emit(event);
+
+      // 少し待つ（非同期処理完了待ち）
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Project ステータス更新が呼ばれていないことを確認
+      expect(mockGitHubProjects.updateProjectStatus).not.toHaveBeenCalled();
+      expect(mockGitHubProjects.verifyProjectStatusUpdate).not.toHaveBeenCalled();
+    });
+
+    test('Project 番号が解決できない場合はスキップ', async () => {
+      mockGitHubProjects.updateProjectStatus.mockClear();
+      mockGitHubProjects.verifyProjectStatusUpdate.mockClear();
+      mockResolveProjectId.mockResolvedValue(null);
+
+      // 仕様書をデータベースに追加
+      const specId = 'spec-test-pr-merged-no-project-number';
+      await lifecycle.db
+        .insertInto('specs')
+        .values({
+          id: specId,
+          name: 'Test Spec PR Merged No Project Number',
+          description: 'Test description',
+          phase: 'completed',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成（project）
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'project',
+          entity_id: specId,
+          github_id: 'PVTI_pr_merged_item_id',
+          github_number: null,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
+        })
+        .execute();
+
+      // イベント発行
+      const event = eventBus.createEvent('spec.pr_merged', specId, {
+        prNumber: 44,
+        branchName: 'feature/test-no-project-number',
+        mergedAt: new Date().toISOString(),
+      });
+      await eventBus.emit(event);
+
+      // 少し待つ（非同期処理完了待ち）
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Project ステータス更新が呼ばれていないことを確認
+      expect(mockGitHubProjects.updateProjectStatus).not.toHaveBeenCalled();
+      expect(mockGitHubProjects.verifyProjectStatusUpdate).not.toHaveBeenCalled();
+    });
+
+    test('GitHub API エラー時も処理を続行', async () => {
+      mockGitHubProjects.updateProjectStatus.mockRejectedValue(
+        new Error('GitHub API error')
+      );
+      mockResolveProjectId.mockResolvedValue(1);
+
+      // 仕様書をデータベースに追加
+      const specId = 'spec-test-pr-merged-api-error';
+      await lifecycle.db
+        .insertInto('specs')
+        .values({
+          id: specId,
+          name: 'Test Spec PR Merged API Error',
+          description: 'Test description',
+          phase: 'completed',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成（project）
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'project',
+          entity_id: specId,
+          github_id: 'PVTI_pr_merged_api_error',
+          github_number: null,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
+        })
+        .execute();
+
+      // イベント発行（エラーがスローされないことを確認）
+      const event = eventBus.createEvent('spec.pr_merged', specId, {
+        prNumber: 45,
+        branchName: 'feature/test-api-error',
+        mergedAt: new Date().toISOString(),
+      });
+      await expect(eventBus.emit(event)).resolves.not.toThrow();
+
+      // 少し待つ（非同期処理完了待ち）
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Project ステータス更新が呼ばれたことを確認（エラーでも試行される）
+      expect(mockGitHubProjects.updateProjectStatus).toHaveBeenCalled();
+    });
+
+    test('検証失敗時も警告のみで処理を続行', async () => {
+      mockGitHubProjects.updateProjectStatus.mockResolvedValue(undefined);
+      mockGitHubProjects.verifyProjectStatusUpdate.mockResolvedValue({
+        success: false,
+        actualStatus: 'In Review',
+        attempts: 3,
+      });
+      mockResolveProjectId.mockResolvedValue(1);
+
+      // 仕様書をデータベースに追加
+      const specId = 'spec-test-pr-merged-verify-fail';
+      await lifecycle.db
+        .insertInto('specs')
+        .values({
+          id: specId,
+          name: 'Test Spec PR Merged Verify Fail',
+          description: 'Test description',
+          phase: 'completed',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
+
+      // github_sync レコード作成（project）
+      await lifecycle.db
+        .insertInto('github_sync')
+        .values({
+          entity_type: 'project',
+          entity_id: specId,
+          github_id: 'PVTI_pr_merged_verify_fail',
+          github_number: null,
+          github_node_id: null,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'success',
+          error_message: null,
+        })
+        .execute();
+
+      // console.warnをモック
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      // イベント発行（エラーがスローされないことを確認）
+      const event = eventBus.createEvent('spec.pr_merged', specId, {
+        prNumber: 46,
+        branchName: 'feature/test-verify-fail',
+        mergedAt: new Date().toISOString(),
+      });
+      await expect(eventBus.emit(event)).resolves.not.toThrow();
+
+      // 少し待つ（非同期処理完了待ち）
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // 検証が呼ばれたことを確認
+      expect(mockGitHubProjects.verifyProjectStatusUpdate).toHaveBeenCalled();
+
+      // 警告が出力されたことを確認
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to verify project status update')
+      );
+
+      consoleWarnSpy.mockRestore();
+    });
+  });
 });
