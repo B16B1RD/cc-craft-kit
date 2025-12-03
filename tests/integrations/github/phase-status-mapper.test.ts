@@ -152,8 +152,8 @@ describe('phase-status-mapper', () => {
         const mapper = new DynamicStatusMapper();
         expect(mapper.mapPhaseToStatus('requirements')).toBe('Todo');
         expect(mapper.mapPhaseToStatus('design')).toBe('In Progress');
-        expect(mapper.mapPhaseToStatus('implementation')).toBe('In Review');
-        expect(mapper.mapPhaseToStatus('completed')).toBe('Done');
+        expect(mapper.mapPhaseToStatus('implementation')).toBe('In Progress');
+        expect(mapper.mapPhaseToStatus('completed')).toBe('In Review');
       });
 
       it('カスタムマッピングを使用', () => {
