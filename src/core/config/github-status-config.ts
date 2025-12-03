@@ -8,7 +8,7 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { SpecPhase } from '../../database/types.js';
+import type { SpecPhase } from '../database/schema.js';
 
 // ============================================================================
 // 型定義

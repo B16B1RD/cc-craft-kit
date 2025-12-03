@@ -1,5 +1,5 @@
 import { IGitHubClient } from './client.js';
-import { ProjectStatus, isProjectStatus } from './phase-status-mapper.js';
+import { loadStatusConfig } from '../../core/config/github-status-config.js';
 
 /**
  * Project V2 フィールド型
@@ -93,7 +93,9 @@ export interface VerifyProjectStatusParams {
   owner: string;
   projectNumber: number;
   itemId: string;
-  expectedStatus: ProjectStatus;
+  expectedStatus: string;
+  statusFieldName?: string;
+  fallbackStatus?: string;
   maxRetries?: number;
 }
 
@@ -102,7 +104,7 @@ export interface VerifyProjectStatusParams {
  */
 export interface VerifyProjectStatusResult {
   success: boolean;
-  actualStatus: ProjectStatus | null;
+  actualStatus: string | null;
   attempts: number;
 }
 
@@ -371,26 +373,47 @@ export class GitHubProjects {
 
   /**
    * Project のステータスフィールドを更新
+   *
+   * @param params.owner リポジトリオーナー
+   * @param params.projectNumber プロジェクト番号
+   * @param params.itemId プロジェクトアイテム ID
+   * @param params.status ステータス名（カスタムステータスも可）
+   * @param params.statusFieldName ステータスフィールド名（省略時は config から取得、またはデフォルト "Status"）
+   * @param params.fallbackStatus フォールバックステータス（省略時は config から取得）
    */
   async updateProjectStatus(params: {
     owner: string;
     projectNumber: number;
     itemId: string;
-    status: 'Todo' | 'In Progress' | 'Done';
+    status: string;
+    statusFieldName?: string;
+    fallbackStatus?: string;
   }): Promise<void> {
+    // config から設定を読み込み（statusFieldName が指定されていない場合）
+    const config = loadStatusConfig();
+    const statusFieldName = params.statusFieldName ?? config.statusFieldName;
+    const fallbackStatus = params.fallbackStatus ?? config.fallbackStatus;
+
     // 1. Project のフィールド一覧を取得
     const fields = await this.getProjectFields(params.owner, params.projectNumber);
 
-    // 2. "Status" フィールドを検索
-    const statusField = fields.find((f) => f.name === 'Status');
+    // 2. ステータスフィールドを検索
+    const statusField = fields.find((f) => f.name === statusFieldName);
     if (!statusField) {
-      throw new Error('Status field not found in project');
+      throw new Error(`Status field "${statusFieldName}" not found in project`);
     }
 
-    // 3. ステータスオプション ID を検索
-    const option = statusField.options.find((o) => o.name === params.status);
+    // 3. ステータスオプション ID を検索（フォールバック対応）
+    let option = statusField.options.find((o) => o.name === params.status);
     if (!option) {
-      throw new Error(`Status option "${params.status}" not found`);
+      // フォールバック試行
+      option = statusField.options.find((o) => o.name === fallbackStatus);
+      if (!option) {
+        throw new Error(
+          `Status option "${params.status}" not found, and fallback "${fallbackStatus}" also not available`
+        );
+      }
+      console.warn(`Status "${params.status}" not found, falling back to "${fallbackStatus}"`);
     }
 
     // 4. Project 情報を取得
@@ -466,9 +489,16 @@ export class GitHubProjects {
 
   /**
    * プロジェクトアイテムの現在のステータスを取得
+   *
+   * @param itemId プロジェクトアイテム ID
+   * @param statusFieldName ステータスフィールド名（省略時は config から取得）
+   * @returns ステータス名（文字列）。取得失敗時は null
    */
-  async getProjectItemStatus(itemId: string): Promise<ProjectStatus | null> {
+  async getProjectItemStatus(itemId: string, statusFieldName?: string): Promise<string | null> {
     try {
+      const config = loadStatusConfig();
+      const fieldName = statusFieldName ?? config.statusFieldName;
+
       const query = `
         query getProjectItemStatus($itemId: ID!) {
           node(id: $itemId) {
@@ -503,24 +533,14 @@ export class GitHubProjects {
         };
       }>(query, { itemId });
 
-      // "Status" フィールドを検索
-      const statusField = result.node.fieldValues.nodes.find((fv) => fv?.field?.name === 'Status');
+      // 指定されたステータスフィールドを検索
+      const statusField = result.node.fieldValues.nodes.find((fv) => fv?.field?.name === fieldName);
 
       if (!statusField) {
         return null;
       }
 
-      // ステータス名を ProjectStatus 型にマッピング
-      const statusName = statusField.name;
-      if (isProjectStatus(statusName)) {
-        return statusName;
-      }
-
-      // 想定外のステータス名をログに記録
-      console.warn(
-        `Unknown project status: "${statusName}". Expected: Todo, In Progress, or Done.`
-      );
-      return null;
+      return statusField.name;
     } catch (error) {
       console.warn('Failed to get project item status:', error);
       return null;
@@ -553,7 +573,7 @@ export class GitHubProjects {
       await this.sleep(waitTime);
 
       try {
-        const actualStatus = await this.getProjectItemStatus(params.itemId);
+        const actualStatus = await this.getProjectItemStatus(params.itemId, params.statusFieldName);
 
         if (actualStatus === params.expectedStatus) {
           return { success: true, actualStatus, attempts };
@@ -566,6 +586,8 @@ export class GitHubProjects {
             projectNumber: params.projectNumber,
             itemId: params.itemId,
             status: params.expectedStatus,
+            statusFieldName: params.statusFieldName,
+            fallbackStatus: params.fallbackStatus,
           });
         }
       } catch (error) {
@@ -580,7 +602,33 @@ export class GitHubProjects {
     }
 
     // 最終的に失敗
-    const finalStatus = await this.getProjectItemStatus(params.itemId);
+    const finalStatus = await this.getProjectItemStatus(params.itemId, params.statusFieldName);
     return { success: false, actualStatus: finalStatus, attempts };
+  }
+
+  /**
+   * プロジェクトの利用可能なステータス一覧を取得
+   *
+   * @param owner リポジトリオーナー
+   * @param projectNumber プロジェクト番号
+   * @param statusFieldName ステータスフィールド名（省略時は config から取得）
+   * @returns 利用可能なステータス名の配列
+   */
+  async detectAvailableStatuses(
+    owner: string,
+    projectNumber: number,
+    statusFieldName?: string
+  ): Promise<string[]> {
+    const config = loadStatusConfig();
+    const fieldName = statusFieldName ?? config.statusFieldName;
+
+    const fields = await this.getProjectFields(owner, projectNumber);
+    const statusField = fields.find((f) => f.name === fieldName);
+
+    if (!statusField) {
+      return [];
+    }
+
+    return statusField.options.map((o) => o.name);
   }
 }
