@@ -185,6 +185,109 @@ export function mergeStatusConfig(partial: Partial<GitHubStatusConfig>): GitHubS
 }
 
 // ============================================================================
+// バリデーション
+// ============================================================================
+
+/**
+ * バリデーション結果
+ */
+export interface ValidationResult {
+  /** バリデーション成功かどうか */
+  valid: boolean;
+  /** エラーメッセージ一覧 */
+  errors: string[];
+  /** 警告メッセージ一覧 */
+  warnings: string[];
+}
+
+/**
+ * ステータス設定のバリデーション
+ *
+ * 以下の項目を検証:
+ * - statusFieldName が空でないこと
+ * - statusMapping の全フェーズが設定されていること
+ * - availableStatuses が空でないこと
+ * - fallbackStatus が availableStatuses に含まれていること
+ * - statusMapping の各ステータスが availableStatuses に含まれていること（警告）
+ *
+ * @param config バリデーション対象の設定
+ * @returns バリデーション結果
+ */
+export function validateStatusConfig(config: GitHubStatusConfig): ValidationResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // statusFieldName のバリデーション
+  if (!config.statusFieldName || config.statusFieldName.trim() === '') {
+    errors.push('statusFieldName は空にできません');
+  }
+
+  // statusMapping のバリデーション
+  const requiredPhases: SpecPhase[] = [
+    'requirements',
+    'design',
+    'tasks',
+    'implementation',
+    'completed',
+  ];
+  for (const phase of requiredPhases) {
+    if (!config.statusMapping[phase] || config.statusMapping[phase].trim() === '') {
+      errors.push(`statusMapping.${phase} は空にできません`);
+    }
+  }
+
+  // availableStatuses のバリデーション
+  if (!config.availableStatuses || config.availableStatuses.length === 0) {
+    errors.push('availableStatuses は少なくとも 1 つのステータスが必要です');
+  }
+
+  // fallbackStatus のバリデーション
+  if (!config.fallbackStatus || config.fallbackStatus.trim() === '') {
+    errors.push('fallbackStatus は空にできません');
+  } else if (
+    config.availableStatuses &&
+    !config.availableStatuses.includes(config.fallbackStatus)
+  ) {
+    errors.push(
+      `fallbackStatus "${config.fallbackStatus}" は availableStatuses に含まれていません`
+    );
+  }
+
+  // statusMapping のステータスが availableStatuses に含まれているか（警告）
+  if (config.availableStatuses && config.availableStatuses.length > 0) {
+    for (const phase of requiredPhases) {
+      const status = config.statusMapping[phase];
+      if (status && !config.availableStatuses.includes(status)) {
+        warnings.push(
+          `statusMapping.${phase} = "${status}" は availableStatuses に含まれていません。フォールバックが適用されます。`
+        );
+      }
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings,
+  };
+}
+
+/**
+ * 設定を読み込んでバリデーション
+ *
+ * @param basePath プロジェクトのベースパス
+ * @returns バリデーション結果と設定
+ */
+export function loadAndValidateStatusConfig(basePath: string = process.cwd()): {
+  config: GitHubStatusConfig;
+  validation: ValidationResult;
+} {
+  const config = loadStatusConfig(basePath);
+  const validation = validateStatusConfig(config);
+  return { config, validation };
+}
+
+// ============================================================================
 // 型ガード・ユーティリティ
 // ============================================================================
 
