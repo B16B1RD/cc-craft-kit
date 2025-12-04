@@ -219,7 +219,7 @@ export async function syncSourceToCcCraftKit(options: SyncOptions = {}): Promise
 }
 
 /**
- * .claude/commands/ の同期
+ * スラッシュコマンドの同期（src/slash-commands/ → .claude/commands/cft/）
  */
 export async function syncSlashCommands(options: SyncOptions = {}): Promise<SyncResult> {
   const { dryRun = false, verbose = false, baseDir = process.cwd() } = options;
@@ -233,11 +233,11 @@ export async function syncSlashCommands(options: SyncOptions = {}): Promise<Sync
 
   try {
     if (verbose) {
-      console.log('🔄 Syncing src/slash-commands/ to .cc-craft-kit/slash-commands/...\n');
+      console.log('🔄 Syncing src/slash-commands/ to .claude/commands/cft/...\n');
     }
 
     const sourceDir = path.join(baseDir, 'src', 'slash-commands');
-    const destDir = path.join(baseDir, '.cc-craft-kit', 'slash-commands');
+    const destDir = path.join(baseDir, '.claude', 'commands', 'cft');
 
     // ソースディレクトリが存在しない場合はスキップ
     try {
@@ -285,6 +285,207 @@ export async function syncSlashCommands(options: SyncOptions = {}): Promise<Sync
 }
 
 /**
+ * スキルの同期（src/skills/ → .claude/skills/）
+ */
+export async function syncSkills(options: SyncOptions = {}): Promise<SyncResult> {
+  const { dryRun = false, verbose = false, baseDir = process.cwd() } = options;
+
+  const result: SyncResult = {
+    success: true,
+    copiedFiles: 0,
+    deletedFiles: 0,
+    errors: [],
+  };
+
+  try {
+    if (verbose) {
+      console.log('🔄 Syncing src/skills/ to .claude/skills/...\n');
+    }
+
+    const sourceDir = path.join(baseDir, 'src', 'skills');
+    const destDir = path.join(baseDir, '.claude', 'skills');
+
+    // ソースディレクトリが存在しない場合はスキップ
+    try {
+      await fs.access(sourceDir);
+    } catch {
+      if (verbose) {
+        console.log('⚠️  src/skills/ does not exist, skipping...\n');
+      }
+      return result;
+    }
+
+    // ディレクトリを再帰的にコピー
+    const copied = await copyDirectory(sourceDir, destDir, { dryRun, verbose });
+    result.copiedFiles = copied;
+
+    if (verbose) {
+      console.log('\n📊 Skills Sync Summary:');
+      console.log(`   Copied: ${result.copiedFiles} files`);
+      console.log(`   Errors: ${result.errors.length}\n`);
+    }
+
+    return result;
+  } catch (error) {
+    console.error('❌ Skills sync failed:', error);
+    result.success = false;
+    return result;
+  }
+}
+
+/**
+ * エージェントの同期（src/agents/ → .claude/agents/）
+ */
+export async function syncAgents(options: SyncOptions = {}): Promise<SyncResult> {
+  const { dryRun = false, verbose = false, baseDir = process.cwd() } = options;
+
+  const result: SyncResult = {
+    success: true,
+    copiedFiles: 0,
+    deletedFiles: 0,
+    errors: [],
+  };
+
+  try {
+    if (verbose) {
+      console.log('🔄 Syncing src/agents/ to .claude/agents/...\n');
+    }
+
+    const sourceDir = path.join(baseDir, 'src', 'agents');
+    const destDir = path.join(baseDir, '.claude', 'agents');
+
+    // ソースディレクトリが存在しない場合はスキップ
+    try {
+      await fs.access(sourceDir);
+    } catch {
+      if (verbose) {
+        console.log('⚠️  src/agents/ does not exist, skipping...\n');
+      }
+      return result;
+    }
+
+    // ソースディレクトリのファイルを取得
+    const files = await fs.readdir(sourceDir, { withFileTypes: true });
+
+    for (const file of files) {
+      if (file.isFile() && file.name.endsWith('.md')) {
+        const srcPath = path.join(sourceDir, file.name);
+        const destPath = path.join(destDir, file.name);
+
+        try {
+          await copyFile(srcPath, destPath, { dryRun, verbose });
+          result.copiedFiles++;
+        } catch (error) {
+          result.errors.push({
+            file: file.name,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          result.success = false;
+        }
+      }
+    }
+
+    if (verbose) {
+      console.log('\n📊 Agents Sync Summary:');
+      console.log(`   Copied: ${result.copiedFiles} files`);
+      console.log(`   Errors: ${result.errors.length}\n`);
+    }
+
+    return result;
+  } catch (error) {
+    console.error('❌ Agents sync failed:', error);
+    result.success = false;
+    return result;
+  }
+}
+
+/**
+ * 開発用スクリプトを削除（.cc-craft-kit/scripts/ から不要なファイルを削除）
+ */
+export async function cleanDevScripts(options: SyncOptions = {}): Promise<SyncResult> {
+  const { dryRun = false, verbose = false, baseDir = process.cwd() } = options;
+
+  const result: SyncResult = {
+    success: true,
+    copiedFiles: 0,
+    deletedFiles: 0,
+    errors: [],
+  };
+
+  // 削除対象のパターン
+  const deletePatterns = [
+    /^add-.*\.ts$/,
+    /^check-.*\.ts$/,
+    /^cleanup-.*\.ts$/,
+    /^close-.*\.ts$/,
+    /^delete-.*\.ts$/,
+    /^fix-.*\.ts$/,
+    /^import-.*\.ts$/,
+    /^migrate-.*\.ts$/,
+    /^monitor-.*\.ts$/,
+    /^rebuild-.*\.ts$/,
+    /^repair-.*\.ts$/,
+    /^run-.*\.ts$/,
+    /^sync-github-.*\.ts$/,
+    /^test-.*\.ts$/,
+    /^update-.*\.ts$/,
+  ];
+
+  try {
+    if (verbose) {
+      console.log('🧹 Cleaning development scripts from .cc-craft-kit/scripts/...\n');
+    }
+
+    const scriptsDir = path.join(baseDir, '.cc-craft-kit', 'scripts');
+
+    // ディレクトリが存在しない場合はスキップ
+    try {
+      await fs.access(scriptsDir);
+    } catch {
+      if (verbose) {
+        console.log('⚠️  .cc-craft-kit/scripts/ does not exist, skipping...\n');
+      }
+      return result;
+    }
+
+    const files = await fs.readdir(scriptsDir, { withFileTypes: true });
+
+    for (const file of files) {
+      if (file.isFile()) {
+        const shouldDelete = deletePatterns.some((pattern) => pattern.test(file.name));
+
+        if (shouldDelete) {
+          const filePath = path.join(scriptsDir, file.name);
+
+          if (dryRun) {
+            if (verbose) {
+              console.log(`[DRY RUN] Would delete: ${filePath}`);
+            }
+          } else {
+            await fs.unlink(filePath);
+            if (verbose) {
+              console.log(`✓ Deleted: ${filePath}`);
+            }
+          }
+          result.deletedFiles++;
+        }
+      }
+    }
+
+    if (verbose) {
+      console.log('\n📊 Dev Scripts Cleanup Summary:');
+      console.log(`   Deleted: ${result.deletedFiles} files\n`);
+    }
+
+    return result;
+  } catch (error) {
+    console.error('❌ Dev scripts cleanup failed:', error);
+    result.success = false;
+    return result;
+  }
+}
+
+/**
  * 完全同期実行
  */
 export async function syncAll(options: SyncOptions = {}): Promise<boolean> {
@@ -294,19 +495,47 @@ export async function syncAll(options: SyncOptions = {}): Promise<boolean> {
     console.log('🚀 Starting full sync...\n');
   }
 
-  // dist/ → .cc-craft-kit/ 同期
+  // src/ → .cc-craft-kit/ 同期（TypeScript ファイル）
   const sourceResult = await syncSourceToCcCraftKit(options);
 
-  // .claude/commands/ 同期
+  // src/slash-commands/ → .claude/commands/cft/ 同期
   const commandsResult = await syncSlashCommands(options);
 
-  const success = sourceResult.success && commandsResult.success;
+  // src/skills/ → .claude/skills/ 同期
+  const skillsResult = await syncSkills(options);
+
+  // src/agents/ → .claude/agents/ 同期
+  const agentsResult = await syncAgents(options);
+
+  // 開発用スクリプト削除
+  const cleanupResult = await cleanDevScripts(options);
+
+  const success =
+    sourceResult.success &&
+    commandsResult.success &&
+    skillsResult.success &&
+    agentsResult.success &&
+    cleanupResult.success;
+
+  const totalCopied =
+    sourceResult.copiedFiles +
+    commandsResult.copiedFiles +
+    skillsResult.copiedFiles +
+    agentsResult.copiedFiles;
+
+  const totalDeleted = sourceResult.deletedFiles + cleanupResult.deletedFiles;
+
+  const totalErrors =
+    sourceResult.errors.length +
+    commandsResult.errors.length +
+    skillsResult.errors.length +
+    agentsResult.errors.length;
 
   if (verbose) {
     console.log('🎉 Full sync completed!');
-    console.log(`   Total files copied: ${sourceResult.copiedFiles + commandsResult.copiedFiles}`);
-    console.log(`   Total files deleted: ${sourceResult.deletedFiles}`);
-    console.log(`   Total errors: ${sourceResult.errors.length + commandsResult.errors.length}\n`);
+    console.log(`   Total files copied: ${totalCopied}`);
+    console.log(`   Total files deleted: ${totalDeleted}`);
+    console.log(`   Total errors: ${totalErrors}\n`);
   }
 
   return success;
