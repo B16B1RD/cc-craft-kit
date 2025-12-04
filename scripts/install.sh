@@ -266,7 +266,9 @@ create_symlink() {
     # Linux/macOS: 相対パスでシンボリックリンク作成
     cd "$INSTALL_DIR/.claude/commands"
     ln -s "../../.cc-craft-kit/commands" cft || {
-      warn "シンボリックリンクの作成に失敗しました。\n手動で作成してください: ln -s ../../.cc-craft-kit/commands $INSTALL_DIR/.claude/commands/cft"
+      warn "シンボリックリンクの作成に失敗しました。"
+      echo "  手動で作成してください:" >&2
+      echo "    ln -s ../../.cc-craft-kit/commands $INSTALL_DIR/.claude/commands/cft" >&2
       cd - >/dev/null
       return
     }
