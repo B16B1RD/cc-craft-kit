@@ -287,6 +287,79 @@ AskUserQuestion ツールで確認:
    - 補完後、このコマンドを再実行
    - **処理を中断**
 
+### Step 4.5: 品質チェック（review フェーズ移行時のみ）
+
+`NEW_PHASE` が `review` の場合のみ、以下の品質チェックを実行します。
+
+> **目的**: PR 作成前に TypeScript 型チェックと ESLint を実行し、CI が失敗する PR の作成を防止します。
+
+#### 4.5.1 品質チェック実行
+
+Skill ツールで `typescript-eslint` スキルを実行します。
+
+スキル実行後、以下のコマンドを並列で実行:
+
+```bash
+# TypeScript 型チェック
+npm run typecheck 2>&1
+
+# ESLint チェック
+npm run lint 2>&1
+```
+
+#### 4.5.2 結果判定と分岐
+
+**両方のチェックが成功した場合（終了コード 0）:**
+
+```
+✓ 品質チェック完了
+
+TypeScript: ✓ 型エラーなし
+ESLint: ✓ 警告/エラーなし
+
+→ PR 作成に進みます...
+```
+
+Step 5 へ進む。
+
+**いずれかのチェックが失敗した場合:**
+
+```
+❌ 品質チェック失敗 - PR 作成をスキップします
+
+仕様書: $SPEC_NAME
+フェーズ遷移: implementation → review （中断）
+
+=== エラー内容 ===
+
+[TypeScript エラーがある場合]
+📋 TypeScript 型エラー:
+[npm run typecheck の出力]
+
+[ESLint エラーがある場合]
+📋 ESLint エラー:
+[npm run lint の出力]
+
+=== 修正ガイダンス ===
+
+以下の手順でエラーを修正してください:
+
+1. 型エラーの修正:
+   - エラーメッセージの該当ファイル・行を確認
+   - 型定義を追加/修正
+
+2. ESLint エラーの自動修正（可能な場合）:
+   npm run lint -- --fix
+
+3. 修正後、再度 review フェーズへ移行:
+   /cft:spec-phase $SPEC_ID review
+
+注意: 品質チェックが成功するまで PR は作成されません。
+これにより CI が失敗する PR の作成を防止しています。
+```
+
+**処理を中断**（DB 更新・pr-creator 呼び出しをスキップ）
+
 ### Step 5: DB 更新 + イベント発火
 
 Bash ツールで以下を実行:
