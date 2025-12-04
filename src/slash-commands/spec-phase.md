@@ -444,6 +444,10 @@ Edit ツールで仕様書ファイル (`SPEC_PATH`) を更新:
 
 ### Step 7: 自動コミット
 
+> **重要**: `NEW_PHASE` が `completed` の場合、このステップをスキップします。
+
+`NEW_PHASE` が `completed` の場合は Step 8 へスキップ。
+
 Bash ツールで以下を実行:
 
 ```bash
