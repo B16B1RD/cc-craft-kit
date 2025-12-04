@@ -45,9 +45,9 @@ warn() {
   printf "${YELLOW}警告: %s${NC}\n" "$1" >&2
 }
 
-# 情報メッセージを表示
+# 情報メッセージを表示（stderr に出力）
 info() {
-  printf "${BLUE}%s${NC}\n" "$1"
+  printf "${BLUE}%s${NC}\n" "$1" >&2
 }
 
 # 成功メッセージを表示
