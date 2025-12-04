@@ -207,6 +207,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - なし（初回リリース）
 
+[0.1.10]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.10
 [0.1.9]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.9
 [0.1.8]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.8
 [0.1.7]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.7
