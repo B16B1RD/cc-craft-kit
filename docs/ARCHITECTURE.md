@@ -90,6 +90,15 @@ cc-craft-kit は**モジュラーモノリス**パターンを採用した、拡
     ├── refactoring-assistant.md
     ├── test-generator.md
     └── code-reviewer.md
+
+.cc-craft-kit/                 # ランタイム専用
+├── commands/                  # CLI コマンド実装
+├── core/                      # TypeScript 実装
+├── hooks/                     # フック実装
+├── integrations/              # 外部連携（GitHub 等）
+├── plugins/                   # プラグイン
+├── scripts/                   # ユーティリティスクリプト
+└── specs/                     # 仕様書データ
 ```
 
 ### 2. Database Layer

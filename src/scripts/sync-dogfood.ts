@@ -486,6 +486,66 @@ export async function cleanDevScripts(options: SyncOptions = {}): Promise<SyncRe
 }
 
 /**
+ * 不要ファイルを削除（.cc-craft-kit/ 直下のゴミファイル）
+ */
+export async function cleanUnusedFiles(options: SyncOptions = {}): Promise<SyncResult> {
+  const { dryRun = false, verbose = false, baseDir = process.cwd() } = options;
+
+  const result: SyncResult = {
+    success: true,
+    copiedFiles: 0,
+    deletedFiles: 0,
+    errors: [],
+  };
+
+  // 削除対象ファイルリスト（固定）
+  const unusedFiles = ['cc-craft-kit-new.db', 'cc-craft-kit-recovered.db', 'test-archive.tar.gz'];
+
+  try {
+    if (verbose) {
+      console.log('🧹 Cleaning unused files from .cc-craft-kit/...\n');
+    }
+
+    const ccCraftKitDir = path.join(baseDir, '.cc-craft-kit');
+
+    for (const fileName of unusedFiles) {
+      const filePath = path.join(ccCraftKitDir, fileName);
+
+      // ファイルが存在するか確認
+      try {
+        await fs.access(filePath);
+      } catch {
+        // ファイルが存在しない場合はスキップ
+        continue;
+      }
+
+      if (dryRun) {
+        if (verbose) {
+          console.log(`[DRY RUN] Would delete: ${filePath}`);
+        }
+      } else {
+        await fs.unlink(filePath);
+        if (verbose) {
+          console.log(`✓ Deleted: ${filePath}`);
+        }
+      }
+      result.deletedFiles++;
+    }
+
+    if (verbose) {
+      console.log('\n📊 Unused Files Cleanup Summary:');
+      console.log(`   Deleted: ${result.deletedFiles} files\n`);
+    }
+
+    return result;
+  } catch (error) {
+    console.error('❌ Unused files cleanup failed:', error);
+    result.success = false;
+    return result;
+  }
+}
+
+/**
  * 完全同期実行
  */
 export async function syncAll(options: SyncOptions = {}): Promise<boolean> {
@@ -510,12 +570,16 @@ export async function syncAll(options: SyncOptions = {}): Promise<boolean> {
   // 開発用スクリプト削除
   const cleanupResult = await cleanDevScripts(options);
 
+  // 不要ファイル削除（.cc-craft-kit/ 直下）
+  const unusedFilesResult = await cleanUnusedFiles(options);
+
   const success =
     sourceResult.success &&
     commandsResult.success &&
     skillsResult.success &&
     agentsResult.success &&
-    cleanupResult.success;
+    cleanupResult.success &&
+    unusedFilesResult.success;
 
   const totalCopied =
     sourceResult.copiedFiles +
@@ -523,7 +587,8 @@ export async function syncAll(options: SyncOptions = {}): Promise<boolean> {
     skillsResult.copiedFiles +
     agentsResult.copiedFiles;
 
-  const totalDeleted = sourceResult.deletedFiles + cleanupResult.deletedFiles;
+  const totalDeleted =
+    sourceResult.deletedFiles + cleanupResult.deletedFiles + unusedFilesResult.deletedFiles;
 
   const totalErrors =
     sourceResult.errors.length +
