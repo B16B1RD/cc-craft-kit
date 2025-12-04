@@ -1,6 +1,6 @@
 {
   "name": "cc-craft-kit",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "統合開発キット - Claude Code上でTDD/SDD/GitHub完全連携を実現",
   "keywords": [
     "claude-code",
