@@ -8,7 +8,7 @@
 import { getDatabase } from '../../core/database/connection.js';
 import { cleanupMergedPullRequest } from '../../integrations/github/pr-cleanup.js';
 import { handleCLIError } from '../utils/error-handler.js';
-import { formatHeading, formatSuccess, formatError } from '../utils/output.js';
+import { formatHeading, formatSuccess, formatError, formatWarning } from '../utils/output.js';
 
 /**
  * メイン処理
@@ -24,6 +24,20 @@ async function main(): Promise<void> {
   }
 
   const specId = args[0];
+
+  // 廃止警告を表示
+  console.log('');
+  console.log(formatWarning('⚠️  このコマンドは廃止予定です'));
+  console.log('');
+  console.log('PR マージ後処理は completed フェーズへの遷移時に自動的に実行されます。');
+  console.log('今後は以下のコマンドをご使用ください:');
+  console.log('');
+  console.log(`  /cft:spec-phase ${specId.substring(0, 8)} completed`);
+  console.log('');
+  console.log(
+    'このコマンドは互換性のために引き続き動作しますが、将来のバージョンで削除される予定です。'
+  );
+  console.log('');
 
   console.log(formatHeading('PR マージ後処理', 1));
   console.log(`\n仕様書ID: ${specId}\n`);

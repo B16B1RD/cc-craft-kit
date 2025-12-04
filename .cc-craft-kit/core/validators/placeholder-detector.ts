@@ -20,7 +20,7 @@ export interface PlaceholderDetectionResult {
 /**
  * 仕様書のフェーズ
  */
-export type Phase = 'requirements' | 'design' | 'tasks' | 'implementation' | 'completed';
+export type Phase = 'requirements' | 'design' | 'tasks' | 'implementation' | 'review' | 'completed';
 
 /**
  * プレースホルダーパターンの定義
@@ -85,6 +85,15 @@ const REQUIRED_SECTIONS: Record<Phase, string[]> = {
     '## 8. 実装タスクリスト',
   ],
   implementation: [
+    '## 1. 背景と目的',
+    '## 2. 対象ユーザー',
+    '## 3. 受け入れ基準',
+    '## 4. 制約条件',
+    '## 5. 依存関係',
+    '## 7. 設計詳細',
+    '## 8. 実装タスクリスト',
+  ],
+  review: [
     '## 1. 背景と目的',
     '## 2. 対象ユーザー',
     '## 3. 受け入れ基準',
