@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.8] - 2025-12-04
+
+### Added
+
+- なし
+
+### Changed
+
+- なし
+
+### Fixed
+
+- インストールスクリプトのパイプ実行時の不具合を修正 (#661)
+
 ## [0.1.7] - 2025-12-04
 
 ### Added
