@@ -28,7 +28,9 @@ export interface StatusMapping {
   tasks: string;
   /** implementation フェーズのステータス（デフォルト: "In Progress"） */
   implementation: string;
-  /** completed フェーズのステータス（デフォルト: "In Review"） */
+  /** review フェーズのステータス（デフォルト: "In Review"） */
+  review: string;
+  /** completed フェーズのステータス（デフォルト: "Done"） */
   completed: string;
 }
 
@@ -60,13 +62,15 @@ export interface GitHubStatusConfig {
  * デフォルトのステータスマッピング
  *
  * 4 段階ステータスモデル: Todo → In Progress → In Review → Done
+ * 5 フェーズモデル: requirements → design → implementation → review → completed
  */
 export const DEFAULT_STATUS_MAPPING: StatusMapping = {
   requirements: 'Todo',
   design: 'In Progress',
   tasks: 'In Progress', // 非推奨フェーズ
   implementation: 'In Progress', // 実装中は In Progress
-  completed: 'In Review', // 完了・PR作成後は In Review（Done は pr-cleanup で設定）
+  review: 'In Review', // レビュー待ち（PR 作成済み）
+  completed: 'Done', // 完了（PR マージ済み、ブランチ削除済み）
 };
 
 /**
@@ -95,6 +99,7 @@ export const LEGACY_3_STAGE_STATUS_MAPPING: StatusMapping = {
   design: 'In Progress',
   tasks: 'In Progress',
   implementation: 'In Progress', // In Review がない場合は In Progress
+  review: 'In Progress', // In Review がない場合は In Progress
   completed: 'Done',
 };
 
@@ -228,6 +233,7 @@ export function validateStatusConfig(config: GitHubStatusConfig): ValidationResu
     'design',
     'tasks',
     'implementation',
+    'review',
     'completed',
   ];
   for (const phase of requiredPhases) {
@@ -295,7 +301,9 @@ export function loadAndValidateStatusConfig(basePath: string = process.cwd()): {
  * 文字列が有効な SpecPhase かを判定する型ガード
  */
 export function isValidPhase(value: string): value is SpecPhase {
-  return ['requirements', 'design', 'tasks', 'implementation', 'completed'].includes(value);
+  return ['requirements', 'design', 'tasks', 'implementation', 'review', 'completed'].includes(
+    value
+  );
 }
 
 /**

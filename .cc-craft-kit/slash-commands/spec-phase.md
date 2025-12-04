@@ -20,9 +20,10 @@ argument-hint: "<spec-id> <phase>"
 | des | design | |
 | task | tasks | ⚠️ 非推奨 |
 | impl, imp | implementation | |
+| rev | review | PR 作成後のレビュー待ち |
 | comp, done | completed | |
 
-> **注意**: 4 フェーズモデル（requirements → design → implementation → completed）を推奨します。
+> **注意**: 5 フェーズモデル（requirements → design → implementation → review → completed）を推奨します。
 > tasks フェーズは非推奨であり、design フェーズでタスク分割が自動実行されます。
 
 ---
@@ -325,8 +326,8 @@ git add "$SPEC_PATH" && git commit -m "feat: $SPEC_NAME の$(NEW_PHASE の日本
 - design → 設計
 - tasks → タスク分解
 - implementation → 実装開始
-- testing → テスト
-- completed → 実装
+- review → レビュー待ち
+- completed → 完了
 
 ### Step 8: フェーズ固有の後処理
 
@@ -557,10 +558,12 @@ git add "$SPEC_PATH" && git commit -m "feat: $SPEC_NAME の$(NEW_PHASE の日本
    次のステップ:
    - 型チェック・リント再実行: npm run typecheck && npm run lint
    - テスト実行: npm test
-   - 実装完了フェーズへ移行: /cft:spec-phase $SPEC_ID completed
+   - レビューフェーズへ移行: /cft:spec-phase $SPEC_ID review
    ```
 
-#### completed フェーズに移行した場合
+#### review フェーズに移行した場合
+
+> **目的**: PR を作成し、コードレビューを受ける準備をします。
 
 Skill ツールで `pr-creator` スキルを実行:
 
@@ -568,6 +571,70 @@ Skill ツールで `pr-creator` スキルを実行:
 - 仕様書パス: `$SPEC_PATH`
 - 仕様書名: `$SPEC_NAME`
 - GitHub Issue 番号: `$GITHUB_ISSUE_NUMBER`
+
+PR 作成後のガイダンス:
+
+```
+✓ review フェーズに移行しました
+
+仕様書: $SPEC_NAME
+フェーズ: implementation → review
+
+PR が作成されました。GitHub 上でコードレビューを受けてください。
+
+次のステップ:
+1. PR のレビューを依頼
+2. レビューコメントに対応
+3. PR を GitHub 上でマージ
+4. 完了フェーズへ移行: /cft:spec-phase $SPEC_ID completed
+```
+
+#### completed フェーズに移行した場合
+
+> **目的**: PR がマージされた後の後処理を実行します。
+> このフェーズでは、ブランチ削除と Issue クローズが自動的に実行されます。
+
+**前提条件確認**:
+
+1. PR が GitHub 上でマージ済みであること
+2. PR がマージされていない場合は、以下のメッセージを表示して処理を中断:
+
+```
+❌ PR がマージされていません
+
+completed フェーズに移行するには、PR が GitHub 上でマージされている必要があります。
+
+対処方法:
+1. GitHub で PR をマージ
+2. 再度実行: /cft:spec-phase $SPEC_ID completed
+
+または、review フェーズに戻る: /cft:spec-phase $SPEC_ID review
+```
+
+**処理内容**:
+
+completed フェーズへの遷移時は、以下の処理が `github-integration.ts` で自動実行されます:
+
+1. **pr-cleanup 処理**: ローカル/リモートブランチの削除、DB 更新
+2. **GitHub Issue クローズ**: 完了コメント追加後にクローズ
+3. **GitHub Projects ステータス更新**: Done に設定
+
+ガイダンス:
+
+```
+✓ completed フェーズに移行しました
+
+仕様書: $SPEC_NAME
+フェーズ: review → completed
+
+実行された処理:
+- ローカルブランチ削除: $BRANCH_NAME
+- リモートブランチ削除: $BRANCH_NAME
+- GitHub Issue #$GITHUB_ISSUE_NUMBER をクローズ
+- GitHub Projects ステータス: Done
+
+おめでとうございます！この仕様書の実装が完了しました。
+```
 
 #### design フェーズに移行した場合
 
@@ -803,10 +870,11 @@ git status --porcelain
 ```
 ❌ 無効なフェーズ名: $2
 
-有効なフェーズ（4 フェーズモデル）:
+有効なフェーズ（5 フェーズモデル）:
 - requirements (req, reqs)
 - design (des)
 - implementation (impl, imp)
+- review (rev)
 - completed (comp, done)
 
 非推奨フェーズ:
@@ -829,5 +897,6 @@ git status --porcelain
 # 省略形
 /cft:spec-phase f6621295 des
 /cft:spec-phase f6621295 impl
+/cft:spec-phase f6621295 rev
 /cft:spec-phase f6621295 comp
 ```

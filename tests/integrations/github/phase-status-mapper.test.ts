@@ -153,7 +153,8 @@ describe('phase-status-mapper', () => {
         expect(mapper.mapPhaseToStatus('requirements')).toBe('Todo');
         expect(mapper.mapPhaseToStatus('design')).toBe('In Progress');
         expect(mapper.mapPhaseToStatus('implementation')).toBe('In Progress');
-        expect(mapper.mapPhaseToStatus('completed')).toBe('In Review');
+        expect(mapper.mapPhaseToStatus('review')).toBe('In Review');
+        expect(mapper.mapPhaseToStatus('completed')).toBe('Done');
       });
 
       it('カスタムマッピングを使用', () => {
@@ -164,6 +165,7 @@ describe('phase-status-mapper', () => {
             design: 'In Progress',
             tasks: 'In Progress',
             implementation: 'In Progress',
+            review: 'In Review',
             completed: 'Closed',
           },
         };

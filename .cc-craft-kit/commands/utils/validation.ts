@@ -23,6 +23,7 @@ export const VALID_PHASES = [
   'design',
   'tasks',
   'implementation',
+  'review',
   'completed',
 ] as const;
 
