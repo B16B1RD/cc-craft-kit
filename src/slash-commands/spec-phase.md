@@ -427,6 +427,11 @@ npx tsx .cc-craft-kit/commands/spec/update-phase.ts "$SPEC_ID" "$NEW_PHASE"
 
 ### Step 6: Markdown ファイル更新
 
+> **重要**: `NEW_PHASE` が `completed` の場合、このステップをスキップします。
+> 仕様書の completed フェーズ更新は review フェーズの PR に含まれています。
+
+`NEW_PHASE` が `completed` の場合は Step 8 へスキップ。
+
 Edit ツールで仕様書ファイル (`SPEC_PATH`) を更新:
 
 1. フェーズ行を更新:
