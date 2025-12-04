@@ -427,6 +427,11 @@ npx tsx .cc-craft-kit/commands/spec/update-phase.ts "$SPEC_ID" "$NEW_PHASE"
 
 ### Step 6: Markdown ファイル更新
 
+> **重要**: `NEW_PHASE` が `completed` の場合、このステップをスキップします。
+> 仕様書の completed フェーズ更新は review フェーズの PR に含まれています。
+
+`NEW_PHASE` が `completed` の場合は Step 8 へスキップ。
+
 Edit ツールで仕様書ファイル (`SPEC_PATH`) を更新:
 
 1. フェーズ行を更新:
@@ -438,6 +443,10 @@ Edit ツールで仕様書ファイル (`SPEC_PATH`) を更新:
    - 置換: `**更新日時:** <現在日時（YYYY/MM/DD HH:mm:ss 形式）>`
 
 ### Step 7: 自動コミット
+
+> **重要**: `NEW_PHASE` が `completed` の場合、このステップをスキップします。
+
+`NEW_PHASE` が `completed` の場合は Step 8 へスキップ。
 
 Bash ツールで以下を実行:
 
@@ -690,12 +699,27 @@ git add "$SPEC_PATH" && git commit -m "feat: $SPEC_NAME の$(NEW_PHASE の日本
 
 > **目的**: PR を作成し、コードレビューを受ける準備をします。
 
-Skill ツールで `pr-creator` スキルを実行:
+1. **仕様書フェーズの先行更新**（PR に含める）:
 
-- 仕様書 ID: `$SPEC_ID`
-- 仕様書パス: `$SPEC_PATH`
-- 仕様書名: `$SPEC_NAME`
-- GitHub Issue 番号: `$GITHUB_ISSUE_NUMBER`
+   PR 作成前に、仕様書のフェーズを `completed` に先行更新します。
+   これにより、PR マージ後の completed フェーズ移行時にファイル変更が不要になります。
+
+   - Edit ツールで仕様書（`$SPEC_PATH`）を更新:
+     - 検索: `**フェーズ:** review`
+     - 置換: `**フェーズ:** completed`
+   - 更新日時も更新:
+     - 検索: `**更新日時:** .*`
+     - 置換: `**更新日時:** <現在日時（YYYY/MM/DD HH:mm:ss 形式）>`
+   - git add && git commit --amend --no-edit で直前のコミットに追加
+
+2. **PR 作成**:
+
+   Skill ツールで `pr-creator` スキルを実行:
+
+   - 仕様書 ID: `$SPEC_ID`
+   - 仕様書パス: `$SPEC_PATH`
+   - 仕様書名: `$SPEC_NAME`
+   - GitHub Issue 番号: `$GITHUB_ISSUE_NUMBER`
 
 PR 作成後のガイダンス:
 
