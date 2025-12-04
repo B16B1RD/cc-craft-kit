@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.7] - 2025-12-04
+
+### Added
+
+- なし
+
+### Changed
+
+- フェーズおよび Issue ステータスの見直し（5フェーズモデル: requirements → design → implementation → review → completed）
+- GitHub Projects ステータス連携の改善
+
+### Fixed
+
+- インストーラーアーカイブエラーの修正
+
 ## [0.1.6] - 2025-12-03
 
 ### Added
@@ -142,6 +157,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - なし（初回リリース）
 
+[0.1.7]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.7
 [0.1.6]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.6
 [0.1.5]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.5
 [0.1.4]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.4
