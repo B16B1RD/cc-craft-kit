@@ -33,6 +33,8 @@ describe('getStatusFromDb', () => {
     });
 
     test('フェーズ別に仕様書を正しく集計する', async () => {
+      const testBranch = 'feature/test';
+
       // 各フェーズに仕様書を作成
       const phases = ['requirements', 'design', 'tasks', 'implementation', 'completed'] as const;
       for (const phase of phases) {
@@ -43,7 +45,7 @@ describe('getStatusFromDb', () => {
             name: `${phase} テスト仕様書`,
             description: null,
             phase,
-            branch_name: 'feature/test',
+            branch_name: testBranch,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
@@ -58,13 +60,13 @@ describe('getStatusFromDb', () => {
           name: 'design テスト仕様書 2',
           description: null,
           phase: 'design',
-          branch_name: 'feature/test',
+          branch_name: testBranch,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
         .execute();
 
-      const result = await getStatusFromDb(lifecycle.db);
+      const result = await getStatusFromDb(lifecycle.db, { branchName: testBranch });
 
       expect(result.specs.total).toBe(6);
       expect(result.specs.byPhase.requirements).toBe(1);
@@ -75,6 +77,8 @@ describe('getStatusFromDb', () => {
     });
 
     test('最近の仕様書は最新 5 件を返す', async () => {
+      const testBranch = 'feature/test';
+
       // 10 件の仕様書を作成（created_at を古い順に）
       for (let i = 0; i < 10; i++) {
         const date = new Date(Date.now() - (10 - i) * 1000);
@@ -85,14 +89,14 @@ describe('getStatusFromDb', () => {
             name: `仕様書 ${i + 1}`,
             description: null,
             phase: 'requirements',
-            branch_name: 'feature/test',
+            branch_name: testBranch,
             created_at: date.toISOString(),
             updated_at: date.toISOString(),
           })
           .execute();
       }
 
-      const result = await getStatusFromDb(lifecycle.db);
+      const result = await getStatusFromDb(lifecycle.db, { branchName: testBranch });
 
       expect(result.specs.recent).toHaveLength(5);
       // 最新順（desc）なので、仕様書 10 が最初
@@ -101,6 +105,7 @@ describe('getStatusFromDb', () => {
     });
 
     test('Issue 未作成の仕様書を正しく検出する', async () => {
+      const testBranch = 'feature/test';
       const specWithIssue = randomUUID();
       const specWithoutIssue = randomUUID();
       const completedSpec = randomUUID();
@@ -113,7 +118,7 @@ describe('getStatusFromDb', () => {
           name: 'Issue あり',
           description: null,
           phase: 'implementation',
-          branch_name: 'feature/test',
+          branch_name: testBranch,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -144,7 +149,7 @@ describe('getStatusFromDb', () => {
           name: 'Issue なし',
           description: null,
           phase: 'design',
-          branch_name: 'feature/test',
+          branch_name: testBranch,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -158,13 +163,13 @@ describe('getStatusFromDb', () => {
           name: '完了済み',
           description: null,
           phase: 'completed',
-          branch_name: 'feature/test',
+          branch_name: testBranch,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
         .execute();
 
-      const result = await getStatusFromDb(lifecycle.db);
+      const result = await getStatusFromDb(lifecycle.db, { branchName: testBranch });
 
       expect(result.specs.withoutIssue).toHaveLength(1);
       expect(result.specs.withoutIssue[0].name).toBe('Issue なし');
@@ -264,6 +269,7 @@ describe('getStatusFromDb', () => {
 
   describe('GitHub 連携情報', () => {
     test('仕様書の GitHub Issue 番号と PR 番号を正しく取得する', async () => {
+      const testBranch = 'feature/github-test';
       const specId = randomUUID();
 
       await lifecycle.db
@@ -273,7 +279,7 @@ describe('getStatusFromDb', () => {
           name: 'GitHub 連携テスト',
           description: null,
           phase: 'implementation',
-          branch_name: 'feature/github-test',
+          branch_name: testBranch,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -298,7 +304,7 @@ describe('getStatusFromDb', () => {
         })
         .execute();
 
-      const result = await getStatusFromDb(lifecycle.db);
+      const result = await getStatusFromDb(lifecycle.db, { branchName: testBranch });
 
       expect(result.specs.recent).toHaveLength(1);
       expect(result.specs.recent[0].github_issue_number).toBe(456);
