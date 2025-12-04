@@ -19,7 +19,7 @@ import type { SpecPhase } from '../../core/database/schema.js';
 // 後方互換用の型・関数
 // ============================================================================
 
-export type Phase = 'requirements' | 'design' | 'tasks' | 'implementation' | 'completed';
+export type Phase = 'requirements' | 'design' | 'tasks' | 'implementation' | 'review' | 'completed';
 
 /**
  * @deprecated 3 段階ステータス型。4 段階ステータスを使用してください。
@@ -43,6 +43,7 @@ export function mapPhaseToStatus(phase: Phase): ProjectStatus {
     design: 'In Progress',
     tasks: 'In Progress',
     implementation: 'In Progress',
+    review: 'In Progress',
     completed: 'Done',
   };
 
