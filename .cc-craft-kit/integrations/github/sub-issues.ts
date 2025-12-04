@@ -594,7 +594,10 @@ export class SubIssueManager {
    * タスクが完了した際に以下の処理を自動実行:
    * 1. Sub Issue をクローズ
    * 2. 親 Issue のチェックボックスを更新
-   * 3. 全 Sub Issue がクローズされていたら親 Issue もクローズ
+   *
+   * 注意: 親 Issue の自動クローズは無効化されています。
+   * 親 Issue のクローズは completed フェーズ遷移時に github-integration.ts で
+   * 明示的に実行されます。
    *
    * @param taskId タスク ID
    * @param token GitHub API トークン
@@ -665,6 +668,11 @@ export class SubIssueManager {
     );
 
     // 5. 全 Sub Issue がクローズされているか確認
+    // NOTE: 親 Issue の自動クローズは無効化されました。
+    // 理由: Sub Issue 全完了時に親 Issue をクローズすると、GitHub Projects の
+    // Built-in Workflow により Done ステータスに自動更新されてしまう。
+    // 親 Issue のクローズは completed フェーズ遷移時に github-integration.ts で
+    // 明示的に実行されるため、ここでの自動クローズは不要。
     const allClosed = await this.checkAllSubIssuesClosedViaApi(
       owner,
       repo,
@@ -672,9 +680,12 @@ export class SubIssueManager {
       token
     );
 
-    // 6. 全 Sub Issue がクローズされていたら親 Issue もクローズ
     if (allClosed) {
-      await this.closeParentIssue(owner, repo, syncRecord.parent_issue_number, token);
+      // 親 Issue はクローズせず、情報ログのみ出力
+      console.log(
+        `All Sub Issues completed for parent issue #${syncRecord.parent_issue_number}. ` +
+          `Parent issue will be closed when spec transitions to completed phase.`
+      );
     }
   }
 }
