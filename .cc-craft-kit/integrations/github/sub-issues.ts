@@ -43,6 +43,28 @@ const MAX_RETRIES = 3;
 const INITIAL_RETRY_DELAY_MS = 1000;
 
 /**
+ * 既存 Sub Issue 情報のレスポンス型
+ */
+interface ExistingSubIssue {
+  title: string;
+  number: number;
+  state: string;
+}
+
+/**
+ * GraphQL Sub Issue 取得レスポンス型
+ */
+interface GetSubIssuesResponse {
+  repository: {
+    issue: {
+      subIssues: {
+        nodes: ExistingSubIssue[];
+      };
+    } | null;
+  };
+}
+
+/**
  * Sub Issue Manager
  * GitHub の Sub Issue 機能を使用してタスクを管理
  */
@@ -101,6 +123,67 @@ export class SubIssueManager {
   }
 
   /**
+   * 親 Issue に紐づく既存の Sub Issue を取得する
+   *
+   * @param owner リポジトリオーナー
+   * @param repo リポジトリ名
+   * @param parentIssueNumber 親 Issue 番号
+   * @param token GitHub トークン
+   * @returns 既存 Sub Issue のタイトル一覧（Set）
+   */
+  async getExistingSubIssuesForParent(
+    owner: string,
+    repo: string,
+    parentIssueNumber: number,
+    token: string
+  ): Promise<Set<string>> {
+    const query = `
+      query GetSubIssues($owner: String!, $repo: String!, $issueNumber: Int!) {
+        repository(owner: $owner, name: $repo) {
+          issue(number: $issueNumber) {
+            subIssues(first: 100) {
+              nodes {
+                title
+                number
+                state
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const graphqlClient = this.getGraphQLClient(token);
+
+    try {
+      const response = await graphqlClient<GetSubIssuesResponse>(query, {
+        owner,
+        repo,
+        issueNumber: parentIssueNumber,
+      });
+
+      const subIssues = response.repository.issue?.subIssues.nodes ?? [];
+      const titles = new Set<string>();
+
+      for (const subIssue of subIssues) {
+        titles.add(subIssue.title);
+      }
+
+      console.log(
+        `[getExistingSubIssuesForParent] Found ${titles.size} existing Sub Issues for parent #${parentIssueNumber}`
+      );
+
+      return titles;
+    } catch (error) {
+      console.error(
+        `[getExistingSubIssuesForParent] Failed to get existing Sub Issues: ${error instanceof Error ? error.message : String(error)}`
+      );
+      // エラー時は空の Set を返し、全タスクを新規作成として扱う
+      return new Set();
+    }
+  }
+
+  /**
    * 仕様書のタスクリストから Sub Issue を一括作成
    */
   async createSubIssuesFromTaskList(config: SubIssueConfig): Promise<void> {
@@ -119,8 +202,26 @@ export class SubIssueManager {
       );
     }
 
-    // 3. 各タスクを Sub Issue として作成
+    // 3. 既存の Sub Issue タイトル一覧を取得（重複チェック用）
+    const existingTitles = await this.getExistingSubIssuesForParent(
+      config.owner,
+      config.repo,
+      config.parentIssueNumber,
+      config.githubToken
+    );
+
+    // 4. 各タスクを Sub Issue として作成（重複チェック付き）
+    let createdCount = 0;
+    let skippedCount = 0;
+
     for (const task of config.taskList) {
+      // 重複チェック: 既存タイトルと一致する場合はスキップ
+      if (existingTitles.has(task.title)) {
+        console.log(`ℹ️ Sub Issue already exists: ${task.title}`);
+        skippedCount++;
+        continue;
+      }
+
       const subIssueNumber = await this.createSubIssue(
         config.owner,
         config.repo,
@@ -176,7 +277,15 @@ export class SubIssueManager {
             `Sub Issue #${subIssueNumber}, parent=#${config.parentIssueNumber}`
         );
       }
+
+      createdCount++;
     }
+
+    // サマリーログ出力
+    console.log(
+      `[createSubIssuesFromTaskList] 完了: ` +
+        `作成=${createdCount}, スキップ（重複）=${skippedCount}, 合計=${config.taskList.length}`
+    );
   }
 
   /**
