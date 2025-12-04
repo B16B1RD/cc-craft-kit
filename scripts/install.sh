@@ -133,19 +133,6 @@ check_prerequisites() {
 }
 
 # ========================================
-# OS検出関数
-# ========================================
-
-detect_os() {
-  case "$(uname -s)" in
-    Linux*)   echo "linux" ;;
-    Darwin*)  echo "macos" ;;
-    CYGWIN*|MINGW*|MSYS*) echo "windows" ;;
-    *)        echo "unknown" ;;
-  esac
-}
-
-# ========================================
 # 最新バージョン取得関数
 # ========================================
 
@@ -224,6 +211,28 @@ extract_archive() {
     rm -rf "$INSTALL_DIR/.cc-craft-kit"
   fi
 
+  # 既存の .claude/ 内の cc-craft-kit 関連ディレクトリを削除
+  # （ユーザーのカスタム設定は保持）
+  if [ -d "$INSTALL_DIR/.claude/commands/cft" ]; then
+    rm -rf "$INSTALL_DIR/.claude/commands/cft"
+  fi
+  if [ -d "$INSTALL_DIR/.claude/skills/database-schema-validator" ]; then
+    rm -rf "$INSTALL_DIR/.claude/skills/database-schema-validator"
+  fi
+  if [ -d "$INSTALL_DIR/.claude/skills/typescript-eslint" ]; then
+    rm -rf "$INSTALL_DIR/.claude/skills/typescript-eslint"
+  fi
+  if [ -d "$INSTALL_DIR/.claude/skills/pr-creator" ]; then
+    rm -rf "$INSTALL_DIR/.claude/skills/pr-creator"
+  fi
+  if [ -d "$INSTALL_DIR/.claude/skills/git-operations" ]; then
+    rm -rf "$INSTALL_DIR/.claude/skills/git-operations"
+  fi
+  # エージェントファイルを削除
+  rm -f "$INSTALL_DIR/.claude/agents/refactoring-assistant.md" 2>/dev/null
+  rm -f "$INSTALL_DIR/.claude/agents/test-generator.md" 2>/dev/null
+  rm -f "$INSTALL_DIR/.claude/agents/code-reviewer.md" 2>/dev/null
+
   # 展開
   if ! tar -xzf "$ARCHIVE_FILE" -C "$INSTALL_DIR"; then
     rm -f "$ARCHIVE_FILE"
@@ -234,48 +243,6 @@ extract_archive() {
   rm -f "$ARCHIVE_FILE"
 
   success "展開完了"
-}
-
-# ========================================
-# シンボリックリンク作成関数
-# ========================================
-
-create_symlink() {
-  info "シンボリックリンクを作成しています..."
-
-  # .claude/commands/ ディレクトリ作成
-  mkdir -p "$INSTALL_DIR/.claude/commands"
-
-  # 既存のシンボリックリンクを削除
-  if [ -L "$INSTALL_DIR/.claude/commands/cft" ] || [ -d "$INSTALL_DIR/.claude/commands/cft" ]; then
-    rm -rf "$INSTALL_DIR/.claude/commands/cft"
-  fi
-
-  # OS 別のシンボリックリンク作成
-  OS=$(detect_os)
-  if [ "$OS" = "windows" ]; then
-    # Windows: cmd //c mklink を試行
-    cmd //c mklink //D "$INSTALL_DIR\\.claude\\commands\\cft" "$INSTALL_DIR\\.cc-craft-kit\\commands" 2>/dev/null || \
-    ln -s "$INSTALL_DIR/.cc-craft-kit/commands" "$INSTALL_DIR/.claude/commands/cft" 2>/dev/null || {
-      warn "シンボリックリンクの作成に失敗しました。"
-      echo "  手動で作成してください:" >&2
-      echo "    ln -s $INSTALL_DIR/.cc-craft-kit/commands $INSTALL_DIR/.claude/commands/cft" >&2
-      return
-    }
-  else
-    # Linux/macOS: 相対パスでシンボリックリンク作成
-    cd "$INSTALL_DIR/.claude/commands"
-    ln -s "../../.cc-craft-kit/commands" cft || {
-      warn "シンボリックリンクの作成に失敗しました。"
-      echo "  手動で作成してください:" >&2
-      echo "    ln -s ../../.cc-craft-kit/commands $INSTALL_DIR/.claude/commands/cft" >&2
-      cd - >/dev/null
-      return
-    }
-    cd - >/dev/null
-  fi
-
-  success "シンボリックリンク作成完了"
 }
 
 # ========================================
@@ -404,7 +371,6 @@ main() {
   fetch_latest_version
   ARCHIVE_FILE=$(download_archive)
   extract_archive "$ARCHIVE_FILE"
-  create_symlink
   generate_env
   init_project
   show_success

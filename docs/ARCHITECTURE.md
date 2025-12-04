@@ -70,9 +70,27 @@ cc-craft-kit は**モジュラーモノリス**パターンを採用した、拡
 
 **実装**。
 
-- スラッシュコマンド定義: `src/slash-commands/*.md`
-- コマンド実装: `src/commands/*.ts`
-- 実行環境: `.cc-craft-kit/commands/` (ドッグフーディング用)
+- スラッシュコマンド定義（開発用）: `src/slash-commands/*.md`
+- スラッシュコマンド定義（実行用）: `.claude/commands/cft/*.md`
+- コマンド実装（開発用）: `src/commands/*.ts`
+- コマンド実装（実行用）: `.cc-craft-kit/commands/*.ts`
+- スキル定義: `.claude/skills/*/SKILL.md`
+- エージェント定義: `.claude/agents/*.md`
+
+**配置構成**:
+```text
+.claude/                       # Claude Code 標準ディレクトリ
+├── commands/cft/              # スラッシュコマンド
+├── skills/                    # スキル
+│   ├── database-schema-validator/
+│   ├── typescript-eslint/
+│   ├── pr-creator/
+│   └── git-operations/
+└── agents/                    # エージェント
+    ├── refactoring-assistant.md
+    ├── test-generator.md
+    └── code-reviewer.md
+```
 
 ### 2. Database Layer
 
