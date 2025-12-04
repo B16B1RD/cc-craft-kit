@@ -27,8 +27,10 @@ curl -fsSL https://raw.githubusercontent.com/B16B1RD/cc-craft-kit/main/scripts/i
 
 インストールスクリプトは以下を自動的に実行します。
 
-- `.cc-craft-kit/` ディレクトリの作成
-- `.claude/commands/cft` シンボリックリンクの作成
+- `.cc-craft-kit/` ディレクトリの展開（ランタイム実装）
+- `.claude/commands/cft/` ディレクトリの展開（スラッシュコマンド）
+- `.claude/skills/` ディレクトリの展開（スキル）
+- `.claude/agents/` ディレクトリの展開（エージェント）
 - `.env` ファイルの生成
 - プロジェクトの初期化
 
@@ -248,21 +250,20 @@ npm run db:migrate
 
 ### スラッシュコマンドが認識されない
 
-1. `.claude/commands/cc-craft-kit/` が `src/slash-commands/` へのシンボリックリンクになっているか確認
+1. `.claude/commands/cft/` ディレクトリに `.md` ファイルが存在するか確認
 
    ```bash
-   ls -la .claude/commands/cc-craft-kit
+   ls -la .claude/commands/cft/
    ```
 
-2. `src/slash-commands/` に `.md` ファイルが存在するか確認
-3. `.cc-craft-kit/commands/` に TypeScript ファイルが同期されているか確認
+2. `.cc-craft-kit/commands/` に TypeScript ファイルが同期されているか確認
 
    ```bash
    npm run check:sync
    npm run sync:dogfood
    ```
 
-4. Claude Code を再起動
+3. Claude Code を再起動
 
 ## 高度なコマンド
 

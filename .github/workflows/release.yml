@@ -31,8 +31,40 @@ jobs:
       - name: Copy .env.example to archive directory
         run: cp .env.example .cc-craft-kit/.env.example
 
+      - name: Cleanup unnecessary files before archiving
+        run: |
+          # Remove development scripts
+          rm -f .cc-craft-kit/scripts/add-*.ts 2>/dev/null || true
+          rm -f .cc-craft-kit/scripts/check-*.ts 2>/dev/null || true
+          rm -f .cc-craft-kit/scripts/cleanup-*.ts 2>/dev/null || true
+          rm -f .cc-craft-kit/scripts/close-*.ts 2>/dev/null || true
+          rm -f .cc-craft-kit/scripts/delete-*.ts 2>/dev/null || true
+          rm -f .cc-craft-kit/scripts/fix-*.ts 2>/dev/null || true
+          rm -f .cc-craft-kit/scripts/import-*.ts 2>/dev/null || true
+          rm -f .cc-craft-kit/scripts/migrate-*.ts 2>/dev/null || true
+          rm -f .cc-craft-kit/scripts/monitor-*.ts 2>/dev/null || true
+          rm -f .cc-craft-kit/scripts/rebuild-*.ts 2>/dev/null || true
+          rm -f .cc-craft-kit/scripts/repair-*.ts 2>/dev/null || true
+          rm -f .cc-craft-kit/scripts/run-*.ts 2>/dev/null || true
+          rm -f .cc-craft-kit/scripts/sync-github-*.ts 2>/dev/null || true
+          rm -f .cc-craft-kit/scripts/test-*.ts 2>/dev/null || true
+          rm -f .cc-craft-kit/scripts/update-*.ts 2>/dev/null || true
+          # Remove backup and test directories
+          rm -rf .cc-craft-kit/backups 2>/dev/null || true
+          rm -rf .cc-craft-kit/quality-templates 2>/dev/null || true
+          # Remove specs directory (user data)
+          rm -rf .cc-craft-kit/specs 2>/dev/null || true
+          # Remove database file (user data)
+          rm -f .cc-craft-kit/cc-craft-kit.db 2>/dev/null || true
+
       - name: Create archive
-        run: tar -czf .cc-craft-kit.tar.gz .cc-craft-kit/
+        run: |
+          # Create archive with both .cc-craft-kit/ and .claude/ directories
+          tar -czf .cc-craft-kit.tar.gz \
+            .cc-craft-kit/ \
+            .claude/commands/cft/ \
+            .claude/skills/ \
+            .claude/agents/
 
       - name: Cleanup copied .env.example
         run: rm -f .cc-craft-kit/.env.example
