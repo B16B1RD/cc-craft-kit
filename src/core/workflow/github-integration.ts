@@ -528,9 +528,37 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
           }
         }
 
-        // completed フェーズで Issue をクローズ
+        // review フェーズで PR 作成後の処理
+        // 注意: PR 作成は phase.md のプロンプト層で pr-creator スキルを使用して実行
+        // ここでは GitHub Projects ステータス (In Review) の更新のみ行う（上記で既に実行済み）
+
+        // completed フェーズで pr-cleanup 処理を実行し、Issue をクローズ
         if (event.data.newPhase === 'completed') {
           try {
+            // pr-cleanup 処理を実行（ブランチ削除、DB 更新）
+            const { cleanupMergedPullRequest } = await import(
+              '../../integrations/github/pr-cleanup.js'
+            );
+            const cleanupResult = await cleanupMergedPullRequest(db, spec.id);
+
+            if (cleanupResult.success) {
+              console.log(`✓ PR cleanup completed: PR #${cleanupResult.prNumber}`);
+              console.log(`  - Local branch deleted: ${cleanupResult.branchName}`);
+              console.log(`  - Remote branch deleted: ${cleanupResult.branchName}`);
+              console.log(`  - Merged at: ${cleanupResult.mergedAt}`);
+            } else {
+              // PR がマージされていない場合のエラーメッセージを表示
+              console.warn(`⚠️ PR cleanup failed: ${cleanupResult.error}`);
+              console.warn(
+                `\nPR がマージされていません。GitHub で PR をマージしてから再度実行してください。`
+              );
+              console.warn(
+                `または、/cft:spec-phase ${spec.id.substring(0, 8)} review に戻すことができます。\n`
+              );
+              // pr-cleanup が失敗した場合でも Issue クローズは試みる（既にマージ済みの場合もあるため）
+            }
+
+            // Issue クローズ処理
             const closeComment = `## ✅ 実装完了
 
 この仕様書の実装が完了しました。
@@ -538,6 +566,7 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
 **完了日時:** ${new Date().toLocaleString('ja-JP')}
 **最終フェーズ:** completed
 **仕様書:** [\`.cc-craft-kit/specs/${spec.id}.md\`](../../.cc-craft-kit/specs/${spec.id}.md)
+${cleanupResult.success ? `**PR:** #${cleanupResult.prNumber} (merged at ${cleanupResult.mergedAt})` : ''}
 `;
 
             await issues.addComment(
@@ -551,12 +580,17 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
 
             console.log(`✓ GitHub Issue #${spec.github_issue_number} closed automatically`);
           } catch (closeError) {
-            await logError('warn', 'Failed to close GitHub Issue', closeError, {
-              event: 'spec.phase_changed',
-              specId: event.specId,
-              newPhase: event.data.newPhase,
-              action: 'close_issue',
-            });
+            await logError(
+              'warn',
+              'Failed to complete cleanup and close GitHub Issue',
+              closeError,
+              {
+                event: 'spec.phase_changed',
+                specId: event.specId,
+                newPhase: event.data.newPhase,
+                action: 'close_issue',
+              }
+            );
           }
         }
       } catch (error) {
