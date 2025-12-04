@@ -284,7 +284,7 @@ create_symlink() {
 
 generate_env() {
   if [ -f "$INSTALL_DIR/.env" ]; then
-    info ".env ファイルがすでに存在します（スキップ）"
+    info ".env ファイルがすでに存在します（上書きせず保持します）"
     return
   fi
 
