@@ -12,7 +12,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 export interface SpecMetadata {
   id: string;
   name: string;
-  phase: 'requirements' | 'design' | 'tasks' | 'implementation' | 'completed';
+  phase: 'requirements' | 'design' | 'tasks' | 'implementation' | 'review' | 'completed';
   createdAt: string;
   updatedAt: string;
   description?: string;
@@ -114,7 +114,7 @@ export function validateMetadata(metadata: SpecMetadata): ValidationResult {
   }
 
   // フェーズのチェック
-  const validPhases = ['requirements', 'design', 'tasks', 'implementation', 'completed'];
+  const validPhases = ['requirements', 'design', 'tasks', 'implementation', 'review', 'completed'];
   if (!validPhases.includes(metadata.phase)) {
     errors.push(`Invalid phase: ${metadata.phase}`);
   }
