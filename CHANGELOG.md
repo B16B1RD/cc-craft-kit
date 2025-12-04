@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.10] - 2025-12-05
+
+### Added
+
+- なし
+
+### Changed
+
+- インストール構成の見直し - シンボリックリンク廃止と適切なファイル配置 (#711)
+
+### Fixed
+
+- completed フェーズ移行時にブランチ削除が失敗する問題を修正 (#783)
+- completed フェーズで仕様書が更新される問題を修正 (#775)
+- DB の整合性修正 - review フェーズ集計漏れを解消 (#769)
+- Sub Issue が重複して作成される問題を修正 (#754)
+- /cft:status が別ブランチの仕様書ファイルを読み取ろうとしてエラーになる問題を修正 (#746)
+- CI が失敗する PR が作成されることがある問題を修正 (#738)
+- 本リポジトリの .cc-craft-kit/ に無駄なファイルがある問題を修正 (#723)
+
 ## [0.1.9] - 2025-12-04
 
 ### Added
@@ -187,6 +207,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - なし（初回リリース）
 
+[0.1.10]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.10
 [0.1.9]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.9
 [0.1.8]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.8
 [0.1.7]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.7

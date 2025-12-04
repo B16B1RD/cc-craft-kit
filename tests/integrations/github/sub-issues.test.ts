@@ -59,6 +59,17 @@ describe('SubIssueManager', () => {
         githubToken: 'ghp_test_token',
       };
 
+      // 既存 Sub Issue 取得をモック（getExistingSubIssuesForParent）
+      mockGraphqlClient.mockResolvedValueOnce({
+        repository: {
+          issue: {
+            subIssues: {
+              nodes: [], // 既存の Sub Issue なし
+            },
+          },
+        },
+      });
+
       // 親 Issue の Node ID 取得をモック
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -141,7 +152,9 @@ describe('SubIssueManager', () => {
       expect(mockFetch).toHaveBeenCalledTimes(5); // 親NodeID取得 + (Sub作成 + NodeID取得) x 2
 
       // GraphQL が正しく呼ばれたか確認
-      expect(mockGraphqlClient).toHaveBeenCalledTimes(2);
+      // 1回目: getExistingSubIssuesForParent（既存 Sub Issue 取得）
+      // 2回目/3回目: addSubIssue（Sub Issue 作成）x 2
+      expect(mockGraphqlClient).toHaveBeenCalledTimes(3);
 
       // github_sync テーブルに記録されたか確認
       const syncRecords = await lifecycle.db
@@ -992,7 +1005,7 @@ describe('SubIssueManager', () => {
   });
 
   describe('エッジケース', () => {
-    it('空のタスクリストの場合は何も実行しない', async () => {
+    it('空のタスクリストの場合は Sub Issue 作成は実行しない', async () => {
       const config: SubIssueConfig = {
         owner: 'test-owner',
         repo: 'test-repo',
@@ -1000,6 +1013,17 @@ describe('SubIssueManager', () => {
         taskList: [],
         githubToken: 'ghp_test_token',
       };
+
+      // 既存 Sub Issue 取得をモック（getExistingSubIssuesForParent）
+      mockGraphqlClient.mockResolvedValueOnce({
+        repository: {
+          issue: {
+            subIssues: {
+              nodes: [],
+            },
+          },
+        },
+      });
 
       // 親 Issue の Node ID 取得のみモック
       mockFetch.mockResolvedValueOnce({
@@ -1015,7 +1039,8 @@ describe('SubIssueManager', () => {
 
       // 親 Issue の Node ID 取得のみ実行される
       expect(mockFetch).toHaveBeenCalledTimes(1);
-      expect(mockGraphqlClient).not.toHaveBeenCalled();
+      // getExistingSubIssuesForParent による GraphQL 呼び出しのみ（Sub Issue 作成なし）
+      expect(mockGraphqlClient).toHaveBeenCalledTimes(1);
     });
 
     it('description が undefined のタスクも正常に処理できる', async () => {

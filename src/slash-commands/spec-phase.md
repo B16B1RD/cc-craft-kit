@@ -287,6 +287,131 @@ AskUserQuestion ツールで確認:
    - 補完後、このコマンドを再実行
    - **処理を中断**
 
+### Step 4.5: 品質チェック（review フェーズ移行時のみ）
+
+`NEW_PHASE` が `review` の場合のみ、以下の品質チェックを実行します。
+
+> **目的**: PR 作成前に TypeScript 型チェックと ESLint を実行し、CI が失敗する PR の作成を防止します。
+
+#### 4.5.1 品質チェック実行
+
+Skill ツールで `typescript-eslint` スキルを実行します。
+
+スキル実行後、以下のコマンドを並列で実行:
+
+```bash
+# TypeScript 型チェック
+npm run typecheck 2>&1
+
+# ESLint チェック
+npm run lint 2>&1
+```
+
+#### 4.5.2 TypeScript・ESLint 結果判定
+
+**両方のチェックが成功した場合（終了コード 0）:**
+
+→ Step 4.5.3 へ進む。
+
+**いずれかのチェックが失敗した場合:**
+
+```
+❌ 品質チェック失敗 - PR 作成をスキップします
+
+仕様書: $SPEC_NAME
+フェーズ遷移: implementation → review （中断）
+
+=== エラー内容 ===
+
+[TypeScript エラーがある場合]
+📋 TypeScript 型エラー:
+[npm run typecheck の出力]
+
+[ESLint エラーがある場合]
+📋 ESLint エラー:
+[npm run lint の出力]
+
+=== 修正ガイダンス ===
+
+以下の手順でエラーを修正してください:
+
+1. 型エラーの修正:
+   - エラーメッセージの該当ファイル・行を確認
+   - 型定義を追加/修正
+
+2. ESLint エラーの自動修正（可能な場合）:
+   npm run lint -- --fix
+
+3. 修正後、再度 review フェーズへ移行:
+   /cft:spec-phase $SPEC_ID review
+
+注意: 品質チェックが成功するまで PR は作成されません。
+これにより CI が失敗する PR の作成を防止しています。
+```
+
+**処理を中断**（DB 更新・pr-creator 呼び出しをスキップ）
+
+#### 4.5.3 テスト実行
+
+TypeScript・ESLint チェック成功後、テストを実行します:
+
+```bash
+# テスト実行
+npm test 2>&1
+```
+
+> **注意**: `npm test` コマンドが存在しない場合やテストが設定されていない場合は、このステップをスキップして Step 4.5.4 へ進みます。
+
+#### 4.5.4 最終結果判定と分岐
+
+**すべてのチェックが成功した場合:**
+
+```
+✓ 品質チェック完了
+
+TypeScript: ✓ 型エラーなし
+ESLint: ✓ 警告/エラーなし
+テスト: ✓ 全テスト合格
+
+→ PR 作成に進みます...
+```
+
+Step 5 へ進む。
+
+**テストが失敗した場合:**
+
+```
+❌ 品質チェック失敗 - PR 作成をスキップします
+
+仕様書: $SPEC_NAME
+フェーズ遷移: implementation → review （中断）
+
+=== エラー内容 ===
+
+📋 テスト失敗:
+[npm test の出力]
+
+=== 修正ガイダンス ===
+
+以下の手順でテストを修正してください:
+
+1. 失敗したテストの確認:
+   - テスト出力のエラーメッセージを確認
+   - 該当するテストファイルと行番号を特定
+
+2. テストの修正:
+   - 実装コードの修正（テストが正しい場合）
+   - テストコードの修正（実装が正しい場合）
+
+3. 修正後、再度 review フェーズへ移行:
+   /cft:spec-phase $SPEC_ID review
+
+注意: すべてのチェックが成功するまで PR は作成されません。
+これにより CI が失敗する PR の作成を防止しています。
+```
+
+**処理を中断**（DB 更新・pr-creator 呼び出しをスキップ）
+
 ### Step 5: DB 更新 + イベント発火
 
 Bash ツールで以下を実行:
@@ -302,6 +427,11 @@ npx tsx .cc-craft-kit/commands/spec/update-phase.ts "$SPEC_ID" "$NEW_PHASE"
 
 ### Step 6: Markdown ファイル更新
 
+> **重要**: `NEW_PHASE` が `completed` の場合、このステップをスキップします。
+> 仕様書の completed フェーズ更新は review フェーズの PR に含まれています。
+
+`NEW_PHASE` が `completed` の場合は Step 8 へスキップ。
+
 Edit ツールで仕様書ファイル (`SPEC_PATH`) を更新:
 
 1. フェーズ行を更新:
@@ -313,6 +443,10 @@ Edit ツールで仕様書ファイル (`SPEC_PATH`) を更新:
    - 置換: `**更新日時:** <現在日時（YYYY/MM/DD HH:mm:ss 形式）>`
 
 ### Step 7: 自動コミット
+
+> **重要**: `NEW_PHASE` が `completed` の場合、このステップをスキップします。
+
+`NEW_PHASE` が `completed` の場合は Step 8 へスキップ。
 
 Bash ツールで以下を実行:
 
@@ -565,12 +699,27 @@ git add "$SPEC_PATH" && git commit -m "feat: $SPEC_NAME の$(NEW_PHASE の日本
 
 > **目的**: PR を作成し、コードレビューを受ける準備をします。
 
-Skill ツールで `pr-creator` スキルを実行:
+1. **仕様書フェーズの先行更新**（PR に含める）:
 
-- 仕様書 ID: `$SPEC_ID`
-- 仕様書パス: `$SPEC_PATH`
-- 仕様書名: `$SPEC_NAME`
-- GitHub Issue 番号: `$GITHUB_ISSUE_NUMBER`
+   PR 作成前に、仕様書のフェーズを `completed` に先行更新します。
+   これにより、PR マージ後の completed フェーズ移行時にファイル変更が不要になります。
+
+   - Edit ツールで仕様書（`$SPEC_PATH`）を更新:
+     - 検索: `**フェーズ:** review`
+     - 置換: `**フェーズ:** completed`
+   - 更新日時も更新:
+     - 検索: `**更新日時:** .*`
+     - 置換: `**更新日時:** <現在日時（YYYY/MM/DD HH:mm:ss 形式）>`
+   - git add && git commit --amend --no-edit で直前のコミットに追加
+
+2. **PR 作成**:
+
+   Skill ツールで `pr-creator` スキルを実行:
+
+   - 仕様書 ID: `$SPEC_ID`
+   - 仕様書パス: `$SPEC_PATH`
+   - 仕様書名: `$SPEC_NAME`
+   - GitHub Issue 番号: `$GITHUB_ISSUE_NUMBER`
 
 PR 作成後のガイダンス:
 
@@ -594,7 +743,82 @@ PR が作成されました。GitHub 上でコードレビューを受けてく�
 > **目的**: PR がマージされた後の後処理を実行します。
 > このフェーズでは、ブランチ削除と Issue クローズが自動的に実行されます。
 
-**前提条件確認**:
+##### Step 8.0: 現在のブランチを確認
+
+Bash ツールで以下を実行:
+
+```bash
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+echo "現在のブランチ: $CURRENT_BRANCH"
+echo "削除対象ブランチ: $BRANCH_NAME"
+```
+
+##### Step 8.1: 削除対象ブランチと同一か判定
+
+現在のブランチ（`CURRENT_BRANCH`）と削除対象ブランチ（`BRANCH_NAME`）を比較:
+
+- **同一の場合**: Step 8.2 へ進む
+- **異なる場合**: Step 8.3 へ進む（ブランチ切り替え不要）
+
+```bash
+if [ "$CURRENT_BRANCH" = "$BRANCH_NAME" ]; then
+  echo "⚠️ 現在のブランチが削除対象です。ベースブランチに切り替えます..."
+  # Step 8.2 へ
+else
+  echo "✓ 別ブランチにいます。そのまま処理を続行します。"
+  # Step 8.3 へ
+fi
+```
+
+##### Step 8.2: ベースブランチへの自動切り替え
+
+> **前提**: Step 8.1 で現在のブランチと削除対象が同一と判定された場合のみ実行
+
+1. **未コミット変更チェック**:
+
+   ```bash
+   if [ -n "$(git status --porcelain)" ]; then
+     echo "⚠️ 未コミットの変更があります"
+     git status --short
+     echo ""
+     echo "変更を自動コミットします..."
+     git add -A
+     git commit -m "chore: completed フェーズ移行前の自動コミット"
+   fi
+   ```
+
+2. **ベースブランチに切り替え**:
+
+   ```bash
+   git checkout "$BASE_BRANCH"
+   ```
+
+   **エラー時**:
+   ```
+   ❌ ベースブランチへの切り替えに失敗しました
+
+   ベースブランチ: $BASE_BRANCH
+   現在のブランチ: $CURRENT_BRANCH
+
+   対処方法:
+   1. ベースブランチの存在確認: git branch -a | grep "$BASE_BRANCH"
+   2. 手動で切り替え: git checkout "$BASE_BRANCH"
+   3. 再実行: /cft:spec-phase $SPEC_ID completed
+   ```
+
+3. **切り替え成功確認**:
+
+   ```bash
+   NEW_CURRENT=$(git rev-parse --abbrev-ref HEAD)
+   if [ "$NEW_CURRENT" = "$BASE_BRANCH" ]; then
+     echo "✓ $BASE_BRANCH に切り替えました"
+   else
+     echo "❌ ブランチ切り替えに失敗しました"
+     exit 1
+   fi
+   ```
+
+##### Step 8.3: 前提条件確認
 
 1. PR が GitHub 上でマージ済みであること
 2. PR がマージされていない場合は、以下のメッセージを表示して処理を中断:
@@ -611,7 +835,7 @@ completed フェーズに移行するには、PR が GitHub 上でマージさ�
 または、review フェーズに戻る: /cft:spec-phase $SPEC_ID review
 ```
 
-**処理内容**:
+##### Step 8.4: 後処理実行
 
 completed フェーズへの遷移時は、以下の処理が `github-integration.ts` で自動実行されます:
 
@@ -628,6 +852,7 @@ completed フェーズへの遷移時は、以下の処理が `github-integratio
 フェーズ: review → completed
 
 実行された処理:
+- ベースブランチに切り替え: $BASE_BRANCH（削除対象ブランチにいた場合のみ）
 - ローカルブランチ削除: $BRANCH_NAME
 - リモートブランチ削除: $BRANCH_NAME
 - GitHub Issue #$GITHUB_ISSUE_NUMBER をクローズ

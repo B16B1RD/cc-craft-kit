@@ -6,9 +6,19 @@ import { createHash } from 'crypto';
 import { createReadStream } from 'fs';
 
 /**
- * スキャン対象のディレクトリ
+ * スキャン対象のディレクトリ（src/ → .cc-craft-kit/ への同期対象）
+ * 注: slash-commands, skills, agents は .claude/ 配下に同期されるため除外
  */
-const SCAN_DIRECTORIES = ['commands', 'core', 'integrations', 'slash-commands'];
+const SCAN_DIRECTORIES = ['commands', 'core', 'integrations'];
+
+/**
+ * .claude/ 配下への同期対象ディレクトリ
+ */
+const CLAUDE_SYNC_MAPPINGS: Array<{ src: string; dest: string }> = [
+  { src: 'slash-commands', dest: '.claude/commands/cft' },
+  { src: 'skills', dest: '.claude/skills' },
+  { src: 'agents', dest: '.claude/agents' },
+];
 
 /**
  * 除外するパターン（glob形式）
@@ -120,7 +130,7 @@ function shouldExclude(filePath: string): boolean {
  */
 export async function scanProjectFiles(
   options: ScanOptions = {}
-): Promise<{ srcFiles: FileInfo[]; ccCraftKitFiles: FileInfo[] }> {
+): Promise<{ srcFiles: FileInfo[]; destFiles: FileInfo[] }> {
   const { baseDir = process.cwd(), verbose = false } = options;
 
   if (verbose) {
@@ -128,9 +138,9 @@ export async function scanProjectFiles(
   }
 
   const srcFiles: FileInfo[] = [];
-  const ccCraftKitFiles: FileInfo[] = [];
+  const destFiles: FileInfo[] = [];
 
-  // src/ 配下のディレクトリをスキャン
+  // src/ → .cc-craft-kit/ への同期対象をスキャン
   for (const dir of SCAN_DIRECTORIES) {
     const srcDir = path.join(baseDir, 'src', dir);
     const ccCraftKitDir = path.join(baseDir, '.cc-craft-kit', dir);
@@ -161,7 +171,7 @@ export async function scanProjectFiles(
         console.log(`📂 Scanning .cc-craft-kit/${dir}/...`);
       }
       const files = await scanDirectory(ccCraftKitDir, { ...options, baseDir });
-      ccCraftKitFiles.push(
+      destFiles.push(
         ...files.map((f) => ({
           relativePath: path.join(dir, f.relativePath),
           absolutePath: f.absolutePath,
@@ -174,12 +184,56 @@ export async function scanProjectFiles(
     }
   }
 
-  if (verbose) {
-    console.log(`\n✓ Found ${srcFiles.length} files in src/`);
-    console.log(`✓ Found ${ccCraftKitFiles.length} files in .cc-craft-kit/\n`);
+  // src/ → .claude/ への同期対象をスキャン
+  for (const mapping of CLAUDE_SYNC_MAPPINGS) {
+    const srcDir = path.join(baseDir, 'src', mapping.src);
+    const destDir = path.join(baseDir, mapping.dest);
+
+    // src/ をスキャン
+    try {
+      await fs.access(srcDir);
+      if (verbose) {
+        console.log(`📂 Scanning src/${mapping.src}/...`);
+      }
+      const files = await scanDirectory(srcDir, { ...options, baseDir });
+      srcFiles.push(
+        ...files.map((f) => ({
+          relativePath: path.join(mapping.src, f.relativePath),
+          absolutePath: f.absolutePath,
+        }))
+      );
+    } catch {
+      if (verbose) {
+        console.log(`⚠️  src/${mapping.src}/ does not exist, skipping...`);
+      }
+    }
+
+    // .claude/ をスキャン
+    try {
+      await fs.access(destDir);
+      if (verbose) {
+        console.log(`📂 Scanning ${mapping.dest}/...`);
+      }
+      const files = await scanDirectory(destDir, { ...options, baseDir });
+      destFiles.push(
+        ...files.map((f) => ({
+          relativePath: path.join(mapping.src, f.relativePath),
+          absolutePath: f.absolutePath,
+        }))
+      );
+    } catch {
+      if (verbose) {
+        console.log(`⚠️  ${mapping.dest}/ does not exist, skipping...`);
+      }
+    }
   }
 
-  return { srcFiles, ccCraftKitFiles };
+  if (verbose) {
+    console.log(`\n✓ Found ${srcFiles.length} files in src/`);
+    console.log(`✓ Found ${destFiles.length} files in destination directories\n`);
+  }
+
+  return { srcFiles, destFiles };
 }
 
 /**
@@ -318,16 +372,16 @@ export async function checkSync(options: ScanOptions = {}): Promise<SyncCheckRes
   const { verbose = false } = options;
 
   // ファイルスキャン
-  const { srcFiles, ccCraftKitFiles } = await scanProjectFiles(options);
+  const { srcFiles, destFiles } = await scanProjectFiles(options);
 
   // ハッシュ計算
   const srcHashes = await calculateFileHashes(srcFiles, { verbose });
-  const ccCraftKitHashes = await calculateFileHashes(ccCraftKitFiles, { verbose });
+  const destHashes = await calculateFileHashes(destFiles, { verbose });
 
   // 差分検出
-  const diffs = detectDifferences(srcHashes, ccCraftKitHashes);
+  const diffs = detectDifferences(srcHashes, destHashes);
 
-  const totalFiles = Math.max(srcFiles.length, ccCraftKitFiles.length);
+  const totalFiles = Math.max(srcFiles.length, destFiles.length);
   const inSync = diffs.length === 0;
 
   return {
@@ -352,7 +406,7 @@ export function printDiffReport(
 
   if (result.inSync) {
     console.log('✅ All files are in sync!');
-    console.log(`   src/ and .cc-craft-kit/ are identical.\n`);
+    console.log(`   src/ and destination directories are identical.\n`);
     return;
   }
 
@@ -374,7 +428,7 @@ export function printDiffReport(
   }
 
   if (missingInCcCraftKit.length > 0) {
-    console.log(`❌ Missing in .cc-craft-kit/ (${missingInCcCraftKit.length}):`);
+    console.log(`❌ Missing in destination (${missingInCcCraftKit.length}):`);
     missingInCcCraftKit.forEach((diff) => {
       console.log(`   - ${diff.path}`);
       if (showHash) {
@@ -385,11 +439,11 @@ export function printDiffReport(
   }
 
   if (extraInCcCraftKit.length > 0) {
-    console.log(`🔹 Extra in .cc-craft-kit/ (${extraInCcCraftKit.length}):`);
+    console.log(`🔹 Extra in destination (${extraInCcCraftKit.length}):`);
     extraInCcCraftKit.forEach((diff) => {
       console.log(`   - ${diff.path}`);
       if (showHash) {
-        console.log(`     .cc-craft-kit/: ${diff.ccCraftKitHash}`);
+        console.log(`     dest: ${diff.ccCraftKitHash}`);
       }
     });
     console.log('');

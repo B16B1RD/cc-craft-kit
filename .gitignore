@@ -35,13 +35,26 @@ Thumbs.db
 .cc-craft-kit/*
 !.cc-craft-kit/.gitkeep
 !.cc-craft-kit/specs/
-!.cc-craft-kit/quality-templates/
 !.cc-craft-kit/commands/
 !.cc-craft-kit/core/
 !.cc-craft-kit/integrations/
-!.cc-craft-kit/slash-commands/
 !.cc-craft-kit/scripts/
 .cc-craft-kit-test/
+
+# 不要ファイル（自動削除対象）
+.cc-craft-kit/cc-craft-kit-new.db
+.cc-craft-kit/cc-craft-kit-recovered.db
+.cc-craft-kit/test-archive.tar.gz
+
+# cc-craft-kit in .claude/ (installed files, not tracked)
+.claude/commands/cft/
+.claude/skills/database-schema-validator/
+.claude/skills/typescript-eslint/
+.claude/skills/pr-creator/
+.claude/skills/git-operations/
+.claude/agents/refactoring-assistant.md
+.claude/agents/test-generator.md
+.claude/agents/code-reviewer.md
 
 # Logs
 logs/
