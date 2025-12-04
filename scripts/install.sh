@@ -257,7 +257,9 @@ create_symlink() {
     # Windows: cmd //c mklink を試行
     cmd //c mklink //D "$INSTALL_DIR\\.claude\\commands\\cft" "$INSTALL_DIR\\.cc-craft-kit\\commands" 2>/dev/null || \
     ln -s "$INSTALL_DIR/.cc-craft-kit/commands" "$INSTALL_DIR/.claude/commands/cft" 2>/dev/null || {
-      warn "シンボリックリンクの作成に失敗しました。\n手動で作成してください: ln -s $INSTALL_DIR/.cc-craft-kit/commands $INSTALL_DIR/.claude/commands/cft"
+      warn "シンボリックリンクの作成に失敗しました。"
+      echo "  手動で作成してください:" >&2
+      echo "    ln -s $INSTALL_DIR/.cc-craft-kit/commands $INSTALL_DIR/.claude/commands/cft" >&2
       return
     }
   else
