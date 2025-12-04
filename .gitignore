@@ -41,6 +41,11 @@ Thumbs.db
 !.cc-craft-kit/scripts/
 .cc-craft-kit-test/
 
+# 不要ファイル（自動削除対象）
+.cc-craft-kit/cc-craft-kit-new.db
+.cc-craft-kit/cc-craft-kit-recovered.db
+.cc-craft-kit/test-archive.tar.gz
+
 # cc-craft-kit in .claude/ (installed files, not tracked)
 .claude/commands/cft/
 .claude/skills/database-schema-validator/
