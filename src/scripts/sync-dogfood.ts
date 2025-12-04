@@ -570,12 +570,16 @@ export async function syncAll(options: SyncOptions = {}): Promise<boolean> {
   // 開発用スクリプト削除
   const cleanupResult = await cleanDevScripts(options);
 
+  // 不要ファイル削除（.cc-craft-kit/ 直下）
+  const unusedFilesResult = await cleanUnusedFiles(options);
+
   const success =
     sourceResult.success &&
     commandsResult.success &&
     skillsResult.success &&
     agentsResult.success &&
-    cleanupResult.success;
+    cleanupResult.success &&
+    unusedFilesResult.success;
 
   const totalCopied =
     sourceResult.copiedFiles +
@@ -583,7 +587,8 @@ export async function syncAll(options: SyncOptions = {}): Promise<boolean> {
     skillsResult.copiedFiles +
     agentsResult.copiedFiles;
 
-  const totalDeleted = sourceResult.deletedFiles + cleanupResult.deletedFiles;
+  const totalDeleted =
+    sourceResult.deletedFiles + cleanupResult.deletedFiles + unusedFilesResult.deletedFiles;
 
   const totalErrors =
     sourceResult.errors.length +
