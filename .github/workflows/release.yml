@@ -34,6 +34,9 @@ jobs:
       - name: Create archive
         run: tar -czf .cc-craft-kit.tar.gz .cc-craft-kit/
 
+      - name: Cleanup copied .env.example
+        run: rm -f .cc-craft-kit/.env.example
+
       - name: Generate changelog
         id: changelog
         run: |
