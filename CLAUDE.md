@@ -28,8 +28,12 @@ project-root/
 │   ├── skills/                # スキル（直接配置）
 │   └── agents/                # エージェント（直接配置）
 ├── .cc-craft-kit/             # ランタイム専用（プロジェクトデータ）
-│   ├── core/                  # TypeScript 実装
 │   ├── commands/              # CLI コマンド実装
+│   ├── core/                  # TypeScript 実装
+│   ├── hooks/                 # フック実装
+│   ├── integrations/          # 外部連携（GitHub 等）
+│   ├── plugins/               # プラグイン
+│   ├── scripts/               # ユーティリティスクリプト
 │   └── specs/                 # 仕様書データ
 └── src/                       # 開発用ソース（マスター）
     ├── slash-commands/        # スラッシュコマンド定義
