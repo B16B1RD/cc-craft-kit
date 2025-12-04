@@ -8,6 +8,7 @@
 import type { Kysely } from 'kysely';
 import type { Database, SpecPhase } from '../../core/database/schema.js';
 import { getSpecsWithGitHubInfo } from '../../core/database/helpers.js';
+import { getCurrentBranch } from '../../core/git/branch-cache.js';
 
 /**
  * 仕様書情報（簡易版）
@@ -56,7 +57,10 @@ export interface LogsInfo {
 export async function getStatusFromDb(
   db: Kysely<Database>
 ): Promise<{ specs: SpecsInfo; logs: LogsInfo }> {
+  // 現在のブランチの仕様書のみ取得（別ブランチの仕様書ファイル読み取りエラーを防止）
+  const currentBranch = getCurrentBranch();
   const allSpecs = await getSpecsWithGitHubInfo(db, {
+    branchName: currentBranch,
     orderBy: 'created_at',
     orderDirection: 'desc',
   });

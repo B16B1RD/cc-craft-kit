@@ -22,6 +22,7 @@ import {
 } from './utils/error-handler.js';
 import { resolveProjectId } from '../integrations/github/project-resolver.js';
 import { checkDatabaseIntegrity } from '../core/validators/database-integrity-checker.js';
+import { getCurrentBranch } from '../core/git/branch-cache.js';
 
 /**
  * プロジェクト設定
@@ -170,7 +171,10 @@ export async function showStatus(
   }
 
   // フェーズ別仕様書集計（github_sync との JOIN を使用）
+  // 現在のブランチの仕様書のみ取得（別ブランチの仕様書ファイル読み取りエラーを防止）
+  const currentBranch = getCurrentBranch();
   const specs = await getSpecsWithGitHubInfo(db, {
+    branchName: currentBranch,
     orderBy: 'created_at',
     orderDirection: 'desc',
   });
