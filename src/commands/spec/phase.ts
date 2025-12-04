@@ -285,14 +285,21 @@ export async function updateSpecPhase(
     case 'implementation':
       console.log('  • Implement the tasks');
       console.log('  • Write tests and documentation');
+      console.log('  • Move to review: /cft:spec-phase ' + spec.id.substring(0, 8) + ' review');
+      break;
+
+    case 'review':
+      console.log('  • Create Pull Request for review');
+      console.log('  • Address review feedback');
+      console.log('  • Merge PR on GitHub after approval');
       console.log(
         '  • Move to completed: /cft:spec-phase ' + spec.id.substring(0, 8) + ' completed'
       );
       break;
 
     case 'completed':
-      console.log('  • Review the implementation');
-      console.log('  • Archive or close related GitHub issues');
+      console.log('  • PR has been merged and branches cleaned up');
+      console.log('  • GitHub Issue has been closed automatically');
       console.log('  • Create new specs for follow-up work');
       break;
   }

@@ -186,6 +186,7 @@ describe('PHASE_ALIASES', () => {
       'design',
       'tasks',
       'implementation',
+      'review',
       'completed',
     ];
 

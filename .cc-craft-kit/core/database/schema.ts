@@ -7,14 +7,26 @@ import type { ColumnType, Generated, Insertable, Selectable, Updateable } from '
 /**
  * 仕様書フェーズ
  *
- * 4 フェーズモデル: requirements → design → implementation → completed
+ * 5 フェーズモデル: requirements → design → implementation → review → completed
+ *
+ * - requirements: 要件定義フェーズ
+ * - design: 設計フェーズ（タスク分割も実行）
+ * - implementation: 実装フェーズ
+ * - review: コードレビュー待ちフェーズ（PR 作成済み）
+ * - completed: 完了フェーズ（PR マージ済み、ブランチ削除）
  *
  * @deprecated 'tasks' フェーズは非推奨です。
  * design フェーズでタスク分割を行い、Sub Issue として管理してください。
  * 既存の tasks フェーズの仕様書は後方互換性のため引き続きサポートされますが、
  * 新規作成時は design フェーズを使用してください。
  */
-export type SpecPhase = 'requirements' | 'design' | 'tasks' | 'implementation' | 'completed';
+export type SpecPhase =
+  | 'requirements'
+  | 'design'
+  | 'tasks'
+  | 'implementation'
+  | 'review'
+  | 'completed';
 
 // タスクステータス
 export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'review' | 'done';

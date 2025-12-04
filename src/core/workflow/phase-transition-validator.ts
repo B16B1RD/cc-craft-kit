@@ -38,6 +38,41 @@ interface PhaseValidationRule {
 }
 
 /**
+ * implementation → review 遷移時のバリデーション
+ *
+ * 実装タスクがすべて完了していることを確認
+ */
+function checkImplementationPhase(content: string): string[] {
+  const missingSections: string[] = [];
+
+  // タスクリストセクションの存在確認
+  if (!content.includes('## 8. 実装タスクリスト')) {
+    missingSections.push('8. 実装タスクリスト');
+    return missingSections;
+  }
+
+  // 未完了タスク（- [ ]）があるか確認
+  const uncheckedTasks = content.match(/^- \[ \] /gm);
+  if (uncheckedTasks && uncheckedTasks.length > 0) {
+    missingSections.push(`未完了タスクがあります（${uncheckedTasks.length} 件）`);
+  }
+
+  return missingSections;
+}
+
+/**
+ * review → completed 遷移時のバリデーション
+ *
+ * PR がマージ済みであることの確認は github-integration.ts で行う
+ * ここでは仕様書の状態のみチェック
+ */
+function checkReviewPhase(_content: string): string[] {
+  // review フェーズでは特別なバリデーションは不要
+  // PR マージ確認は github-integration.ts で行う
+  return [];
+}
+
+/**
  * フェーズ遷移ルール
  *
  * 各フェーズ遷移時にチェックすべき内容を定義
@@ -54,6 +89,20 @@ const PHASE_TRANSITION_RULES: PhaseValidationRule[] = [
     toPhase: 'tasks',
     validator: checkDesignPhase,
     errorMessage: 'Design フェーズの設計詳細セクションが不足しています。自動補完が必要です。',
+  },
+  {
+    fromPhase: 'implementation',
+    toPhase: 'review',
+    validator: checkImplementationPhase,
+    errorMessage:
+      '実装タスクが完了していません。すべてのタスクを完了してから review フェーズに移行してください。',
+  },
+  {
+    fromPhase: 'review',
+    toPhase: 'completed',
+    validator: checkReviewPhase,
+    errorMessage:
+      'PR がマージされていません。PR がマージされてから completed フェーズに移行してください。',
   },
 ];
 

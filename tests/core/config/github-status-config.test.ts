@@ -35,7 +35,8 @@ describe('github-status-config', () => {
         design: 'In Progress',
         tasks: 'In Progress',
         implementation: 'In Progress',
-        completed: 'In Review',
+        review: 'In Review',
+        completed: 'Done',
       });
     });
 
@@ -270,7 +271,8 @@ describe('github-status-config', () => {
       expect(getStatusForPhase('requirements')).toBe('Todo');
       expect(getStatusForPhase('design')).toBe('In Progress');
       expect(getStatusForPhase('implementation')).toBe('In Progress');
-      expect(getStatusForPhase('completed')).toBe('In Review');
+      expect(getStatusForPhase('review')).toBe('In Review');
+      expect(getStatusForPhase('completed')).toBe('Done');
     });
 
     it('カスタム設定でフェーズからステータスを取得', () => {

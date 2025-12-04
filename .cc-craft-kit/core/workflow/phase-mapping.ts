@@ -25,6 +25,9 @@ export const PHASE_ALIASES: Record<string, SpecPhase> = {
   impl: 'implementation',
   imp: 'implementation', // 後方互換性のため保持
 
+  // review の省略形
+  rev: 'review',
+
   // completed の省略形
   comp: 'completed',
   done: 'completed',
@@ -76,6 +79,7 @@ export function getPhaseAliasesHelp(): string {
     design: [],
     tasks: [],
     implementation: [],
+    review: [],
     completed: [],
   };
 
