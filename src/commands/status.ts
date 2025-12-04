@@ -195,7 +195,7 @@ export async function showStatus(
   console.log(formatKeyValue('Total', specs.length, options.color));
   console.log('');
 
-  const phases = ['requirements', 'design', 'tasks', 'implementation', 'completed'];
+  const phases = ['requirements', 'design', 'tasks', 'implementation', 'review', 'completed'];
   const phaseCounts: string[][] = [];
 
   for (const phase of phases) {
