@@ -743,7 +743,82 @@ PR が作成されました。GitHub 上でコードレビューを受けてく�
 > **目的**: PR がマージされた後の後処理を実行します。
 > このフェーズでは、ブランチ削除と Issue クローズが自動的に実行されます。
 
-**前提条件確認**:
+##### Step 8.0: 現在のブランチを確認
+
+Bash ツールで以下を実行:
+
+```bash
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+echo "現在のブランチ: $CURRENT_BRANCH"
+echo "削除対象ブランチ: $BRANCH_NAME"
+```
+
+##### Step 8.1: 削除対象ブランチと同一か判定
+
+現在のブランチ（`CURRENT_BRANCH`）と削除対象ブランチ（`BRANCH_NAME`）を比較:
+
+- **同一の場合**: Step 8.2 へ進む
+- **異なる場合**: Step 8.3 へ進む（ブランチ切り替え不要）
+
+```bash
+if [ "$CURRENT_BRANCH" = "$BRANCH_NAME" ]; then
+  echo "⚠️ 現在のブランチが削除対象です。ベースブランチに切り替えます..."
+  # Step 8.2 へ
+else
+  echo "✓ 別ブランチにいます。そのまま処理を続行します。"
+  # Step 8.3 へ
+fi
+```
+
+##### Step 8.2: ベースブランチへの自動切り替え
+
+> **前提**: Step 8.1 で現在のブランチと削除対象が同一と判定された場合のみ実行
+
+1. **未コミット変更チェック**:
+
+   ```bash
+   if [ -n "$(git status --porcelain)" ]; then
+     echo "⚠️ 未コミットの変更があります"
+     git status --short
+     echo ""
+     echo "変更を自動コミットします..."
+     git add -A
+     git commit -m "chore: completed フェーズ移行前の自動コミット"
+   fi
+   ```
+
+2. **ベースブランチに切り替え**:
+
+   ```bash
+   git checkout "$BASE_BRANCH"
+   ```
+
+   **エラー時**:
+   ```
+   ❌ ベースブランチへの切り替えに失敗しました
+
+   ベースブランチ: $BASE_BRANCH
+   現在のブランチ: $CURRENT_BRANCH
+
+   対処方法:
+   1. ベースブランチの存在確認: git branch -a | grep "$BASE_BRANCH"
+   2. 手動で切り替え: git checkout "$BASE_BRANCH"
+   3. 再実行: /cft:spec-phase $SPEC_ID completed
+   ```
+
+3. **切り替え成功確認**:
+
+   ```bash
+   NEW_CURRENT=$(git rev-parse --abbrev-ref HEAD)
+   if [ "$NEW_CURRENT" = "$BASE_BRANCH" ]; then
+     echo "✓ $BASE_BRANCH に切り替えました"
+   else
+     echo "❌ ブランチ切り替えに失敗しました"
+     exit 1
+   fi
+   ```
+
+##### Step 8.3: 前提条件確認
 
 1. PR が GitHub 上でマージ済みであること
 2. PR がマージされていない場合は、以下のメッセージを表示して処理を中断:
@@ -760,7 +835,7 @@ completed フェーズに移行するには、PR が GitHub 上でマージさ�
 または、review フェーズに戻る: /cft:spec-phase $SPEC_ID review
 ```
 
-**処理内容**:
+##### Step 8.4: 後処理実行
 
 completed フェーズへの遷移時は、以下の処理が `github-integration.ts` で自動実行されます:
 
@@ -777,6 +852,7 @@ completed フェーズへの遷移時は、以下の処理が `github-integratio
 フェーズ: review → completed
 
 実行された処理:
+- ベースブランチに切り替え: $BASE_BRANCH（削除対象ブランチにいた場合のみ）
 - ローカルブランチ削除: $BRANCH_NAME
 - リモートブランチ削除: $BRANCH_NAME
 - GitHub Issue #$GITHUB_ISSUE_NUMBER をクローズ
