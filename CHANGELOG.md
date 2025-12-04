@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.9] - 2025-12-04
+
+### Added
+
+- なし
+
+### Changed
+
+- `scripts/install.sh`: 警告メッセージの改行表示を改善（`\n` が正しく表示されるよう修正）
+- `.github/workflows/release.yml`: アーカイブ生成時に `.env.example` を同梱するよう変更
+
+### Fixed
+
+- インストールスクリプトの `.env.example` 不足警告を修正 (#678)
+- 既存 `.env` 保持時のユーザーフィードバックを明確化
+
 ## [0.1.8] - 2025-12-04
 
 ### Added
@@ -171,6 +187,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - なし（初回リリース）
 
+[0.1.9]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.9
+[0.1.8]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.8
 [0.1.7]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.7
 [0.1.6]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.6
 [0.1.5]: https://github.com/B16B1RD/cc-craft-kit/releases/tag/v0.1.5
