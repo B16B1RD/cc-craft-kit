@@ -529,3 +529,57 @@ For emergency production fixes:
 2. Complete fix → Create PR to `main`
 3. Review and CI pass → Squash and Merge to `main`
 4. Backport to `develop` (PR or direct merge)
+
+---
+
+## cc-craft-kit Integration
+
+### Invocation Method
+
+This skill is available for reference and guidance. Git commands are executed directly via Bash tool.
+
+```bash
+# Via Skill tool for guidance
+Skill(git-operations)
+```
+
+### Project-Specific Settings
+
+| Setting | File | Description |
+|---------|------|-------------|
+| Base Branch | `.env` → `BASE_BRANCH` | Default branch for new branches (default: `develop`) |
+| GitHub Info | `.env` → `GITHUB_OWNER`, `GITHUB_REPO` | Repository information |
+
+### Related Commands
+
+| Command | Description |
+|---------|-------------|
+| `/cft:spec-phase <spec-id> <phase>` | Creates/switches to spec-related branches automatically |
+| `/cft:pr-cleanup <spec-id>` | Deletes local and remote branches after PR merge |
+| `/cft:github-init <owner> <repo>` | Initializes GitHub integration |
+
+### Integration with SDD Workflow
+
+Git operations are automated at various points in the SDD workflow:
+
+1. **Spec Creation**: Branch auto-created with `<prefix>/spec-<id>-<name>` pattern
+2. **Phase Transitions**: Automatic branch switching
+3. **review Phase**: Auto-commit before PR creation
+4. **completed Phase**: Automatic branch deletion
+
+### Common Workflows in cc-craft-kit
+
+```bash
+# Start new spec implementation
+/cft:spec-create "Feature name"
+/cft:spec-phase <spec-id> impl
+# (Branch auto-created and switched)
+
+# Complete implementation, create PR
+/cft:spec-phase <spec-id> review
+# (Auto-commit, quality check, PR created)
+
+# After PR merged, cleanup
+/cft:spec-phase <spec-id> completed
+# (Branch deleted, Issue closed)
+```
