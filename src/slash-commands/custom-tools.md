@@ -219,13 +219,22 @@ npx tsx .cc-craft-kit/commands/skill/create.ts "$3" "$4"
 
 ##### Step AL1: サブエージェント一覧の取得
 
-Bash ツールで以下を実行:
+Glob ツールで以下のパターンを検索:
 
-```bash
-npx tsx .cc-craft-kit/commands/agent/list.ts
+```
+.claude/agents/*.md
 ```
 
-##### Step AL2: 結果の表示
+##### Step AL2: 各ファイルの情報抽出
+
+見つかった各 `.md` ファイルに対して Read ツールで先頭 50 行を読み込み、以下の情報を抽出:
+
+- **名前**: ファイル名から `.md` を除去（例: `code-reviewer.md` → `code-reviewer`）
+- **説明**: ファイル冒頭の `# {タイトル}` の直後の段落（1行目の説明文）
+- **モデル**: frontmatter の `model` フィールド（デフォルト: `sonnet`）
+- **ツール**: frontmatter の `tools` フィールドまたは本文中の `## Tools` セクション
+
+##### Step AL3: 結果の表示
 
 ```
 # サブエージェント一覧
