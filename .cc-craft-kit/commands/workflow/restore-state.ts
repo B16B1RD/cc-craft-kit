@@ -11,7 +11,7 @@
  */
 
 import '../../core/config/env.js';
-import { getDatabase, closeDatabase } from '../../core/database/connection.js';
+import { getWorkflowStateBySpec, loadWorkflowState, getSpec } from '../../core/storage/index.js';
 import { handleCLIError } from '../utils/error-handler.js';
 
 /**
@@ -38,35 +38,27 @@ interface RestoreStateOutput {
  *
  * @param specId - 特定の仕様書 ID を指定（省略時は最新の状態を取得）
  */
-export async function restoreWorkflowState(specId?: string): Promise<RestoreStateOutput> {
+export function restoreWorkflowState(specId?: string): RestoreStateOutput {
   const output: RestoreStateOutput = {
     success: false,
     hasState: false,
   };
 
   try {
-    const db = getDatabase();
-
-    // クエリ構築
-    let query = db
-      .selectFrom('workflow_state')
-      .innerJoin('specs', 'specs.id', 'workflow_state.spec_id')
-      .select([
-        'workflow_state.spec_id',
-        'specs.name as spec_name',
-        'workflow_state.current_task_number',
-        'workflow_state.current_task_title',
-        'workflow_state.next_action',
-        'workflow_state.github_issue_number',
-        'workflow_state.saved_at',
-      ])
-      .orderBy('workflow_state.saved_at', 'desc');
+    let workflowState;
 
     if (specId) {
-      query = query.where('workflow_state.spec_id', '=', specId);
+      // 特定の仕様書のワークフロー状態を取得
+      workflowState = getWorkflowStateBySpec(specId);
+    } else {
+      // 最新のワークフロー状態を取得
+      const allStates = loadWorkflowState();
+      if (allStates.length > 0) {
+        // saved_at の降順でソート
+        allStates.sort((a, b) => new Date(b.saved_at).getTime() - new Date(a.saved_at).getTime());
+        workflowState = allStates[0];
+      }
     }
-
-    const workflowState = await query.executeTakeFirst();
 
     if (!workflowState) {
       output.success = true;
@@ -74,14 +66,18 @@ export async function restoreWorkflowState(specId?: string): Promise<RestoreStat
       return output;
     }
 
+    // 仕様書名を取得
+    const spec = getSpec(workflowState.spec_id);
+    const specName = spec?.name ?? 'Unknown';
+
     output.state = {
       specId: workflowState.spec_id,
-      specName: workflowState.spec_name,
+      specName,
       currentTaskNumber: workflowState.current_task_number,
       currentTaskTitle: workflowState.current_task_title,
       nextAction: workflowState.next_action,
       githubIssueNumber: workflowState.github_issue_number,
-      savedAt: workflowState.saved_at?.toString() ?? '',
+      savedAt: workflowState.saved_at ?? '',
     };
 
     // Claude Code へのプロンプトメッセージを生成
@@ -159,8 +155,8 @@ function generatePromptMessage(state: NonNullable<RestoreStateOutput['state']>):
 /**
  * JSON 出力形式で実行（プログラムからの呼び出し用）
  */
-export async function executeRestoreStateJson(specId?: string): Promise<void> {
-  const output = await restoreWorkflowState(specId);
+export function executeRestoreStateJson(specId?: string): void {
+  const output = restoreWorkflowState(specId);
   console.log(JSON.stringify(output, null, 2));
 }
 
@@ -170,8 +166,8 @@ export async function executeRestoreStateJson(specId?: string): Promise<void> {
  * フックからの呼び出し時は、Claude Code がプロンプトとして
  * 認識できるよう、プロンプトメッセージのみを出力します。
  */
-export async function executeRestoreStatePrompt(specId?: string): Promise<void> {
-  const output = await restoreWorkflowState(specId);
+export function executeRestoreStatePrompt(specId?: string): void {
+  const output = restoreWorkflowState(specId);
 
   if (output.success && output.hasState && output.promptMessage) {
     console.log(output.promptMessage);
@@ -184,19 +180,17 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const mode = process.argv[2]; // 'json' または 'prompt' または spec-id
   const specId = process.argv[3];
 
-  if (mode === 'json') {
-    executeRestoreStateJson(specId)
-      .catch((error) => handleCLIError(error))
-      .finally(() => closeDatabase());
-  } else if (mode === 'prompt') {
-    executeRestoreStatePrompt(specId)
-      .catch((error) => handleCLIError(error))
-      .finally(() => closeDatabase());
-  } else {
-    // デフォルトはプロンプトモード
-    const targetSpecId = mode; // mode が spec-id の場合
-    executeRestoreStatePrompt(targetSpecId)
-      .catch((error) => handleCLIError(error))
-      .finally(() => closeDatabase());
+  try {
+    if (mode === 'json') {
+      executeRestoreStateJson(specId);
+    } else if (mode === 'prompt') {
+      executeRestoreStatePrompt(specId);
+    } else {
+      // デフォルトはプロンプトモード
+      const targetSpecId = mode; // mode が spec-id の場合
+      executeRestoreStatePrompt(targetSpecId);
+    }
+  } catch (error) {
+    handleCLIError(error);
   }
 }

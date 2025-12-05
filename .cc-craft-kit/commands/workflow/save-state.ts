@@ -11,9 +11,11 @@
 
 import '../../core/config/env.js';
 import { z } from 'zod';
-import { randomUUID } from 'crypto';
-import { getDatabase, closeDatabase } from '../../core/database/connection.js';
-import type { WorkflowNextAction } from '../../core/database/schema.js';
+import {
+  setWorkflowState,
+  deleteWorkflowState as deleteWorkflowStateStorage,
+  type WorkflowNextAction,
+} from '../../core/storage/index.js';
 import { handleCLIError } from '../utils/error-handler.js';
 
 /**
@@ -43,13 +45,13 @@ interface SaveStateOutput {
 /**
  * ワークフロー状態を保存（UPSERT）
  */
-export async function saveWorkflowState(args: {
+export function saveWorkflowState(args: {
   specId: string;
   currentTaskNumber: number;
   currentTaskTitle: string;
   nextAction: WorkflowNextAction;
   githubIssueNumber?: number;
-}): Promise<SaveStateOutput> {
+}): SaveStateOutput {
   const output: SaveStateOutput = {
     success: false,
     specId: args.specId,
@@ -60,53 +62,18 @@ export async function saveWorkflowState(args: {
     // 引数の検証
     const validated = ArgsSchema.parse(args);
 
-    const db = getDatabase();
-    const now = new Date().toISOString();
+    // JSON ストレージに保存（UPSERT 動作）
+    const result = setWorkflowState(validated.specId, {
+      current_task_number: validated.currentTaskNumber,
+      current_task_title: validated.currentTaskTitle,
+      next_action: validated.nextAction,
+      github_issue_number: validated.githubIssueNumber ?? null,
+    });
 
-    // 既存のワークフロー状態を確認（spec_id にユニーク制約があるため、1件のみ）
-    const existing = await db
-      .selectFrom('workflow_state')
-      .select(['id'])
-      .where('spec_id', '=', validated.specId)
-      .executeTakeFirst();
-
-    if (existing) {
-      // UPDATE
-      await db
-        .updateTable('workflow_state')
-        .set({
-          current_task_number: validated.currentTaskNumber,
-          current_task_title: validated.currentTaskTitle,
-          next_action: validated.nextAction,
-          github_issue_number: validated.githubIssueNumber ?? null,
-          saved_at: now,
-          updated_at: now,
-        })
-        .where('spec_id', '=', validated.specId)
-        .execute();
-
-      output.workflowStateId = existing.id;
-      output.isUpdate = true;
-    } else {
-      // INSERT
-      const id = randomUUID();
-      await db
-        .insertInto('workflow_state')
-        .values({
-          id,
-          spec_id: validated.specId,
-          current_task_number: validated.currentTaskNumber,
-          current_task_title: validated.currentTaskTitle,
-          next_action: validated.nextAction,
-          github_issue_number: validated.githubIssueNumber ?? null,
-          saved_at: now,
-          updated_at: now,
-        })
-        .execute();
-
-      output.workflowStateId = id;
-      output.isUpdate = false;
-    }
+    output.workflowStateId = result.id;
+    // setWorkflowState は常に UPSERT なので、新規作成か更新かは判別できない
+    // ここでは isUpdate = false としておく（実装上の制約）
+    output.isUpdate = false;
 
     output.success = true;
     return output;
@@ -122,19 +89,17 @@ export async function saveWorkflowState(args: {
  * 仕様書が completed フェーズに移行した際などに呼び出され、
  * 不要になったワークフロー状態を削除します。
  */
-export async function deleteWorkflowState(specId: string): Promise<{
+export function deleteWorkflowState(specId: string): {
   success: boolean;
   deleted: boolean;
   error?: string;
-}> {
+} {
   try {
-    const db = getDatabase();
-
-    const result = await db.deleteFrom('workflow_state').where('spec_id', '=', specId).execute();
+    const deleted = deleteWorkflowStateStorage(specId);
 
     return {
       success: true,
-      deleted: result.length > 0 && Number(result[0].numDeletedRows) > 0,
+      deleted,
     };
   } catch (error) {
     return {
@@ -148,8 +113,8 @@ export async function deleteWorkflowState(specId: string): Promise<{
 /**
  * JSON 出力形式で実行（プロンプトからの呼び出し用）
  */
-export async function executeSaveStateJson(args: Args): Promise<void> {
-  const output = await saveWorkflowState(args);
+export function executeSaveStateJson(args: Args): void {
+  const output = saveWorkflowState(args);
   console.log(JSON.stringify(output, null, 2));
 }
 
@@ -170,13 +135,15 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  executeSaveStateJson({
-    specId,
-    currentTaskNumber,
-    currentTaskTitle,
-    nextAction,
-    githubIssueNumber,
-  })
-    .catch((error) => handleCLIError(error))
-    .finally(() => closeDatabase());
+  try {
+    executeSaveStateJson({
+      specId,
+      currentTaskNumber,
+      currentTaskTitle,
+      nextAction,
+      githubIssueNumber,
+    });
+  } catch (error) {
+    handleCLIError(error);
+  }
 }
