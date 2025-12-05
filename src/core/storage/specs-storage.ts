@@ -77,23 +77,35 @@ export function findSpecByIdPrefix(idPrefix: string, baseDir?: string): SpecData
 
 /**
  * 新しい仕様書を追加
+ *
+ * @param spec 仕様書データ（id は任意で指定可能、未指定時は自動生成）
+ * @param baseDir ベースディレクトリ
+ * @returns 追加された仕様書
  */
 export function addSpec(
-  spec: Omit<SpecData, 'id' | 'created_at' | 'updated_at'>,
+  spec: Omit<SpecData, 'created_at' | 'updated_at'> & { id?: string },
   baseDir?: string
 ): SpecData {
   const specs = loadSpecs(baseDir);
   const now = new Date().toISOString();
 
   const newSpec: SpecData = {
-    id: randomUUID(),
-    ...spec,
+    id: spec.id || randomUUID(),
+    name: spec.name,
+    description: spec.description,
+    phase: spec.phase,
+    branch_name: spec.branch_name,
     created_at: now,
     updated_at: now,
   };
 
   // バリデーション
   SpecDataSchema.parse(newSpec);
+
+  // 重複チェック
+  if (specs.some((s) => s.id === newSpec.id)) {
+    throw new Error(`Spec with id ${newSpec.id} already exists`);
+  }
 
   specs.push(newSpec);
   saveSpecs(specs, baseDir);
