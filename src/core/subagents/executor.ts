@@ -99,20 +99,21 @@ export class SubagentExecutor {
     const allLogs = readLogs();
 
     return allLogs
-      .filter(
-        (log: { spec_id: string | null; action: string }) =>
-          log.spec_id === specId && log.action.startsWith('subagent_')
-      )
+      .filter((log) => log.spec_id === specId && log.action.startsWith('subagent_'))
       .slice(0, limit)
-      .map((log: { metadata: Record<string, unknown>; id: string; timestamp: string }) => {
-        const metadata = log.metadata || {};
+      .map((log): SubagentExecution => {
+        const metadata = log.metadata ?? {};
+        const status = (metadata.status as string) || 'pending';
+        const validStatuses = ['pending', 'running', 'completed', 'failed', 'cancelled'];
         return {
           id: (metadata.executionId as string) || log.id,
           subagentName: (metadata.subagentName as string) || 'unknown',
-          status: (metadata.status as string) || 'unknown',
+          status: validStatuses.includes(status)
+            ? (status as SubagentExecution['status'])
+            : 'pending',
           input: {},
           startedAt: log.timestamp,
-          context: { specId, phase: 'unknown' },
+          context: { specId, phase: 'pending' },
         };
       });
   }
