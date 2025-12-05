@@ -368,3 +368,23 @@ When transitioning to review phase, this skill acts as a **quality gate**:
 1. **TypeScript Check**: `npm run typecheck` must exit with code 0
 2. **ESLint Check**: `npm run lint` must exit with code 0
 3. **If any check fails**: PR creation is blocked with error details
+
+---
+
+## Related Skills and Subagents
+
+### Related Skills
+
+| Skill | Description | Integration Point |
+|-------|-------------|-------------------|
+| `database-schema-validator` | Schema validation | Validates schema.ts types |
+| `git-operations` | Git command helpers | Quality check before commit |
+| `pr-creator` | PR creation | Quality gate before PR |
+
+### Related Subagents
+
+| Subagent | Description | Integration Point |
+|----------|-------------|-------------------|
+| `code-reviewer` | Code review support | Review type errors and lint issues |
+| `refactoring-assistant` | Refactoring support | Fix lint violations via refactoring |
+| `test-generator` | Test generation | Ensure test code passes lint checks |
