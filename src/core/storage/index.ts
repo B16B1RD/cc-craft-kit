@@ -63,7 +63,9 @@ export {
   getGitHubSyncByIssueNumber,
   addGitHubSync,
   updateGitHubSync,
+  updateGitHubSyncByEntity,
   deleteGitHubSync,
+  deleteGitHubSyncByEntity,
 } from './github-sync-storage.js';
 
 export {

@@ -8,7 +8,12 @@
 import '../../core/config/env.js';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase, closeDatabase } from '../../core/database/connection.js';
+import {
+  findSpecByIdPrefix,
+  getSpec,
+  getGitHubSyncBySpecId,
+  getGitHubSyncByIssueNumber,
+} from '../../core/storage/index.js';
 import {
   validateSpecId,
   isGitHubIssueNumber,
@@ -35,7 +40,7 @@ interface ResolveIdOutput {
 /**
  * 仕様書 ID を解決して完全な情報を取得（部分一致）
  */
-async function resolveSpecById(partialId: string, ccCraftKitDir: string): Promise<ResolveIdOutput> {
+function resolveSpecById(partialId: string, ccCraftKitDir: string): ResolveIdOutput {
   // 仕様書IDの検証
   try {
     validateSpecId(partialId);
@@ -46,15 +51,8 @@ async function resolveSpecById(partialId: string, ccCraftKitDir: string): Promis
     };
   }
 
-  // データベース取得
-  const db = getDatabase();
-
-  // 仕様書検索（部分一致対応）
-  const spec = await db
-    .selectFrom('specs')
-    .selectAll()
-    .where('id', 'like', `${partialId}%`)
-    .executeTakeFirst();
+  // 仕様書検索（前方一致）
+  const spec = findSpecByIdPrefix(partialId);
 
   if (!spec) {
     return {
@@ -63,13 +61,8 @@ async function resolveSpecById(partialId: string, ccCraftKitDir: string): Promis
     };
   }
 
-  // github_sync テーブルから GitHub Issue 番号を取得
-  const sync = await db
-    .selectFrom('github_sync')
-    .select(['github_number'])
-    .where('entity_type', '=', 'spec')
-    .where('entity_id', '=', spec.id)
-    .executeTakeFirst();
+  // github-sync.json から GitHub Issue 番号を取得
+  const sync = getGitHubSyncBySpecId(spec.id);
 
   // 仕様書ファイルパス
   const specPath = join(ccCraftKitDir, 'specs', `${spec.id}.md`);
@@ -90,21 +83,11 @@ async function resolveSpecById(partialId: string, ccCraftKitDir: string): Promis
 /**
  * GitHub Issue 番号から仕様書を解決
  */
-async function resolveSpecByIssueNumber(
-  issueNumber: number,
-  ccCraftKitDir: string
-): Promise<ResolveIdOutput> {
-  const db = getDatabase();
+function resolveSpecByIssueNumber(issueNumber: number, ccCraftKitDir: string): ResolveIdOutput {
+  // github-sync.json から entity_type = 'spec' で github_number を検索
+  const sync = getGitHubSyncByIssueNumber(issueNumber);
 
-  // github_sync テーブルから entity_type = 'spec' で github_number を検索
-  const sync = await db
-    .selectFrom('github_sync')
-    .select(['entity_id', 'github_number'])
-    .where('entity_type', '=', 'spec')
-    .where('github_number', '=', issueNumber)
-    .executeTakeFirst();
-
-  if (!sync) {
+  if (!sync || sync.entity_type !== 'spec') {
     return {
       success: false,
       error: `No spec found for GitHub Issue #${issueNumber}`,
@@ -112,11 +95,7 @@ async function resolveSpecByIssueNumber(
   }
 
   // 仕様書を取得
-  const spec = await db
-    .selectFrom('specs')
-    .selectAll()
-    .where('id', '=', sync.entity_id)
-    .executeTakeFirst();
+  const spec = getSpec(sync.entity_id);
 
   if (!spec) {
     return {
@@ -148,7 +127,7 @@ async function resolveSpecByIssueNumber(
  * - "#42" または "42" 形式 → GitHub Issue 番号として検索
  * - 8文字以上の hex 文字列 → 仕様書 ID として検索
  */
-async function resolveSpecId(input: string): Promise<ResolveIdOutput> {
+function resolveSpecId(input: string): ResolveIdOutput {
   const cwd = process.cwd();
   const ccCraftKitDir = join(cwd, '.cc-craft-kit');
 
@@ -191,23 +170,19 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  resolveSpecId(partialId)
-    .then((result) => {
-      console.log(JSON.stringify(result, null, 2));
-      if (!result.success) {
-        process.exit(1);
-      }
-    })
-    .catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : String(error);
-      const errorOutput: ResolveIdOutput = {
-        success: false,
-        error: message,
-      };
-      console.log(JSON.stringify(errorOutput, null, 2));
-      process.exit(1);
-    })
-    .finally(() => closeDatabase());
+  try {
+    const result = resolveSpecId(partialId);
+    console.log(JSON.stringify(result, null, 2));
+    process.exit(result.success ? 0 : 1);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    const errorOutput: ResolveIdOutput = {
+      success: false,
+      error: message,
+    };
+    console.log(JSON.stringify(errorOutput, null, 2));
+    process.exit(1);
+  }
 }
 
 export { resolveSpecId, type ResolveIdOutput };

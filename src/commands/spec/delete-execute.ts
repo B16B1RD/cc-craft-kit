@@ -13,7 +13,7 @@ import {
   getSpec,
   deleteSpec,
   getGitHubSyncBySpecId,
-  deleteGitHubSync,
+  deleteGitHubSyncByEntity,
 } from '../../core/storage/index.js';
 import { getEventBusAsync } from '../../core/workflow/event-bus.js';
 import { GitHubClient } from '../../integrations/github/client.js';
@@ -174,7 +174,7 @@ export async function executeDelete(
 
     // github_sync レコードも削除
     if (githubSync) {
-      deleteGitHubSync('spec', specId);
+      deleteGitHubSyncByEntity(specId, 'spec');
     }
 
     // 3. ファイル削除
