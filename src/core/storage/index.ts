@@ -76,3 +76,11 @@ export {
 } from './tasks-storage.js';
 
 export { appendLog, readLogs, readLogsBySpec, readLogsByTask } from './logs-storage.js';
+
+// ヘルパー関数
+export {
+  type SpecWithGitHub,
+  getSpecWithGitHubInfo,
+  getSpecsWithGitHubInfo,
+  countSpecsWithFilter,
+} from './helpers.js';
