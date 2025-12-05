@@ -1,7 +1,11 @@
 import { graphql } from '@octokit/graphql';
-import type { Kysely } from 'kysely';
-import type { Database } from '../../core/database/schema.js';
 import { z } from 'zod';
+import {
+  addGitHubSync,
+  getGitHubSyncByEntity,
+  loadGitHubSync,
+  updateGitHubSync,
+} from '../../core/storage/index.js';
 
 /**
  * GitHub API レスポンススキーマ
@@ -71,7 +75,7 @@ interface GetSubIssuesResponse {
 export class SubIssueManager {
   private graphqlClientCache: Map<string, ReturnType<typeof graphql.defaults>> = new Map();
 
-  constructor(private db: Kysely<Database>) {}
+  constructor() {}
 
   /**
    * レート制限対応の fetch ラッパー
@@ -240,8 +244,8 @@ export class SubIssueManager {
 
       await this.addSubIssueToParent(parentNodeId, subIssueNodeId, config.githubToken);
 
-      // 5. github_sync テーブルに記録（親 Issue 関連情報を含む）
-      await this.recordSubIssueSyncData(
+      // 5. github-sync.json に記録（親 Issue 関連情報を含む）
+      this.recordSubIssueSyncData(
         task.id,
         subIssueNumber,
         subIssueNodeId,
@@ -254,12 +258,7 @@ export class SubIssueManager {
       );
 
       // 6. 登録結果を検証
-      const verifyRecord = await this.db
-        .selectFrom('github_sync')
-        .selectAll()
-        .where('entity_id', '=', task.id)
-        .where('entity_type', '=', 'sub_issue')
-        .executeTakeFirst();
+      const verifyRecord = getGitHubSyncByEntity(task.id, 'sub_issue');
 
       if (!verifyRecord) {
         console.error(
@@ -391,7 +390,7 @@ export class SubIssueManager {
   }
 
   /**
-   * github_sync テーブルに Sub Issue 情報を記録
+   * github-sync.json に Sub Issue 情報を記録
    *
    * @param taskId タスク ID
    * @param issueNumber Sub Issue の GitHub Issue 番号
@@ -400,33 +399,34 @@ export class SubIssueManager {
    * @param repo リポジトリ名
    * @param options 親 Issue 関連情報（オプション）
    */
-  private async recordSubIssueSyncData(
+  private recordSubIssueSyncData(
     taskId: string,
     issueNumber: number,
     nodeId: string,
     owner: string,
     repo: string,
     options?: RecordSubIssueSyncOptions
-  ): Promise<void> {
-    const { randomUUID } = await import('crypto');
+  ): void {
     const repository = `${owner}/${repo}`;
 
-    await this.db
-      .insertInto('github_sync')
-      .values({
-        id: randomUUID(),
-        entity_type: 'sub_issue',
-        entity_id: taskId,
-        github_id: repository, // owner/repo 形式で保存
-        github_number: issueNumber,
-        github_node_id: nodeId,
-        last_synced_at: new Date().toISOString(),
-        sync_status: 'success',
-        error_message: null,
-        parent_issue_number: options?.parentIssueNumber ?? null,
-        parent_spec_id: options?.parentSpecId ?? null,
-      })
-      .execute();
+    addGitHubSync({
+      entity_type: 'sub_issue',
+      entity_id: taskId,
+      github_id: repository, // owner/repo 形式で保存
+      github_number: issueNumber,
+      github_node_id: nodeId,
+      issue_number: issueNumber,
+      issue_url: `https://github.com/${repository}/issues/${issueNumber}`,
+      pr_number: null,
+      pr_url: null,
+      pr_merged_at: null,
+      sync_status: 'success',
+      error_message: null,
+      checkbox_hash: null,
+      last_body_hash: null,
+      parent_issue_number: options?.parentIssueNumber ?? null,
+      parent_spec_id: options?.parentSpecId ?? null,
+    });
   }
 
   /**
@@ -437,13 +437,8 @@ export class SubIssueManager {
     status: 'open' | 'closed',
     token: string
   ): Promise<void> {
-    // 1. github_sync から Sub Issue の GitHub Issue 番号を取得
-    const syncRecord = await this.db
-      .selectFrom('github_sync')
-      .selectAll()
-      .where('entity_id', '=', taskId)
-      .where('entity_type', '=', 'sub_issue')
-      .executeTakeFirst();
+    // 1. github-sync.json から Sub Issue の GitHub Issue 番号を取得
+    const syncRecord = getGitHubSyncByEntity(taskId, 'sub_issue');
 
     if (!syncRecord) {
       throw new Error(`Sub issue not found for task: ${taskId}`);
@@ -479,12 +474,8 @@ export class SubIssueManager {
       );
     }
 
-    // 3. github_sync の last_synced_at を更新
-    await this.db
-      .updateTable('github_sync')
-      .set({ last_synced_at: new Date().toISOString() })
-      .where('id', '=', syncRecord.id)
-      .execute();
+    // 3. github-sync.json の last_synced_at を更新
+    updateGitHubSync(syncRecord.id, { last_synced_at: new Date().toISOString() });
   }
 
   /**
@@ -592,13 +583,11 @@ export class SubIssueManager {
     parentIssueNumber: number,
     token: string
   ): Promise<boolean> {
-    // DB から同じ親 Issue に紐づく全 Sub Issue を取得
-    const subIssues = await this.db
-      .selectFrom('github_sync')
-      .select(['github_number'])
-      .where('entity_type', '=', 'sub_issue')
-      .where('parent_issue_number', '=', parentIssueNumber)
-      .execute();
+    // github-sync.json から同じ親 Issue に紐づく全 Sub Issue を取得
+    const allSyncData = loadGitHubSync();
+    const subIssues = allSyncData.filter(
+      (s) => s.entity_type === 'sub_issue' && s.parent_issue_number === parentIssueNumber
+    );
 
     if (subIssues.length === 0) {
       return true;
@@ -714,21 +703,19 @@ export class SubIssueManager {
   async handleTaskCompletion(taskId: string, token: string): Promise<void> {
     console.log(`[handleTaskCompletion] 開始: taskId=${taskId}`);
 
-    // 1. github_sync から Sub Issue 情報を取得
-    const syncRecord = await this.db
-      .selectFrom('github_sync')
-      .selectAll()
-      .where('entity_id', '=', taskId)
-      .where('entity_type', '=', 'sub_issue')
-      .executeTakeFirst();
+    // 1. github-sync.json から Sub Issue 情報を取得
+    const syncRecord = getGitHubSyncByEntity(taskId, 'sub_issue');
 
     if (!syncRecord) {
       // デバッグ用: 登録済みの Sub Issue を全て取得
-      const allSubIssues = await this.db
-        .selectFrom('github_sync')
-        .select(['entity_id', 'github_number', 'parent_issue_number'])
-        .where('entity_type', '=', 'sub_issue')
-        .execute();
+      const allSyncData = loadGitHubSync();
+      const allSubIssues = allSyncData
+        .filter((s) => s.entity_type === 'sub_issue')
+        .map((s) => ({
+          entity_id: s.entity_id,
+          github_number: s.github_number,
+          parent_issue_number: s.parent_issue_number,
+        }));
       console.warn(
         `[handleTaskCompletion] Sub Issue 未登録: taskId=${taskId}\n` +
           `登録済み Sub Issues: ${JSON.stringify(allSubIssues, null, 2)}`

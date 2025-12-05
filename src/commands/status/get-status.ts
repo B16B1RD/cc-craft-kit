@@ -1,13 +1,11 @@
 /**
  * プロジェクト状態情報取得 - コアロジック
  *
- * DB からプロジェクト状態を取得します。
+ * JSON ストレージからプロジェクト状態を取得します。
  * CLI エントリポイント (info.ts) から分離されたテスト可能なコア関数です。
  */
 
-import type { Kysely } from 'kysely';
-import type { Database, SpecPhase } from '../../core/database/schema.js';
-import { getSpecsWithGitHubInfo } from '../../core/database/helpers.js';
+import { getSpecsWithGitHubInfo, readLogs, type SpecPhase } from '../../core/storage/index.js';
 import { getCurrentBranch } from '../../core/git/branch-cache.js';
 
 /**
@@ -49,7 +47,7 @@ export interface LogsInfo {
 }
 
 /**
- * getStatusFromDb のオプション
+ * getStatusFromStorage のオプション
  */
 export interface GetStatusOptions {
   /**
@@ -60,23 +58,21 @@ export interface GetStatusOptions {
 }
 
 /**
- * データベースから仕様書・ログ情報を取得（テスト可能なコア関数）
+ * JSON ストレージから仕様書・ログ情報を取得（テスト可能なコア関数）
  *
- * @param db - Kysely データベースインスタンス
  * @param options - オプション（ブランチ名など）
  * @returns specs と logs 情報
  */
-export async function getStatusFromDb(
-  db: Kysely<Database>,
-  options: GetStatusOptions = {}
-): Promise<{ specs: SpecsInfo; logs: LogsInfo }> {
+export function getStatusFromStorage(options: GetStatusOptions = {}): {
+  specs: SpecsInfo;
+  logs: LogsInfo;
+} {
   // 現在のブランチの仕様書のみ取得（別ブランチの仕様書ファイル読み取りエラーを防止）
   const branchName = options.branchName ?? getCurrentBranch();
-  const allSpecs = await getSpecsWithGitHubInfo(db, {
-    branchName,
-    orderBy: 'created_at',
-    orderDirection: 'desc',
-  });
+  const allSpecs = getSpecsWithGitHubInfo({ branchName });
+
+  // created_at の降順でソート
+  allSpecs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   // フェーズ別集計
   const phases: SpecPhase[] = [
@@ -119,32 +115,24 @@ export async function getStatusFromDb(
     withoutIssue,
   };
 
-  // エラーログ（error/warn のみ、最新10件）
-  const errorLogsResult = await db
-    .selectFrom('logs')
-    .select(['level', 'message', 'timestamp'])
-    .where('level', 'in', ['error', 'warn'])
-    .orderBy('timestamp', 'desc')
-    .limit(10)
-    .execute();
+  // JSON ストレージからログを読み込み
+  const allLogs = readLogs();
 
-  const errors: LogEntry[] = errorLogsResult.map((log) => ({
-    timestamp: new Date(log.timestamp).toISOString(),
-    level: log.level,
+  // エラーログ（error/warn のみ、最新10件）
+  const errorLogs = allLogs
+    .filter((log) => log.level === 'error' || log.level === 'warn')
+    .slice(0, 10);
+
+  const errors: LogEntry[] = errorLogs.map((log) => ({
+    timestamp: log.timestamp,
+    level: log.level as 'error' | 'warn',
     message: log.message,
   }));
 
   // 最近のログ（全レベル、最新5件）
-  const recentLogsResult = await db
-    .selectFrom('logs')
-    .select(['level', 'message', 'timestamp'])
-    .orderBy('timestamp', 'desc')
-    .limit(5)
-    .execute();
-
-  const recentLogs: LogEntry[] = recentLogsResult.map((log) => ({
-    timestamp: new Date(log.timestamp).toISOString(),
-    level: log.level,
+  const recentLogs: LogEntry[] = allLogs.slice(0, 5).map((log) => ({
+    timestamp: log.timestamp,
+    level: log.level as 'debug' | 'info' | 'warn' | 'error',
     message: log.message,
   }));
 

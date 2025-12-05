@@ -6,7 +6,6 @@
 
 import '../../core/config/env.js';
 import { z } from 'zod';
-import { closeDatabase } from '../../core/database/connection.js';
 import {
   registerSpec,
   registerArgsSchema,
@@ -62,8 +61,6 @@ export async function runCli(): Promise<void> {
     };
     console.log(JSON.stringify(result, null, 2));
     process.exit(1);
-  } finally {
-    await closeDatabase();
   }
 }
 

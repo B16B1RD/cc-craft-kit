@@ -4,8 +4,7 @@
 
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase, closeDatabase } from '../../core/database/connection.js';
-import { getSpecsWithGitHubInfo } from '../../core/database/helpers.js';
+import { getSpecsWithGitHubInfo, countSpecsWithFilter } from '../../core/storage/index.js';
 import { formatHeading, formatTable, formatKeyValue, OutputOptions } from '../utils/output.js';
 import { createProjectNotInitializedError, handleCLIError } from '../utils/error-handler.js';
 import { validatePhase, VALID_PHASES } from '../utils/validation.js';
@@ -13,11 +12,11 @@ import { validatePhase, VALID_PHASES } from '../utils/validation.js';
 /**
  * 仕様書一覧表示
  */
-export async function listSpecs(
+export function listSpecs(
   phase?: string,
   limit?: number,
   options: OutputOptions = { format: 'table', color: true }
-): Promise<void> {
+): void {
   const cwd = process.cwd();
   const ccCraftKitDir = join(cwd, '.cc-craft-kit');
 
@@ -29,14 +28,11 @@ export async function listSpecs(
   // パラメータのデフォルト値
   const displayLimit = limit || 20;
 
-  // データベース取得
-  const db = getDatabase();
-
   // フェーズバリデーション
   const validatedPhase = phase ? validatePhase(phase) : undefined;
 
-  // ヘルパー関数を使用して github_sync と JOIN（全ブランチ表示）
-  const specs = await getSpecsWithGitHubInfo(db, {
+  // JSON ストレージから取得
+  const specs = getSpecsWithGitHubInfo({
     phase: validatedPhase,
     limit: displayLimit,
     orderBy: 'created_at',
@@ -44,12 +40,7 @@ export async function listSpecs(
   });
 
   // 総数取得
-  let totalQuery = db.selectFrom('specs').select(db.fn.countAll().as('count'));
-  if (validatedPhase) {
-    totalQuery = totalQuery.where('phase', '=', validatedPhase);
-  }
-  const totalResult = await totalQuery.executeTakeFirst();
-  const total = Number(totalResult?.count || 0);
+  const total = countSpecsWithFilter(validatedPhase);
 
   console.log(formatHeading('Specifications', 1, options.color));
   console.log('');
@@ -96,7 +87,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const phase = process.argv[2];
   const limit = process.argv[3] ? parseInt(process.argv[3], 10) : undefined;
 
-  listSpecs(phase, limit)
-    .catch((error) => handleCLIError(error))
-    .finally(() => closeDatabase());
+  try {
+    listSpecs(phase, limit);
+  } catch (error) {
+    handleCLIError(error);
+  }
 }

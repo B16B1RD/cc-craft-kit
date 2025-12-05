@@ -5,8 +5,7 @@
 import '../../core/config/env.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase, closeDatabase } from '../../core/database/connection.js';
-import { getSpecWithGitHubInfo } from '../../core/database/helpers.js';
+import { getSpecWithGitHubInfo, updateSpec, addGitHubSync } from '../../core/storage/index.js';
 import { GitHubClient } from '../../integrations/github/client.js';
 import { GitHubIssues } from '../../integrations/github/issues.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
@@ -68,11 +67,8 @@ export async function createGitHubIssue(
     throw createGitHubNotConfiguredError();
   }
 
-  // データベース取得
-  const db = getDatabase();
-
-  // 仕様書検索（github_sync との JOIN を使用）
-  const spec = await getSpecWithGitHubInfo(db, specId);
+  // 仕様書検索（JSON ストレージから同期的に取得）
+  const spec = getSpecWithGitHubInfo(specId);
 
   if (!spec) {
     throw createSpecNotFoundError(specId);
@@ -127,30 +123,29 @@ export async function createGitHubIssue(
       labels: [`phase:${spec.phase}`],
     });
 
-    // データベース更新（specs テーブルの updated_at のみ）
-    console.log(formatInfo('Updating database...', options.color));
-    await db
-      .updateTable('specs')
-      .set({
-        updated_at: new Date().toISOString(),
-      })
-      .where('id', '=', spec.id)
-      .execute();
+    // JSON ストレージ更新（specs の updated_at のみ）
+    console.log(formatInfo('Updating storage...', options.color));
+    updateSpec(spec.id, { updated_at: new Date().toISOString() });
 
-    // 同期ログ記録
-    // 仕様書とIssueの同期記録
-    // entity_type は 'spec' を使用（'issue' ではない）
-    await db
-      .insertInto('github_sync')
-      .values({
-        entity_type: 'spec',
-        entity_id: spec.id,
-        github_id: issue.number.toString(),
-        github_number: issue.number,
-        last_synced_at: new Date().toISOString(),
-        sync_status: 'success',
-      })
-      .execute();
+    // 同期ログ記録（github-sync.json に追加）
+    addGitHubSync({
+      entity_type: 'spec',
+      entity_id: spec.id,
+      github_id: issue.number.toString(),
+      github_number: issue.number,
+      github_node_id: null,
+      issue_number: issue.number,
+      issue_url: issue.html_url,
+      pr_number: null,
+      pr_url: null,
+      pr_merged_at: null,
+      sync_status: 'success',
+      error_message: null,
+      checkbox_hash: null,
+      last_body_hash: null,
+      parent_issue_number: null,
+      parent_spec_id: null,
+    });
 
     console.log('');
     console.log(formatSuccess('GitHub issue created successfully!', options.color));
@@ -184,7 +179,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  createGitHubIssue(specId)
-    .catch((error) => handleCLIError(error))
-    .finally(() => closeDatabase());
+  createGitHubIssue(specId).catch((error) => handleCLIError(error));
 }

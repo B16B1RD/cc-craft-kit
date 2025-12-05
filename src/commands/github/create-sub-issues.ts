@@ -9,8 +9,7 @@ import '../../core/config/env.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { getDatabase, closeDatabase } from '../../core/database/connection.js';
-import { getSpecWithGitHubInfo } from '../../core/database/helpers.js';
+import { getSpecWithGitHubInfo } from '../../core/storage/index.js';
 import { SubIssueManager } from '../../integrations/github/sub-issues.js';
 import {
   formatSuccess,
@@ -183,11 +182,8 @@ export async function createSubIssues(
     throw createGitHubNotConfiguredError();
   }
 
-  // データベース取得
-  const db = getDatabase();
-
-  // 仕様書検索
-  const spec = await getSpecWithGitHubInfo(db, specId);
+  // 仕様書検索（JSON ストレージから同期的に取得）
+  const spec = getSpecWithGitHubInfo(specId);
 
   if (!spec) {
     throw createSpecNotFoundError(specId);
@@ -240,7 +236,7 @@ export async function createSubIssues(
   console.log('');
 
   // Sub Issue Manager を使用して一括作成
-  const subIssueManager = new SubIssueManager(db);
+  const subIssueManager = new SubIssueManager();
 
   try {
     await subIssueManager.createSubIssuesFromTaskList({
@@ -325,8 +321,7 @@ export async function createSubIssuesJson(specId: string): Promise<void> {
       return;
     }
 
-    const db = getDatabase();
-    const spec = await getSpecWithGitHubInfo(db, specId);
+    const spec = getSpecWithGitHubInfo(specId);
 
     if (!spec) {
       output.error = `Spec not found: ${specId}`;
@@ -360,7 +355,7 @@ export async function createSubIssuesJson(specId: string): Promise<void> {
       return;
     }
 
-    const subIssueManager = new SubIssueManager(db);
+    const subIssueManager = new SubIssueManager();
     await subIssueManager.createSubIssuesFromTaskList({
       owner: githubConfig.owner,
       repo: githubConfig.repo,
@@ -391,14 +386,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
 
   if (jsonMode) {
-    createSubIssuesJson(specId)
-      .catch((error) => {
-        console.log(JSON.stringify({ success: false, error: error.message }));
-      })
-      .finally(() => closeDatabase());
+    createSubIssuesJson(specId).catch((error) => {
+      console.log(JSON.stringify({ success: false, error: error.message }));
+    });
   } else {
-    createSubIssues(specId)
-      .catch((error) => handleCLIError(error))
-      .finally(() => closeDatabase());
+    createSubIssues(specId).catch((error) => handleCLIError(error));
   }
 }

@@ -6,8 +6,6 @@
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
-import { Kysely } from 'kysely';
-import { Database } from '../../core/database/schema.js';
 
 /**
  * チェックボックス項目
@@ -161,7 +159,7 @@ export function applyCheckboxChanges(markdown: string, changes: CheckboxChange[]
  * チェックボックス同期サービス
  */
 export class CheckboxSyncService {
-  constructor(private db: Kysely<Database>) {}
+  constructor() {}
 
   /**
    * Issue から仕様書へチェックボックス状態を同期する

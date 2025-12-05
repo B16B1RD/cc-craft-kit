@@ -2,10 +2,9 @@
 /**
  * PR マージ後処理コマンド
  *
- * PR がマージされた後、ローカル・リモートブランチを削除し、データベースを更新します。
+ * PR がマージされた後、ローカル・リモートブランチを削除し、JSON ストレージを更新します。
  */
 
-import { getDatabase } from '../../core/database/connection.js';
 import { cleanupMergedPullRequest } from '../../integrations/github/pr-cleanup.js';
 import { handleCLIError } from '../utils/error-handler.js';
 import { formatHeading, formatSuccess, formatError, formatWarning } from '../utils/output.js';
@@ -42,11 +41,9 @@ async function main(): Promise<void> {
   console.log(formatHeading('PR マージ後処理', 1));
   console.log(`\n仕様書ID: ${specId}\n`);
 
-  const db = getDatabase();
-
   try {
-    // PR マージ後処理を実行
-    const result = await cleanupMergedPullRequest(db, specId);
+    // PR マージ後処理を実行（JSON ストレージを使用）
+    const result = await cleanupMergedPullRequest(specId);
 
     if (result.success) {
       console.log(formatSuccess('PR マージ後処理が完了しました!'));

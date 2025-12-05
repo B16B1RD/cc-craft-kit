@@ -8,7 +8,7 @@
 import '../../core/config/env.js';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase, closeDatabase } from '../../core/database/connection.js';
+import { findSpecByIdPrefix, updateSpec } from '../../core/storage/index.js';
 import { getEventBusAsync, getEventBus } from '../../core/workflow/event-bus.js';
 import { validateSpecId, validatePhase, Phase } from '../utils/validation.js';
 
@@ -60,15 +60,8 @@ async function updatePhase(specId: string, newPhase: string): Promise<UpdatePhas
     };
   }
 
-  // データベース取得
-  const db = getDatabase();
-
-  // 仕様書検索（部分一致対応）
-  const spec = await db
-    .selectFrom('specs')
-    .selectAll()
-    .where('id', 'like', `${specId}%`)
-    .executeTakeFirst();
+  // 仕様書検索（前方一致）
+  const spec = findSpecByIdPrefix(specId);
 
   if (!spec) {
     return {
@@ -78,23 +71,15 @@ async function updatePhase(specId: string, newPhase: string): Promise<UpdatePhas
   }
 
   const oldPhase = spec.phase;
-  const now = new Date().toISOString();
 
-  // データベース更新
+  // JSON ストレージ更新
   try {
-    await db
-      .updateTable('specs')
-      .set({
-        phase: validatedPhase,
-        updated_at: now,
-      })
-      .where('id', '=', spec.id)
-      .execute();
+    updateSpec(spec.id, { phase: validatedPhase });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      error: `Failed to update database: ${message}`,
+      error: `Failed to update storage: ${message}`,
     };
   }
 
@@ -148,9 +133,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   updatePhase(specId, newPhase)
     .then((result) => {
       console.log(JSON.stringify(result, null, 2));
-      if (!result.success) {
-        process.exit(1);
-      }
+      process.exit(result.success ? 0 : 1);
     })
     .catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
@@ -160,8 +143,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       };
       console.log(JSON.stringify(errorOutput, null, 2));
       process.exit(1);
-    })
-    .finally(() => closeDatabase());
+    });
 }
 
 export { updatePhase, type UpdatePhaseOutput };
