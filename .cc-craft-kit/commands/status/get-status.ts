@@ -6,7 +6,6 @@
  */
 
 import { getSpecsWithGitHubInfo, readLogs, type SpecPhase } from '../../core/storage/index.js';
-import { getCurrentBranch } from '../../core/git/branch-cache.js';
 
 /**
  * 仕様書情報（簡易版）
@@ -48,14 +47,12 @@ export interface LogsInfo {
 
 /**
  * getStatusFromStorage のオプション
+ *
+ * 現在は全仕様書を取得するため、オプションは使用されていません。
+ * 将来の拡張のために型定義を維持しています。
  */
-export interface GetStatusOptions {
-  /**
-   * ブランチ名（指定しない場合は getCurrentBranch() を使用）
-   * テスト時にモックブランチ名を指定するために使用
-   */
-  branchName?: string;
-}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface GetStatusOptions {}
 
 /**
  * JSON ストレージから仕様書・ログ情報を取得（テスト可能なコア関数）
@@ -63,13 +60,13 @@ export interface GetStatusOptions {
  * @param options - オプション（ブランチ名など）
  * @returns specs と logs 情報
  */
-export function getStatusFromStorage(options: GetStatusOptions = {}): {
+export function getStatusFromStorage(_options: GetStatusOptions = {}): {
   specs: SpecsInfo;
   logs: LogsInfo;
 } {
-  // 現在のブランチの仕様書のみ取得（別ブランチの仕様書ファイル読み取りエラーを防止）
-  const branchName = options.branchName ?? getCurrentBranch();
-  const allSpecs = getSpecsWithGitHubInfo({ branchName });
+  // 全仕様書を取得（ブランチフィルタリングなし）
+  // includeAllBranches: true で全ブランチの仕様書を表示
+  const allSpecs = getSpecsWithGitHubInfo({ includeAllBranches: true });
 
   // created_at の降順でソート
   allSpecs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
