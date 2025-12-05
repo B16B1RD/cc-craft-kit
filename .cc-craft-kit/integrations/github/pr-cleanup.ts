@@ -2,14 +2,13 @@
  * GitHub プルリクエスト マージ後処理
  */
 
-import { Kysely } from 'kysely';
-import { Database } from '../../core/database/schema.js';
 import { getGitHubClient, GitHubClient } from './client.js';
 import {
   getSpecWithGitHubInfo,
-  updateSpecBranchToBaseBranch,
-  updatePrMergedStatus,
-} from '../../core/database/helpers.js';
+  updateSpec,
+  getGitHubSyncByEntity,
+  updateGitHubSync,
+} from '../../core/storage/index.js';
 import {
   deleteLocalBranch,
   deleteRemoteBranch,
@@ -94,17 +93,13 @@ export async function checkPullRequestMerged(
  * 1. PR マージ状態を確認
  * 2. ローカルブランチ削除
  * 3. リモートブランチ削除
- * 4. データベース更新
+ * 4. JSON ストレージ更新
  * 5. イベント発火
  *
- * @param db - Kysely データベースインスタンス
  * @param specId - 仕様書ID（前方一致検索）
  * @returns クリーンアップ結果
  */
-export async function cleanupMergedPullRequest(
-  db: Kysely<Database>,
-  specId: string
-): Promise<CleanupResult> {
+export async function cleanupMergedPullRequest(specId: string): Promise<CleanupResult> {
   // GitHub クライアント取得（未初期化の場合は環境変数から初期化）
   let client: GitHubClient;
   try {
@@ -138,8 +133,8 @@ export async function cleanupMergedPullRequest(
     };
   }
 
-  // 1. 仕様書と GitHub 情報を取得
-  const spec = await getSpecWithGitHubInfo(db, specId);
+  // 1. 仕様書と GitHub 情報を取得（JSON ストレージから）
+  const spec = getSpecWithGitHubInfo(specId);
   if (!spec) {
     return {
       success: false,
@@ -259,21 +254,28 @@ export async function cleanupMergedPullRequest(
     console.warn(`⚠️  リモートブランチの削除に失敗しました: ${branchName}`);
   }
 
-  // 6. データベース更新
+  // 6. JSON ストレージ更新
   try {
-    await db.transaction().execute(async (trx) => {
-      // specs.branch_name を PR のベースブランチに更新
-      // PR マージ後、作業ブランチは削除されるため、仕様書ファイルはベースブランチに存在する
-      const baseBranch = pr.base.ref;
-      await updateSpecBranchToBaseBranch(trx, spec.id, baseBranch);
-
-      // github_sync.pr_merged_at を記録
-      await updatePrMergedStatus(trx, spec.id, pr.merged_at || new Date().toISOString());
+    // specs.json の branch_name を PR のベースブランチに更新
+    // PR マージ後、作業ブランチは削除されるため、仕様書ファイルはベースブランチに存在する
+    const baseBranch = pr.base.ref;
+    updateSpec(spec.id, {
+      branch_name: baseBranch,
+      updated_at: new Date().toISOString(),
     });
+
+    // github-sync.json の pr_merged_at を記録
+    const syncRecord = getGitHubSyncByEntity(spec.id, 'spec');
+    if (syncRecord) {
+      updateGitHubSync(syncRecord.id, {
+        pr_merged_at: pr.merged_at || new Date().toISOString(),
+        last_synced_at: new Date().toISOString(),
+      });
+    }
   } catch (error) {
     return {
       success: false,
-      error: `データベース更新に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+      error: `JSON ストレージ更新に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
     };
   }
 

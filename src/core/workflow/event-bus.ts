@@ -202,17 +202,15 @@ async function registerHandlersAsync(bus: EventBus): Promise<void> {
   registrationInProgress = true;
 
   try {
-    const { getDatabase } = await import('../database/connection.js');
     const { registerGitHubIntegrationHandlers } = await import('./github-integration.js');
     const { registerGitIntegrationHandlers } = await import('./git-integration.js');
     const { registerBranchManagementHandlers } = await import('./branch-management.js');
     const { registerPhaseAutomationHandlers } = await import('./phase-automation-registration.js');
 
-    const db = getDatabase();
-    registerGitHubIntegrationHandlers(bus, db);
-    registerGitIntegrationHandlers(bus, db);
-    registerBranchManagementHandlers(bus, db);
-    registerPhaseAutomationHandlers(bus, db);
+    registerGitHubIntegrationHandlers(bus);
+    registerGitIntegrationHandlers(bus);
+    registerBranchManagementHandlers(bus);
+    registerPhaseAutomationHandlers(bus);
     handlersRegistered = true;
   } catch (error) {
     // データベース未初期化、モジュール未存在などのエラーはスキップ

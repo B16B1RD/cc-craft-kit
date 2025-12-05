@@ -8,8 +8,7 @@
 import '../../core/config/env.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase, closeDatabase } from '../../core/database/connection.js';
-import { getStatusFromDb, type SpecsInfo, type LogsInfo } from './get-status.js';
+import { getStatusFromStorage, type SpecsInfo, type LogsInfo } from './get-status.js';
 
 /**
  * プロジェクト情報
@@ -91,9 +90,8 @@ export async function getStatusInfo(): Promise<StatusInfo> {
       }
     : { configured: false };
 
-  // データベースから仕様書・ログ情報を取得
-  const db = getDatabase();
-  const { specs, logs } = await getStatusFromDb(db);
+  // JSON ストレージから仕様書・ログ情報を取得
+  const { specs, logs } = getStatusFromStorage();
 
   return {
     project,
@@ -112,6 +110,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     .catch((error) => {
       console.error(JSON.stringify({ error: error.message }));
       process.exit(1);
-    })
-    .finally(() => closeDatabase());
+    });
 }

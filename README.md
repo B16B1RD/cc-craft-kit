@@ -214,7 +214,7 @@ cc-craft-kit v0.1.2 では、関連機能を統合コマンドにまとめ、42�
 | `/cft:test-generate <file-pattern>` | テスト自動生成 |
 | `/cft:refactor <file-pattern>` | リファクタリング支援 |
 | `/cft:lint-check` | TypeScript/ESLint チェック |
-| `/cft:schema-validate` | データベーススキーマ検証 |
+| `/cft:schema-validate` | JSON ストレージスキーマ検証 |
 
 #### ナレッジベース（統合コマンド）
 
@@ -280,14 +280,14 @@ project-root/
 │
 ├── .cc-craft-kit/                 # ランタイム専用（プロジェクトデータ）
 │   ├── core/                      # TypeScript 実装
-│   │   ├── database/              # Kysely + SQLite
+│   │   ├── storage/               # JSON ファイルストレージ
 │   │   ├── workflow/              # EventBus + Git統合
 │   │   └── templates/             # Handlebars
 │   ├── integrations/              # 外部連携
 │   │   └── github/                # GitHub API (REST + GraphQL)
 │   ├── commands/                  # CLI コマンド実装
 │   ├── specs/                     # 仕様書データ（Git 管理対象）
-│   └── cc-craft-kit.db            # データベース（Git 除外）
+│   └── meta/                      # JSON ストレージ（Git 管理対象）
 │
 └── src/                           # 開発用ソース（マスター）
     ├── slash-commands/            # スラッシュコマンド定義
@@ -302,71 +302,70 @@ project-root/
 
 ### 技術スタック
 
-| カテゴリ     | 技術            | 用途                       |
-| ------------ | --------------- | -------------------------- |
-| 言語         | TypeScript 5.0+ | 型安全な開発               |
-| ランタイム   | Node.js 18+     | CLI実行                    |
-| データベース | SQLite + Kysely | ローカルデータ管理         |
-| GitHub API   | Octokit         | REST + GraphQL統合         |
-| DI           | TSyringe        | 依存性注入                 |
-| イベント     | EventEmitter2   | イベント駆動アーキテクチャ |
-| CLI          | Node.js parseArgs | コマンドライン引数パース |
+| カテゴリ     | 技術              | 用途                       |
+| ------------ | ----------------- | -------------------------- |
+| 言語         | TypeScript 5.0+   | 型安全な開発               |
+| ランタイム   | Node.js 18+       | CLI実行                    |
+| ストレージ   | JSON + Zod        | 軽量ファイルベースストレージ |
+| GitHub API   | Octokit           | REST + GraphQL統合         |
+| DI           | TSyringe          | 依存性注入                 |
+| イベント     | EventEmitter2     | イベント駆動アーキテクチャ |
+| CLI          | Node.js parseArgs | コマンドライン引数パース   |
 
-### データベーススキーマ
+### JSON ストレージ構造
 
-```sql
--- 仕様書
-CREATE TABLE specs (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  description TEXT,
-  phase TEXT NOT NULL, -- requirements/design/implementation/completed（4フェーズモデル）
-  github_issue_id INTEGER,
-  github_project_id TEXT,
-  github_milestone_id INTEGER,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
+cc-craft-kit は軽量なファイルベースストレージを採用し、`.cc-craft-kit/meta/` ディレクトリに JSON ファイルとして保存します。
 
--- タスク
-CREATE TABLE tasks (
-  id TEXT PRIMARY KEY,
-  spec_id TEXT NOT NULL REFERENCES specs(id),
-  title TEXT NOT NULL,
-  description TEXT,
-  status TEXT NOT NULL, -- todo/in_progress/blocked/review/done
-  priority INTEGER NOT NULL,
-  github_issue_id INTEGER,
-  github_issue_number INTEGER,
-  assignee TEXT,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-
--- ログ
-CREATE TABLE logs (
-  id TEXT PRIMARY KEY,
-  task_id TEXT REFERENCES tasks(id),
-  spec_id TEXT REFERENCES specs(id),
-  action TEXT NOT NULL,
-  level TEXT NOT NULL, -- debug/info/warn/error
-  message TEXT NOT NULL,
-  metadata TEXT, -- JSON
-  timestamp TEXT NOT NULL
-);
-
--- GitHub同期
-CREATE TABLE github_sync (
-  id TEXT PRIMARY KEY,
-  entity_type TEXT NOT NULL, -- spec/task
-  entity_id TEXT NOT NULL,
-  github_id TEXT NOT NULL,
-  github_number INTEGER,
-  last_synced_at TEXT NOT NULL,
-  sync_status TEXT NOT NULL, -- success/failed/pending
-  error_message TEXT
-);
+```text
+.cc-craft-kit/meta/
+├── specs.json          # 仕様書メタデータ
+├── github-sync.json    # GitHub 同期状態
+├── workflow-state.json # ワークフロー状態
+├── tasks.json          # タスク情報
+└── logs.jsonl          # 操作ログ（JSON Lines 形式）
 ```
+
+**specs.json** - 仕様書メタデータ
+```json
+{
+  "specs": [
+    {
+      "id": "uuid",
+      "name": "機能名",
+      "description": "説明",
+      "phase": "requirements|design|implementation|completed",
+      "branch_name": "feature/spec-xxx",
+      "created_at": "ISO8601",
+      "updated_at": "ISO8601"
+    }
+  ]
+}
+```
+
+**github-sync.json** - GitHub 同期状態（仕様書との関連付け）
+```json
+{
+  "syncs": [
+    {
+      "id": "uuid",
+      "entity_type": "spec",
+      "entity_id": "spec-uuid",
+      "github_id": "12345",
+      "github_number": 42,
+      "github_node_id": "I_xxx",
+      "last_synced_at": "ISO8601",
+      "sync_status": "synced|failed|pending",
+      "error_message": null
+    }
+  ]
+}
+```
+
+**利点:**
+- データベースドライバ不要で軽量
+- Git での差分管理が容易
+- Zod スキーマによる型安全なバリデーション
+- 原子的書き込み（一時ファイル + リネーム）
 
 ## 🛠️ 開発
 
@@ -390,9 +389,8 @@ npm run format
 # 型チェック
 npm run typecheck
 
-# データベースマイグレーション
-npm run db:migrate        # マイグレーション実行
-npm run db:migrate down   # ロールバック
+# ソース同期（開発時）
+npm run sync:dogfood      # src/ → .cc-craft-kit/ および .claude/ へ同期
 ```
 
 ### テスト
@@ -413,7 +411,7 @@ npm run test:watch
 ### ✅ Phase 1: コア基盤 (Week 1-3) - 完了
 
 - [x] プロジェクト初期化
-- [x] Kysely + SQLite セットアップ
+- [x] JSON ストレージ + Zod セットアップ
 - [x] CLI インターフェース実装
 - [x] 基本 CLI コマンド (`init`, `spec create/list/get`, `status`)
 - [x] テンプレートエンジン統合 (Handlebars)

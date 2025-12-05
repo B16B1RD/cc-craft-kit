@@ -5,7 +5,7 @@
 import '../../core/config/env.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase, closeDatabase } from '../../core/database/connection.js';
+import { getSpecWithGitHubInfo } from '../../core/storage/index.js';
 import { GitHubClient } from '../../integrations/github/client.js';
 import { GitHubIssues } from '../../integrations/github/issues.js';
 import { GitHubProjects } from '../../integrations/github/projects.js';
@@ -18,7 +18,6 @@ import {
   handleCLIError,
 } from '../utils/error-handler.js';
 import { validateSpecId } from '../utils/validation.js';
-import { getSpecWithGitHubInfo } from '../../core/database/helpers.js';
 
 /**
  * GitHub設定を取得
@@ -77,11 +76,8 @@ export async function addSpecToProject(
     throw createGitHubNotConfiguredError();
   }
 
-  // データベース取得
-  const db = getDatabase();
-
-  // 仕様書検索（部分一致対応）
-  const spec = await getSpecWithGitHubInfo(db, specId);
+  // 仕様書検索（JSON ストレージから同期的に取得）
+  const spec = getSpecWithGitHubInfo(specId);
 
   if (!spec) {
     throw createSpecNotFoundError(specId);
@@ -105,7 +101,7 @@ export async function addSpecToProject(
   const client = new GitHubClient({ token: githubToken });
   const issues = new GitHubIssues(client);
   const projects = new GitHubProjects(client);
-  const syncService = new GitHubSyncService(db, issues, projects);
+  const syncService = new GitHubSyncService(issues, projects);
 
   try {
     console.log(formatInfo('Adding to project...', options.color));
@@ -162,7 +158,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  addSpecToProject(specId, projectId)
-    .catch((error) => handleCLIError(error))
-    .finally(() => closeDatabase());
+  addSpecToProject(specId, projectId).catch((error) => handleCLIError(error));
 }

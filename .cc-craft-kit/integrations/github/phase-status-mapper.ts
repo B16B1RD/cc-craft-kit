@@ -13,7 +13,7 @@ import {
   getStatusWithFallback,
   DEFAULT_STATUS_CONFIG,
 } from '../../core/config/github-status-config.js';
-import type { SpecPhase } from '../../core/database/schema.js';
+import type { SpecPhase } from '../../core/storage/index.js';
 
 // ============================================================================
 // 後方互換用の型・関数

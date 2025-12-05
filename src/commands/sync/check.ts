@@ -1,11 +1,10 @@
 /**
- * 仕様書ファイルとデータベース間の整合性チェックコマンド
+ * 仕様書ファイルと JSON ストレージ間の整合性チェックコマンド
  */
 
 import '../../core/config/env.js';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase, closeDatabase } from '../../core/database/connection.js';
 import { IntegrityChecker, GitHubSyncChecker } from '../../core/sync/index.js';
 import {
   formatHeading,
@@ -41,8 +40,7 @@ export async function checkSync(
   console.log(formatHeading('Spec File Sync Check', 1, options.color));
   console.log('');
 
-  const db = getDatabase();
-  const checker = new IntegrityChecker(db);
+  const checker = new IntegrityChecker();
 
   try {
     const report = await checker.check(specsDir);
@@ -141,8 +139,8 @@ export async function checkSync(
 
     // GitHub同期状態のチェック
     console.log(formatHeading('GitHub Issue Sync Status', 2, options.color));
-    const githubChecker = new GitHubSyncChecker(db);
-    const githubReport = await githubChecker.check();
+    const githubChecker = new GitHubSyncChecker();
+    const githubReport = githubChecker.check();
 
     console.log(formatKeyValue('Synced to GitHub', githubReport.synced.toString(), options.color));
     console.log(
@@ -194,8 +192,6 @@ export async function checkSync(
       )
     );
     throw error;
-  } finally {
-    await closeDatabase();
   }
 }
 

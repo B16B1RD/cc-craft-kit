@@ -6,11 +6,9 @@
 
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import type { Kysely } from 'kysely';
 import { QualityMapper } from './mapper.js';
 import type { TriggerPhase } from './schema.js';
-import type { Database } from '../database/schema.js';
-import { getDatabase } from '../database/connection.js';
+import { appendLog } from '../storage/index.js';
 
 /**
  * 品質チェック自動実行結果
@@ -46,11 +44,9 @@ export interface QualityCheckResult {
  */
 export class QualityCheckAutomation {
   private cwd: string;
-  private db: Kysely<Database>;
 
-  constructor(cwd?: string, db?: Kysely<Database>) {
+  constructor(cwd?: string) {
     this.cwd = cwd || process.cwd();
-    this.db = db || getDatabase();
   }
 
   /**
@@ -107,18 +103,18 @@ export class QualityCheckAutomation {
    * @param result - チェック結果
    * @param specId - 仕様書 ID（ログ記録用）
    */
-  async reportQualityCheckResult(result: QualityCheckResult, specId?: string): Promise<void> {
+  reportQualityCheckResult(result: QualityCheckResult, specId?: string): void {
     if (result.notConfigured) {
       console.log(
         `\nℹ️  品質要件が未設定です。/cft:quality-init で品質要件定義ファイルを作成できます。`
       );
-      await this.logQualityCheck(result, specId, 'skipped');
+      this.logQualityCheck(result, specId, 'skipped');
       return;
     }
 
     if (result.missingCount === 0) {
       console.log(`\n✓ ${result.phase} フェーズの品質要件をすべて満たしています。`);
-      await this.logQualityCheck(result, specId, 'success');
+      this.logQualityCheck(result, specId, 'success');
       return;
     }
 
@@ -133,7 +129,7 @@ export class QualityCheckAutomation {
     console.log(`\n詳細を確認: /cft:quality-check`);
     console.log(`生成コマンド: /cft:quality-generate <type> <name>`);
 
-    await this.logQualityCheck(result, specId, 'failed');
+    this.logQualityCheck(result, specId, 'failed');
   }
 
   /**
@@ -143,31 +139,26 @@ export class QualityCheckAutomation {
    * @param specId - 仕様書 ID
    * @param status - ステータス
    */
-  private async logQualityCheck(
+  private logQualityCheck(
     result: QualityCheckResult,
     specId: string | undefined,
     status: 'success' | 'failed' | 'skipped'
-  ): Promise<void> {
+  ): void {
     try {
-      const metadata = {
-        phase: result.phase,
-        missing_count: result.missingCount,
-        gaps: result.gaps,
-        not_configured: result.notConfigured,
+      appendLog({
+        task_id: null,
         spec_id: specId || null,
-      };
-
-      await this.db
-        .insertInto('logs')
-        .values({
-          action: 'quality_check',
-          level: status === 'failed' ? 'warn' : 'info',
-          message: `品質チェック ${status}: ${result.phase} フェーズ (不足数: ${result.missingCount})`,
-          metadata: JSON.stringify(metadata),
+        action: 'quality_check',
+        level: status === 'failed' ? 'warn' : 'info',
+        message: `品質チェック ${status}: ${result.phase} フェーズ (不足数: ${result.missingCount})`,
+        metadata: {
+          phase: result.phase,
+          missing_count: result.missingCount,
+          gaps: result.gaps,
+          not_configured: result.notConfigured,
           spec_id: specId || null,
-          timestamp: new Date().toISOString(),
-        })
-        .execute();
+        },
+      });
     } catch (error) {
       // ログ記録失敗時も処理を継続
       console.warn(

@@ -3,20 +3,20 @@
  * SessionStart フック処理（セッション再開時）
  *
  * Claude Code のセッション再開（compact|resume）時に呼び出され、
- * 保存されたワークフロー状態をデータベースから読み込み、
+ * 保存されたワークフロー状態を JSON ストレージから読み込み、
  * Claude Code に適切なガイダンスを出力します。
  *
  * このフックは .claude/settings.json の hooks.SessionStart で設定されます。
  * matcher: "compact|resume" で自動圧縮後または手動再開時に発火します。
  *
  * フックの動作:
- * 1. workflow_state テーブルから最新の状態を取得
+ * 1. workflow-state.json から最新の状態を取得
  * 2. 状態が存在する場合、復元ガイダンスを標準出力
  * 3. Claude Code がプロンプトとして認識し、適切なアクションを実行
  */
 
 import '../core/config/env.js';
-import { getDatabase, closeDatabase } from '../core/database/connection.js';
+import { loadWorkflowState, getSpec } from '../core/storage/index.js';
 
 interface WorkflowStateInfo {
   specId: string;
@@ -29,39 +29,37 @@ interface WorkflowStateInfo {
 }
 
 /**
- * ワークフロー状態をデータベースから取得
+ * ワークフロー状態を JSON ストレージから取得
  */
-async function getWorkflowState(): Promise<WorkflowStateInfo | null> {
-  const db = getDatabase();
-
+function getWorkflowState(): WorkflowStateInfo | null {
   // 最新の状態を取得（saved_at 降順）
-  const result = await db
-    .selectFrom('workflow_state')
-    .innerJoin('specs', 'specs.id', 'workflow_state.spec_id')
-    .select([
-      'workflow_state.spec_id',
-      'specs.name as spec_name',
-      'workflow_state.current_task_number',
-      'workflow_state.current_task_title',
-      'workflow_state.next_action',
-      'workflow_state.github_issue_number',
-      'workflow_state.saved_at',
-    ])
-    .orderBy('workflow_state.saved_at', 'desc')
-    .executeTakeFirst();
+  const allStates = loadWorkflowState();
 
-  if (!result) {
+  if (allStates.length === 0) {
+    return null;
+  }
+
+  // saved_at で降順ソート
+  const sortedStates = allStates.sort(
+    (a, b) => new Date(b.saved_at).getTime() - new Date(a.saved_at).getTime()
+  );
+
+  const latestState = sortedStates[0];
+
+  // 対応する仕様書情報を取得
+  const spec = getSpec(latestState.spec_id);
+  if (!spec) {
     return null;
   }
 
   return {
-    specId: result.spec_id,
-    specName: result.spec_name,
-    currentTaskNumber: result.current_task_number,
-    currentTaskTitle: result.current_task_title,
-    nextAction: result.next_action,
-    githubIssueNumber: result.github_issue_number,
-    savedAt: result.saved_at?.toString() ?? '',
+    specId: latestState.spec_id,
+    specName: spec.name,
+    currentTaskNumber: latestState.current_task_number,
+    currentTaskTitle: latestState.current_task_title,
+    nextAction: latestState.next_action,
+    githubIssueNumber: latestState.github_issue_number,
+    savedAt: latestState.saved_at,
   };
 }
 
@@ -128,9 +126,9 @@ function generateGuidance(state: WorkflowStateInfo): string {
 /**
  * メイン処理
  */
-async function main(): Promise<void> {
+function main(): void {
   try {
-    const state = await getWorkflowState();
+    const state = getWorkflowState();
 
     if (!state) {
       // 状態がない場合は何も出力しない
@@ -144,8 +142,6 @@ async function main(): Promise<void> {
       'SessionResume hook error:',
       error instanceof Error ? error.message : String(error)
     );
-  } finally {
-    await closeDatabase();
   }
 }
 

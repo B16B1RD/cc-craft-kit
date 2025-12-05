@@ -46,14 +46,6 @@ export interface SendSlackMessageResult {
 }
 
 /**
- * タスク完了通知パラメータ
- */
-export interface NotifyTaskCompletedParams {
-  taskId: string;
-  channel?: string;
-}
-
-/**
  * 仕様書作成通知パラメータ
  */
 export interface NotifySpecCreatedParams {

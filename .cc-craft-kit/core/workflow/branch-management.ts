@@ -7,8 +7,6 @@
  * プロンプトベース実装（spec-phase.md）に移行されました。
  */
 
-import { Kysely } from 'kysely';
-import { Database } from '../database/schema.js';
 import { EventBus } from './event-bus.js';
 
 /**
@@ -17,7 +15,7 @@ import { EventBus } from './event-bus.js';
  * 現在、このファイルにはイベントハンドラーは登録されていません。
  * completed フェーズ移行時の PR 作成は、spec-phase.md のプロンプト指示で実現されます。
  */
-export function registerBranchManagementHandlers(_eventBus: EventBus, _db: Kysely<Database>): void {
+export function registerBranchManagementHandlers(_eventBus: EventBus): void {
   // 現在、登録するイベントハンドラーはありません
   // completed フェーズ移行時の PR 作成は、spec-phase.md のプロンプト指示で実現されます
 }

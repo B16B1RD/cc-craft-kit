@@ -6,8 +6,7 @@
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
-import { Kysely } from 'kysely';
-import { Database } from '../../core/database/schema.js';
+import { getGitHubSyncByEntity, updateGitHubSync } from '../../core/storage/index.js';
 
 /**
  * チェックボックス項目
@@ -161,7 +160,7 @@ export function applyCheckboxChanges(markdown: string, changes: CheckboxChange[]
  * チェックボックス同期サービス
  */
 export class CheckboxSyncService {
-  constructor(private db: Kysely<Database>) {}
+  constructor() {}
 
   /**
    * Issue から仕様書へチェックボックス状態を同期する
@@ -260,24 +259,22 @@ export class CheckboxSyncService {
   private async updateSyncStatus(specId: string, checkboxes: CheckboxItem[]): Promise<void> {
     const hash = generateCheckboxHash(checkboxes);
 
-    // github_sync テーブルを更新（checkbox_hash カラムが存在する場合）
+    // JSON ストレージを更新
     try {
-      await this.db
-        .updateTable('github_sync')
-        .set({
-          last_synced_at: new Date().toISOString(),
-        })
-        .where('entity_type', '=', 'spec')
-        .where('entity_id', '=', specId)
-        .execute();
+      const syncRecord = getGitHubSyncByEntity(specId, 'spec');
 
-      // checkbox_hash は将来のマイグレーションで追加予定
-      // 現時点では last_synced_at のみ更新
+      if (syncRecord) {
+        updateGitHubSync(syncRecord.id, {
+          last_synced_at: new Date().toISOString(),
+          checkbox_hash: hash,
+        });
+      }
+
       if (process.env.DEBUG === '1') {
         console.log(`Checkbox hash for spec ${specId}: ${hash}`);
       }
     } catch {
-      // テーブルやカラムが存在しない場合は無視
+      // ストレージアクセスエラーは無視
     }
   }
 }

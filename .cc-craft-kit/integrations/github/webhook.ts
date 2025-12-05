@@ -1,9 +1,15 @@
-import { Kysely } from 'kysely';
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
-import { Database } from '../../core/database/schema.js';
 import crypto from 'crypto';
 import { CheckboxSyncService, formatCheckboxChangeSummary } from './checkbox-sync.js';
+import {
+  getSpec,
+  updateSpec,
+  appendLog,
+  getGitHubSyncByIssueNumber,
+  addGitHubSync,
+  type SpecPhase,
+} from '../../core/storage/index.js';
 
 /**
  * Webhook イベント種別
@@ -50,8 +56,6 @@ export function verifyWebhookSignature(
  * GitHub Webhook ハンドラー
  */
 export class GitHubWebhookHandler {
-  constructor(private db: Kysely<Database>) {}
-
   /**
    * Issue イベント処理
    */
@@ -60,24 +64,15 @@ export class GitHubWebhookHandler {
 
     const { action, issue } = payload;
 
-    // 紐づく仕様書を検索 (github_sync テーブル経由)
-    const syncRecord = await this.db
-      .selectFrom('github_sync')
-      .where('entity_type', '=', 'spec')
-      .where('github_number', '=', issue.number)
-      .selectAll()
-      .executeTakeFirst();
+    // 紐づく仕様書を検索 (JSON ストレージ経由)
+    const syncRecord = getGitHubSyncByIssueNumber(issue.number);
 
     if (!syncRecord) {
       console.log(`No spec linked to issue #${issue.number}`);
       return;
     }
 
-    const spec = await this.db
-      .selectFrom('specs')
-      .where('id', '=', syncRecord.entity_id)
-      .selectAll()
-      .executeTakeFirst();
+    const spec = getSpec(syncRecord.entity_id);
 
     if (!spec) {
       console.log(`No spec linked to issue #${issue.number}`);
@@ -87,10 +82,10 @@ export class GitHubWebhookHandler {
     // アクション別処理
     switch (action) {
       case 'closed':
-        await this.handleIssueClosed(spec.id, issue);
+        this.handleIssueClosed(spec.id, issue);
         break;
       case 'reopened':
-        await this.handleIssueReopened(spec.id, issue);
+        this.handleIssueReopened(spec.id, issue);
         break;
       case 'edited':
         await this.handleIssueEdited(spec.id, {
@@ -99,50 +94,45 @@ export class GitHubWebhookHandler {
         });
         break;
       case 'labeled':
-        await this.handleIssueLabeled(spec.id, issue);
+        this.handleIssueLabeled(spec.id, issue);
         break;
     }
 
     // 同期ログ記録
-    const { randomUUID } = await import('crypto');
-    await this.db
-      .insertInto('github_sync')
-      .values({
-        id: randomUUID(),
-        entity_type: 'issue',
-        entity_id: spec.id,
-        github_id: issue.number.toString(),
-        github_number: issue.number,
-        last_synced_at: new Date().toISOString(),
-        sync_status: 'success',
-        error_message: null,
-      })
-      .execute();
+    addGitHubSync({
+      entity_type: 'issue',
+      entity_id: spec.id,
+      github_id: issue.number.toString(),
+      github_number: issue.number,
+      github_node_id: null,
+      issue_number: issue.number,
+      issue_url: null,
+      pr_number: null,
+      pr_url: null,
+      pr_merged_at: null,
+      sync_status: 'success',
+      error_message: null,
+      checkbox_hash: null,
+      last_body_hash: null,
+      parent_issue_number: null,
+      parent_spec_id: null,
+    });
   }
 
   /**
    * Issue コメントイベント処理
    */
-  async handleIssueCommentEvent(payload: WebhookPayload): Promise<void> {
+  handleIssueCommentEvent(payload: WebhookPayload): void {
     if (!payload.issue || !payload.comment) return;
 
     const { issue, comment } = payload;
 
-    // 紐づく仕様書を検索 (github_sync テーブル経由)
-    const syncRecord = await this.db
-      .selectFrom('github_sync')
-      .where('entity_type', '=', 'spec')
-      .where('github_number', '=', issue.number)
-      .selectAll()
-      .executeTakeFirst();
+    // 紐づく仕様書を検索 (JSON ストレージ経由)
+    const syncRecord = getGitHubSyncByIssueNumber(issue.number);
 
     if (!syncRecord) return;
 
-    const spec = await this.db
-      .selectFrom('specs')
-      .where('id', '=', syncRecord.entity_id)
-      .selectAll()
-      .executeTakeFirst();
+    const spec = getSpec(syncRecord.entity_id);
 
     if (!spec) return;
 
@@ -152,82 +142,56 @@ export class GitHubWebhookHandler {
     }
 
     // コメントをログに記録
-    const { randomUUID } = await import('crypto');
-    await this.db
-      .insertInto('logs')
-      .values({
-        id: randomUUID(),
-        task_id: null,
-        spec_id: spec.id,
-        action: 'github_comment',
-        level: 'info',
-        message: `GitHub comment by ${comment.user.login}: ${comment.body.substring(0, 100)}`,
-        metadata: JSON.stringify({
-          commentId: comment.id,
-          issueNumber: issue.number,
-          author: comment.user.login,
-        }),
-        timestamp: new Date().toISOString(),
-      })
-      .execute();
+    appendLog({
+      task_id: null,
+      spec_id: spec.id,
+      action: 'github_comment',
+      level: 'info',
+      message: `GitHub comment by ${comment.user.login}: ${comment.body.substring(0, 100)}`,
+      metadata: {
+        commentId: comment.id,
+        issueNumber: issue.number,
+        author: comment.user.login,
+      },
+    });
   }
 
   /**
    * Issue クローズ処理
    */
-  private async handleIssueClosed(specId: string, issue: { number: number }): Promise<void> {
-    await this.db
-      .updateTable('specs')
-      .set({
-        phase: 'completed',
-        updated_at: new Date().toISOString(),
-      })
-      .where('id', '=', specId)
-      .execute();
+  private handleIssueClosed(specId: string, issue: { number: number }): void {
+    updateSpec(specId, {
+      phase: 'completed' as SpecPhase,
+      updated_at: new Date().toISOString(),
+    });
 
-    const { randomUUID } = await import('crypto');
-    await this.db
-      .insertInto('logs')
-      .values({
-        id: randomUUID(),
-        task_id: null,
-        spec_id: specId,
-        action: 'issue_closed',
-        level: 'info',
-        message: `Spec marked as completed (Issue #${issue.number} closed)`,
-        metadata: JSON.stringify({ issueNumber: issue.number }),
-        timestamp: new Date().toISOString(),
-      })
-      .execute();
+    appendLog({
+      task_id: null,
+      spec_id: specId,
+      action: 'issue_closed',
+      level: 'info',
+      message: `Spec marked as completed (Issue #${issue.number} closed)`,
+      metadata: { issueNumber: issue.number },
+    });
   }
 
   /**
    * Issue 再オープン処理
    */
-  private async handleIssueReopened(specId: string, issue: { number: number }): Promise<void> {
-    await this.db
-      .updateTable('specs')
-      .set({
-        phase: 'implementation',
-        updated_at: new Date().toISOString(),
-      })
-      .where('id', '=', specId)
-      .execute();
+  private handleIssueReopened(specId: string, issue: { number: number }): void {
+    updateSpec(specId, {
+      phase: 'implementation' as SpecPhase,
+      updated_at: new Date().toISOString(),
+    });
 
-    const { randomUUID } = await import('crypto');
-    await this.db
-      .insertInto('logs')
-      .values({
-        id: randomUUID(),
-        task_id: null,
-        spec_id: specId,
-        action: 'issue_reopened',
-        level: 'info',
-        message: `Spec reopened (Issue #${issue.number} reopened)`,
-        metadata: JSON.stringify({ issueNumber: issue.number }),
-        timestamp: new Date().toISOString(),
-      })
-      .execute();
+    appendLog({
+      task_id: null,
+      spec_id: specId,
+      action: 'issue_reopened',
+      level: 'info',
+      message: `Spec reopened (Issue #${issue.number} reopened)`,
+      metadata: { issueNumber: issue.number },
+    });
   }
 
   /**
@@ -243,14 +207,10 @@ export class GitHubWebhookHandler {
     const match = issue.title.match(/^\[.*?\]\s*(.+)$/);
     const name = match ? match[1] : issue.title;
 
-    await this.db
-      .updateTable('specs')
-      .set({
-        name,
-        updated_at: new Date().toISOString(),
-      })
-      .where('id', '=', specId)
-      .execute();
+    updateSpec(specId, {
+      name,
+      updated_at: new Date().toISOString(),
+    });
 
     // チェックボックス同期（Issue → 仕様書）
     if (issue.body) {
@@ -258,7 +218,7 @@ export class GitHubWebhookHandler {
 
       if (existsSync(specPath)) {
         try {
-          const checkboxSync = new CheckboxSyncService(this.db);
+          const checkboxSync = new CheckboxSyncService();
           const result = await checkboxSync.syncToSpec(specId, specPath, issue.body);
 
           if (result.success && result.changes.length > 0) {
@@ -266,23 +226,17 @@ export class GitHubWebhookHandler {
             console.log(`✓ Checkbox sync (Issue → Spec): ${summary}`);
 
             // ログに記録
-            const { randomUUID } = await import('crypto');
-            await this.db
-              .insertInto('logs')
-              .values({
-                id: randomUUID(),
-                task_id: null,
-                spec_id: specId,
-                action: 'checkbox_sync',
-                level: 'info',
-                message: `Checkbox sync from Issue: ${summary}`,
-                metadata: JSON.stringify({
-                  direction: 'to_spec',
-                  changes: result.changes,
-                }),
-                timestamp: new Date().toISOString(),
-              })
-              .execute();
+            appendLog({
+              task_id: null,
+              spec_id: specId,
+              action: 'checkbox_sync',
+              level: 'info',
+              message: `Checkbox sync from Issue: ${summary}`,
+              metadata: {
+                direction: 'to_spec',
+                changes: result.changes,
+              },
+            });
           }
         } catch (error) {
           console.error('Failed to sync checkboxes from Issue:', error);
@@ -294,10 +248,7 @@ export class GitHubWebhookHandler {
   /**
    * Issue ラベル追加処理
    */
-  private async handleIssueLabeled(
-    specId: string,
-    issue: { labels: Array<{ name: string }> }
-  ): Promise<void> {
+  private handleIssueLabeled(specId: string, issue: { labels: Array<{ name: string }> }): void {
     // フェーズラベルをチェック
     const phaseLabel = issue.labels.find((l) => l.name.startsWith('phase:'));
 
@@ -306,14 +257,10 @@ export class GitHubWebhookHandler {
       const validPhases = ['requirements', 'design', 'tasks', 'implementation', 'completed'];
 
       if (validPhases.includes(phase)) {
-        await this.db
-          .updateTable('specs')
-          .set({
-            phase: phase as 'requirements' | 'design' | 'tasks' | 'implementation' | 'completed',
-            updated_at: new Date().toISOString(),
-          })
-          .where('id', '=', specId)
-          .execute();
+        updateSpec(specId, {
+          phase: phase as SpecPhase,
+          updated_at: new Date().toISOString(),
+        });
       }
     }
   }

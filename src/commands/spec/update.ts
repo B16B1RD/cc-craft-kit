@@ -4,8 +4,10 @@
 
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase, closeDatabase } from '../../core/database/connection.js';
-import { getSpecWithGitHubInfo } from '../../core/database/helpers.js';
+import {
+  getSpecWithGitHubInfo,
+  updateSpec as updateSpecStorage,
+} from '../../core/storage/index.js';
 import { getEventBusAsync } from '../../core/workflow/event-bus.js';
 import { formatSuccess, formatHeading, formatKeyValue } from '../utils/output.js';
 import {
@@ -33,11 +35,8 @@ export async function updateSpec(
   // 仕様書IDの検証
   validateSpecId(specId);
 
-  // データベース取得
-  const db = getDatabase();
-
-  // 仕様書検索（github_sync との JOIN を使用）
-  const spec = await getSpecWithGitHubInfo(db, specId);
+  // 仕様書検索（JSON ストレージから取得）
+  const spec = getSpecWithGitHubInfo(specId);
 
   if (!spec) {
     throw createSpecNotFoundError(specId);
@@ -49,11 +48,11 @@ export async function updateSpec(
   console.log(formatKeyValue('Spec Name', spec.name, options.color));
   console.log('');
 
-  // updated_at を現在時刻に更新
+  // updated_at を現在時刻に更新（JSON ストレージ）
   const now = new Date().toISOString();
-  await db.updateTable('specs').set({ updated_at: now }).where('id', '=', spec.id).execute();
+  updateSpecStorage(spec.id, { updated_at: now });
 
-  console.log(formatSuccess('Database updated_at timestamp updated', options.color));
+  console.log(formatSuccess('Storage updated_at timestamp updated', options.color));
 
   // spec.updated イベントを発火（GitHub Issue に自動コメント）
   const eventBus = await getEventBusAsync();
@@ -85,7 +84,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  updateSpec(specId)
-    .catch((error) => handleCLIError(error))
-    .finally(() => closeDatabase());
+  updateSpec(specId).catch((error) => handleCLIError(error));
 }

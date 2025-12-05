@@ -12,7 +12,7 @@
 
 import '../../core/config/env.js';
 import { z } from 'zod';
-import { getDatabase, closeDatabase } from '../../core/database/connection.js';
+import { getGitHubSyncByIssueNumber } from '../../core/storage/index.js';
 import { getEventBusAsync } from '../../core/workflow/event-bus.js';
 import { handleCLIError } from '../utils/error-handler.js';
 
@@ -40,20 +40,11 @@ interface TaskStartOutput {
 /**
  * Issue 番号から関連する Sub Issue 情報を取得
  */
-async function getSubIssueInfo(
-  issueNumber: number
-): Promise<{ specId: string; taskId: string } | null> {
-  const db = getDatabase();
+function getSubIssueInfo(issueNumber: number): { specId: string; taskId: string } | null {
+  // github-sync.json から Sub Issue 情報を検索
+  const syncRecord = getGitHubSyncByIssueNumber(issueNumber);
 
-  // github_sync テーブルから Sub Issue 情報を検索
-  const syncRecord = await db
-    .selectFrom('github_sync')
-    .selectAll()
-    .where('entity_type', '=', 'sub_issue')
-    .where('github_number', '=', issueNumber)
-    .executeTakeFirst();
-
-  if (!syncRecord) {
+  if (!syncRecord || syncRecord.entity_type !== 'sub_issue') {
     return null;
   }
 
@@ -88,12 +79,12 @@ export async function executeTaskStart(
 
     output.issueNumber = args.issueNumber;
 
-    // taskId が指定されていない場合、DB から取得を試みる
+    // taskId が指定されていない場合、JSON ストレージから取得を試みる
     let taskId = args.taskId;
     let specId = args.specId;
 
     if (!taskId) {
-      const subIssueInfo = await getSubIssueInfo(args.issueNumber);
+      const subIssueInfo = getSubIssueInfo(args.issueNumber);
       if (subIssueInfo) {
         taskId = subIssueInfo.taskId;
         if (!specId && subIssueInfo.specId) {
@@ -157,7 +148,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  executeTaskStartJson(issueNumber, { specId, taskId })
-    .catch((error) => handleCLIError(error))
-    .finally(() => closeDatabase());
+  executeTaskStartJson(issueNumber, { specId, taskId }).catch((error) => handleCLIError(error));
 }

@@ -1,8 +1,7 @@
 import { PhaseChangedEvent } from './event-bus.js';
 import { QualityCheckAutomation } from '../quality/automation.js';
 import type { TriggerPhase } from '../quality/schema.js';
-import { getDatabase } from '../database/connection.js';
-import { getSpecWithGitHubInfo } from '../database/helpers.js';
+import { getSpec } from '../storage/index.js';
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
 import { parseTaskList, hasTaskListSection } from '../spec/parser.js';
@@ -170,9 +169,8 @@ export class PhaseAutomationHandler {
     console.log(`✓ 実装フェーズに移行しました`);
 
     try {
-      // データベースから仕様書情報を取得
-      const db = getDatabase();
-      const spec = await getSpecWithGitHubInfo(db, specId);
+      // JSON ストレージから仕様書情報を取得
+      const spec = getSpec(specId);
 
       if (!spec) {
         throw new Error(`仕様書が見つかりません: ${specId}`);

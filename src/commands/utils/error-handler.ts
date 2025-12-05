@@ -3,7 +3,6 @@
  */
 
 import { formatError, formatWarning, formatKeyValue } from './output.js';
-import { closeDatabase } from '../../core/database/connection.js';
 
 /**
  * エラーコード定数
@@ -93,10 +92,9 @@ export class CLIError extends Error {
 /**
  * エラーハンドリング
  *
- * エラー表示後、データベースを安全にクローズしてから終了します。
- * これにより、WALモードでのデータ損失を防ぎます。
+ * エラー表示後、プロセスを終了します。
  */
-export async function handleCLIError(error: unknown, useColor = true): Promise<never> {
+export function handleCLIError(error: unknown, useColor = true): never {
   if (error instanceof CLIError) {
     console.error(error.format(useColor));
   } else if (error instanceof Error) {
@@ -108,19 +106,15 @@ export async function handleCLIError(error: unknown, useColor = true): Promise<n
     console.error(formatError('Unknown error occurred', useColor));
   }
 
-  // データベースを安全にクローズ（WAL checkpointを実行）
-  await closeDatabase();
   process.exit(1);
 }
 
 /**
  * 正常終了時のクリーンアップ
  *
- * データベースを安全にクローズしてから終了します。
- * 全てのコマンドの最後で呼び出すことを推奨します。
+ * プロセスを終了します。
  */
-export async function exitGracefully(code: number = 0): Promise<never> {
-  await closeDatabase();
+export function exitGracefully(code: number = 0): never {
   process.exit(code);
 }
 

@@ -1,13 +1,12 @@
-import { Kysely } from 'kysely';
-import { Database } from '../database/schema.js';
 import { Subagent, SubagentContext, SubagentExecution } from './types.js';
 import { randomUUID } from 'crypto';
+import { appendLog, readLogs } from '../storage/index.js';
 
 /**
  * Subagent実行エンジン
  */
 export class SubagentExecutor {
-  constructor(private db: Kysely<Database>) {}
+  constructor() {}
 
   /**
    * Subagent実行
@@ -31,7 +30,7 @@ export class SubagentExecutor {
     };
 
     // ログ記録: 実行開始
-    await this.logExecution(execution, 'started');
+    this.logExecution(execution, 'started');
 
     try {
       // 入力バリデーション
@@ -54,7 +53,7 @@ export class SubagentExecutor {
       execution.duration = duration;
 
       // ログ記録: 実行完了
-      await this.logExecution(execution, result.success ? 'completed' : 'failed');
+      this.logExecution(execution, result.success ? 'completed' : 'failed');
 
       return execution;
     } catch (error) {
@@ -67,7 +66,7 @@ export class SubagentExecutor {
       execution.duration = duration;
 
       // ログ記録: 実行失敗
-      await this.logExecution(execution, 'failed');
+      this.logExecution(execution, 'failed');
 
       return execution;
     }
@@ -76,52 +75,46 @@ export class SubagentExecutor {
   /**
    * 実行ログ記録
    */
-  private async logExecution(execution: SubagentExecution, action: string): Promise<void> {
-    await this.db
-      .insertInto('logs')
-      .values({
-        id: randomUUID(),
-        task_id: execution.context.taskId || null,
-        spec_id: execution.context.specId,
-        action: `subagent_${action}`,
-        level: execution.status === 'failed' ? 'error' : 'info',
-        message: `Subagent "${execution.subagentName}" ${action}`,
-        metadata: JSON.stringify({
-          executionId: execution.id,
-          subagentName: execution.subagentName,
-          status: execution.status,
-          duration: execution.duration,
-          error: execution.error,
-        }),
-        timestamp: new Date().toISOString(),
-      })
-      .execute();
+  private logExecution(execution: SubagentExecution, action: string): void {
+    appendLog({
+      task_id: execution.context.taskId || null,
+      spec_id: execution.context.specId,
+      action: `subagent_${action}`,
+      level: execution.status === 'failed' ? 'error' : 'info',
+      message: `Subagent "${execution.subagentName}" ${action}`,
+      metadata: {
+        executionId: execution.id,
+        subagentName: execution.subagentName,
+        status: execution.status,
+        duration: execution.duration,
+        error: execution.error,
+      },
+    });
   }
 
   /**
    * 実行履歴取得
    */
-  async getExecutionHistory(specId: string, limit: number = 20): Promise<SubagentExecution[]> {
-    const logs = await this.db
-      .selectFrom('logs')
-      .where('spec_id', '=', specId)
-      .where('action', 'like', 'subagent_%')
-      .orderBy('timestamp', 'desc')
-      .limit(limit)
-      .selectAll()
-      .execute();
+  getExecutionHistory(specId: string, limit: number = 20): SubagentExecution[] {
+    const allLogs = readLogs();
 
-    return logs.map((log) => {
-      const metadata = JSON.parse(log.metadata || '{}');
-      return {
-        id: metadata.executionId || log.id,
-        subagentName: metadata.subagentName || 'unknown',
-        status: metadata.status || 'unknown',
-        input: {},
-        startedAt:
-          typeof log.timestamp === 'string' ? log.timestamp : new Date(log.timestamp).toISOString(),
-        context: { specId, phase: 'unknown' },
-      };
-    });
+    return allLogs
+      .filter((log) => log.spec_id === specId && log.action.startsWith('subagent_'))
+      .slice(0, limit)
+      .map((log): SubagentExecution => {
+        const metadata = log.metadata ?? {};
+        const status = (metadata.status as string) || 'pending';
+        const validStatuses = ['pending', 'running', 'completed', 'failed', 'cancelled'];
+        return {
+          id: (metadata.executionId as string) || log.id,
+          subagentName: (metadata.subagentName as string) || 'unknown',
+          status: validStatuses.includes(status)
+            ? (status as SubagentExecution['status'])
+            : 'pending',
+          input: {},
+          startedAt: log.timestamp,
+          context: { specId, phase: 'pending' },
+        };
+      });
   }
 }

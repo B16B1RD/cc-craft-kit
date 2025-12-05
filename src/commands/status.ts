@@ -3,11 +3,8 @@
  */
 
 import '../core/config/env.js';
-import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase, closeDatabase } from '../core/database/connection.js';
-import { getSpecsWithGitHubInfo } from '../core/database/helpers.js';
-import { createBackup } from '../core/database/backup.js';
 import {
   formatHeading,
   formatKeyValue,
@@ -21,8 +18,13 @@ import {
   handleCLIError,
 } from './utils/error-handler.js';
 import { resolveProjectId } from '../integrations/github/project-resolver.js';
-import { checkDatabaseIntegrity } from '../core/validators/database-integrity-checker.js';
 import { getCurrentBranch } from '../core/git/branch-cache.js';
+import {
+  readLogs,
+  type SpecWithGitHub,
+  getSpecsWithGitHubInfo,
+  type LogData,
+} from '../core/storage/index.js';
 
 /**
  * プロジェクト設定
@@ -45,10 +47,7 @@ interface ProjectConfig {
   };
 }
 
-/**
- * 仕様書レコード（ヘルパー関数の SpecWithGitHub を使用）
- */
-import type { SpecWithGitHub } from '../core/database/helpers.js';
+// SpecWithGitHub は storage/index.js からインポート済み
 
 /**
  * プロジェクト状態表示
@@ -68,70 +67,8 @@ export async function showStatus(
   // 設定ファイル読み込み
   const config: ProjectConfig = JSON.parse(readFileSync(configPath, 'utf-8'));
 
-  // データベースバックアップ作成（週1回）
-  const dbPath = join(ccCraftKitDir, 'cc-craft-kit.db');
-  const backupDir = join(ccCraftKitDir, 'backups');
-  try {
-    // バックアップディレクトリの最終更新日時をチェック
-    if (existsSync(backupDir)) {
-      const backups = readdirSync(backupDir).filter((f: string) => f.startsWith('cc-craft-kit-'));
-
-      // 最新のバックアップが7日以上前の場合、または バックアップが0件の場合は作成
-      if (backups.length === 0) {
-        createBackup(dbPath, { backupDir, maxBackups: 10 });
-      } else {
-        const latestBackup = backups
-          .map((f: string) => ({
-            path: join(backupDir, f),
-            time: statSync(join(backupDir, f)).mtime.getTime(),
-          }))
-          .sort((a: { time: number }, b: { time: number }) => b.time - a.time)[0];
-
-        const daysSinceBackup = (Date.now() - latestBackup.time) / (1000 * 60 * 60 * 24);
-        if (daysSinceBackup >= 7) {
-          createBackup(dbPath, { backupDir, maxBackups: 10 });
-        }
-      }
-    } else {
-      // 初回バックアップ
-      createBackup(dbPath, { backupDir, maxBackups: 10 });
-    }
-  } catch (error) {
-    // バックアップ失敗は警告のみ
-    console.warn('Warning: Failed to create database backup:', error);
-  }
-
-  // データベース整合性チェック（自動実行）
-  const db = getDatabase();
-  const specsDir = join(ccCraftKitDir, 'specs');
-  let integrityWarnings: string[] = [];
-
-  try {
-    const integrityResult = await checkDatabaseIntegrity(db, specsDir);
-
-    // 警告がある場合のみ表示
-    if (!integrityResult.isValid || integrityResult.warnings.length > 0) {
-      integrityWarnings = [...integrityResult.errors, ...integrityResult.warnings];
-    }
-  } catch (error) {
-    // 整合性チェック失敗は警告のみ
-    console.warn('Warning: Failed to check database integrity:', error);
-  }
-
   console.log(formatHeading('cc-craft-kit Project Status', 1, options.color));
   console.log('');
-
-  // データベース整合性警告の表示
-  if (integrityWarnings.length > 0) {
-    console.log('\x1b[33m⚠️  Database integrity warnings:\x1b[0m');
-    for (const warning of integrityWarnings) {
-      console.log(`\x1b[33m     - ${warning}\x1b[0m`);
-    }
-    console.log('');
-    console.log(formatInfo('  Run the repair script to fix:', options.color));
-    console.log(formatInfo('    npx tsx .cc-craft-kit/scripts/repair-database.ts', options.color));
-    console.log('');
-  }
 
   // プロジェクト情報
   console.log(formatHeading('Project', 2, options.color));
@@ -170,14 +107,19 @@ export async function showStatus(
     console.log('');
   }
 
-  // フェーズ別仕様書集計（github_sync との JOIN を使用）
+  // フェーズ別仕様書集計（JSON ストレージから）
   // 現在のブランチの仕様書のみ取得（別ブランチの仕様書ファイル読み取りエラーを防止）
   const currentBranch = getCurrentBranch();
-  const specs = await getSpecsWithGitHubInfo(db, {
-    branchName: currentBranch,
-    orderBy: 'created_at',
-    orderDirection: 'desc',
-  });
+  const allSpecs = getSpecsWithGitHubInfo();
+
+  // ブランチ名でフィルタ（develop または currentBranch を含むブランチのみ）
+  // 日付降順でソート
+  const specs = allSpecs
+    .filter(
+      (spec) =>
+        !spec.branch_name || spec.branch_name === currentBranch || spec.branch_name === 'develop'
+    )
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const specsByPhase = specs.reduce(
     (acc, spec) => {
@@ -249,17 +191,17 @@ export async function showStatus(
   }
 
   // 最近のエラーログ（error と warn のみを表示）
-  const errorLogs = await db
-    .selectFrom('logs')
-    .select(['level', 'message', 'timestamp'])
-    .where('level', 'in', ['error', 'warn'])
-    .orderBy('timestamp', 'desc')
-    .limit(10)
-    .execute();
+  const allLogs: LogData[] = readLogs();
+  const errorLogs = allLogs
+    .filter((log: LogData) => log.level === 'error' || log.level === 'warn')
+    .sort(
+      (a: LogData, b: LogData) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    )
+    .slice(0, 10);
 
   if (errorLogs.length > 0) {
     console.log(formatHeading('Recent Error Logs', 2, options.color));
-    const errorLogRows = errorLogs.map((log) => [
+    const errorLogRows = errorLogs.map((log: LogData) => [
       new Date(log.timestamp).toLocaleTimeString(),
       log.level,
       log.message.substring(0, 60) + (log.message.length > 60 ? '...' : ''),
@@ -269,16 +211,15 @@ export async function showStatus(
   }
 
   // 最近の活動（すべてのログから取得）
-  const logs = await db
-    .selectFrom('logs')
-    .select(['level', 'message', 'timestamp'])
-    .orderBy('timestamp', 'desc')
-    .limit(5)
-    .execute();
+  const logs = allLogs
+    .sort(
+      (a: LogData, b: LogData) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    )
+    .slice(0, 5);
 
   if (logs.length > 0) {
     console.log(formatHeading('Recent Activity', 2, options.color));
-    const logRows = logs.map((log) => [
+    const logRows = logs.map((log: LogData) => [
       new Date(log.timestamp).toLocaleTimeString(),
       log.level,
       log.message.substring(0, 60) + (log.message.length > 60 ? '...' : ''),
@@ -305,6 +246,5 @@ export async function showStatus(
 if (import.meta.url === `file://${process.argv[1]}`) {
   showStatus()
     .then(() => exitGracefully(0))
-    .catch((error) => handleCLIError(error))
-    .finally(() => closeDatabase());
+    .catch((error) => handleCLIError(error));
 }

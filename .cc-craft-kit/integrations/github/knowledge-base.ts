@@ -1,7 +1,5 @@
-import { Kysely } from 'kysely';
-import { Database } from '../../core/database/schema.js';
 import { GitHubIssues } from './issues.js';
-import { getSpecWithGitHubInfo } from '../../core/database/helpers.js';
+import { getSpecWithGitHubInfo, appendLog } from '../../core/storage/index.js';
 
 /**
  * ナレッジエントリ種別
@@ -62,16 +60,13 @@ export interface RecordTipParams {
  * GitHub Issue ナレッジベースサービス
  */
 export class GitHubKnowledgeBase {
-  constructor(
-    private db: Kysely<Database>,
-    private issues: GitHubIssues
-  ) {}
+  constructor(private issues: GitHubIssues) {}
 
   /**
    * 進捗をIssueコメントに記録
    */
   async recordProgress(params: RecordProgressParams): Promise<number> {
-    const spec = await getSpecWithGitHubInfo(this.db, params.specId);
+    const spec = getSpecWithGitHubInfo(params.specId);
 
     if (!spec) {
       throw new Error(`Spec not found: ${params.specId}`);
@@ -95,25 +90,19 @@ export class GitHubKnowledgeBase {
       body
     );
 
-    // ログに記録
-    const { randomUUID } = await import('crypto');
-    await this.db
-      .insertInto('logs')
-      .values({
-        id: randomUUID(),
-        task_id: null,
-        spec_id: params.specId,
-        action: 'record_progress',
-        level: 'info',
-        message: `Progress recorded: ${params.summary}`,
-        metadata: JSON.stringify({
-          type: 'progress',
-          commentId: comment.id,
-          issueNumber: spec.github_issue_number,
-        }),
-        timestamp: new Date().toISOString(),
-      })
-      .execute();
+    // ログに記録（JSON ストレージ）
+    appendLog({
+      task_id: null,
+      spec_id: params.specId,
+      action: 'record_progress',
+      level: 'info',
+      message: `Progress recorded: ${params.summary}`,
+      metadata: {
+        type: 'progress',
+        commentId: comment.id,
+        issueNumber: spec.github_issue_number,
+      },
+    });
 
     return comment.id;
   }
@@ -122,7 +111,7 @@ export class GitHubKnowledgeBase {
    * エラー解決をIssueコメントに記録
    */
   async recordErrorSolution(params: RecordErrorSolutionParams): Promise<number> {
-    const spec = await getSpecWithGitHubInfo(this.db, params.specId);
+    const spec = getSpecWithGitHubInfo(params.specId);
 
     if (!spec) {
       throw new Error(`Spec not found: ${params.specId}`);
@@ -146,25 +135,19 @@ export class GitHubKnowledgeBase {
       body
     );
 
-    // ログに記録
-    const { randomUUID: randomUUID2 } = await import('crypto');
-    await this.db
-      .insertInto('logs')
-      .values({
-        id: randomUUID2(),
-        task_id: null,
-        spec_id: params.specId,
-        action: 'record_error_solution',
-        level: 'warn',
-        message: `Error solution recorded: ${params.errorDescription.substring(0, 50)}...`,
-        metadata: JSON.stringify({
-          type: 'error_solution',
-          commentId: comment.id,
-          issueNumber: spec.github_issue_number,
-        }),
-        timestamp: new Date().toISOString(),
-      })
-      .execute();
+    // ログに記録（JSON ストレージ）
+    appendLog({
+      task_id: null,
+      spec_id: params.specId,
+      action: 'record_error_solution',
+      level: 'warn',
+      message: `Error solution recorded: ${params.errorDescription.substring(0, 50)}...`,
+      metadata: {
+        type: 'error_solution',
+        commentId: comment.id,
+        issueNumber: spec.github_issue_number,
+      },
+    });
 
     return comment.id;
   }
@@ -173,7 +156,7 @@ export class GitHubKnowledgeBase {
    * TipsをIssueコメントに記録
    */
   async recordTip(params: RecordTipParams): Promise<number> {
-    const spec = await getSpecWithGitHubInfo(this.db, params.specId);
+    const spec = getSpecWithGitHubInfo(params.specId);
 
     if (!spec) {
       throw new Error(`Spec not found: ${params.specId}`);
@@ -197,26 +180,20 @@ export class GitHubKnowledgeBase {
       body
     );
 
-    // ログに記録
-    const { randomUUID: randomUUID3 } = await import('crypto');
-    await this.db
-      .insertInto('logs')
-      .values({
-        id: randomUUID3(),
-        task_id: null,
-        spec_id: params.specId,
-        action: 'record_tip',
-        level: 'info',
-        message: `Tip recorded: ${params.title}`,
-        metadata: JSON.stringify({
-          type: 'tip',
-          commentId: comment.id,
-          issueNumber: spec.github_issue_number,
-          category: params.category,
-        }),
-        timestamp: new Date().toISOString(),
-      })
-      .execute();
+    // ログに記録（JSON ストレージ）
+    appendLog({
+      task_id: null,
+      spec_id: params.specId,
+      action: 'record_tip',
+      level: 'info',
+      message: `Tip recorded: ${params.title}`,
+      metadata: {
+        type: 'tip',
+        commentId: comment.id,
+        issueNumber: spec.github_issue_number,
+        category: params.category,
+      },
+    });
 
     return comment.id;
   }

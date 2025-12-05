@@ -5,7 +5,7 @@
 import '../../core/config/env.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase, closeDatabase } from '../../core/database/connection.js';
+import { getSpecWithGitHubInfo, getSpec } from '../../core/storage/index.js';
 import { GitHubClient } from '../../integrations/github/client.js';
 import { GitHubIssues } from '../../integrations/github/issues.js';
 import { GitHubProjects } from '../../integrations/github/projects.js';
@@ -18,7 +18,6 @@ import {
   handleCLIError,
 } from '../utils/error-handler.js';
 import { validateSpecId } from '../utils/validation.js';
-import { getSpecWithGitHubInfo } from '../../core/database/helpers.js';
 
 /**
  * GitHub設定を取得
@@ -70,11 +69,8 @@ export async function syncToGitHub(
     throw createGitHubNotConfiguredError();
   }
 
-  // データベース取得
-  const db = getDatabase();
-
-  // 仕様書検索（部分一致対応）
-  const spec = await getSpecWithGitHubInfo(db, specId);
+  // 仕様書検索（JSON ストレージから同期的に取得）
+  const spec = getSpecWithGitHubInfo(specId);
 
   if (!spec) {
     throw createSpecNotFoundError(specId);
@@ -98,7 +94,7 @@ export async function syncToGitHub(
   const client = new GitHubClient({ token: githubToken });
   const issues = new GitHubIssues(client);
   const projects = new GitHubProjects(client);
-  const syncService = new GitHubSyncService(db, issues, projects);
+  const syncService = new GitHubSyncService(issues, projects);
 
   try {
     console.log(formatInfo('Syncing to GitHub...', options.color));
@@ -159,11 +155,8 @@ export async function syncFromGitHub(
     throw createGitHubNotConfiguredError();
   }
 
-  // データベース取得
-  const db = getDatabase();
-
-  // 仕様書検索（部分一致対応）
-  const spec = await getSpecWithGitHubInfo(db, specId);
+  // 仕様書検索（JSON ストレージから同期的に取得）
+  const spec = getSpecWithGitHubInfo(specId);
 
   if (!spec) {
     throw createSpecNotFoundError(specId);
@@ -184,7 +177,7 @@ export async function syncFromGitHub(
   const client = new GitHubClient({ token: githubToken });
   const issues = new GitHubIssues(client);
   const projects = new GitHubProjects(client);
-  const syncService = new GitHubSyncService(db, issues, projects);
+  const syncService = new GitHubSyncService(issues, projects);
 
   try {
     console.log(formatInfo('Syncing from GitHub...', options.color));
@@ -198,12 +191,11 @@ export async function syncFromGitHub(
     console.log(formatSuccess('Spec updated from GitHub successfully!', options.color));
     console.log('');
 
-    // 更新後の仕様書を表示
-    const updatedSpec = await db
-      .selectFrom('specs')
-      .selectAll()
-      .where('id', '=', spec.id)
-      .executeTakeFirstOrThrow();
+    // 更新後の仕様書を表示（JSON ストレージから再取得）
+    const updatedSpec = getSpec(spec.id);
+    if (!updatedSpec) {
+      throw new Error(`Spec not found after sync: ${spec.id}`);
+    }
 
     console.log(formatKeyValue('Updated Name', updatedSpec.name, options.color));
     console.log(formatKeyValue('Updated Phase', updatedSpec.phase, options.color));
@@ -228,13 +220,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
 
   if (direction === 'to-github') {
-    syncToGitHub(specId)
-      .catch((error) => handleCLIError(error))
-      .finally(() => closeDatabase());
+    syncToGitHub(specId).catch((error) => handleCLIError(error));
   } else if (direction === 'from-github') {
-    syncFromGitHub(specId)
-      .catch((error) => handleCLIError(error))
-      .finally(() => closeDatabase());
+    syncFromGitHub(specId).catch((error) => handleCLIError(error));
   } else {
     console.error('Error: direction must be "to-github" or "from-github"');
     process.exit(1);

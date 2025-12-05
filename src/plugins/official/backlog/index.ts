@@ -1,6 +1,4 @@
 import { Plugin, PluginMetadata, MCPTool } from '../../../core/plugins/types.js';
-import { Kysely } from 'kysely';
-import { Database } from '../../../core/database/schema.js';
 import type {
   SyncBacklogIssueParams,
   SyncBacklogIssueResult,
@@ -30,7 +28,7 @@ export class BacklogPlugin implements Plugin {
   private spaceId?: string;
   private baseUrl?: string;
 
-  constructor(_db: Kysely<Database>) {}
+  constructor() {}
 
   async onLoad(): Promise<void> {
     // 環境変数から設定を読み込み
@@ -172,6 +170,6 @@ export class BacklogPlugin implements Plugin {
 /**
  * プラグインのエクスポート
  */
-export default function createPlugin(db: Kysely<Database>): Plugin {
-  return new BacklogPlugin(db);
+export default function createPlugin(): Plugin {
+  return new BacklogPlugin();
 }

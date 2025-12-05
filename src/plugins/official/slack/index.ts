@@ -1,11 +1,9 @@
 import { Plugin, PluginMetadata, MCPTool, EventHandler } from '../../../core/plugins/types.js';
-import { Kysely } from 'kysely';
-import { Database } from '../../../core/database/schema.js';
 import type { WorkflowEvent } from '../../../core/workflow/event-bus.js';
+import { getSpec } from '../../../core/storage/index.js';
 import type {
   SendSlackMessageParams,
   SendSlackMessageResult,
-  NotifyTaskCompletedParams,
   NotifySpecCreatedParams,
 } from '../../types.js';
 
@@ -30,7 +28,7 @@ export class SlackPlugin implements Plugin {
   private botToken?: string;
   private defaultChannel?: string;
 
-  constructor(private db: Kysely<Database>) {}
+  constructor() {}
 
   async onLoad(): Promise<void> {
     // 環境変数から設定を読み込み
@@ -83,26 +81,6 @@ export class SlackPlugin implements Plugin {
         handler: async (params: unknown) => this.sendMessage(params as SendSlackMessageParams),
       },
       {
-        name: 'slack:notify_task_complete',
-        description: 'タスク完了をSlackに通知',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            taskId: {
-              type: 'string',
-              description: '完了したタスクID',
-            },
-            channel: {
-              type: 'string',
-              description: '送信先チャンネル',
-            },
-          },
-          required: ['taskId'],
-        },
-        handler: async (params: unknown) =>
-          this.notifyTaskComplete(params as NotifyTaskCompletedParams),
-      },
-      {
         name: 'slack:notify_spec_created',
         description: '新規Spec作成をSlackに通知',
         inputSchema: {
@@ -130,11 +108,6 @@ export class SlackPlugin implements Plugin {
    */
   getEventHandlers(): EventHandler[] {
     return [
-      {
-        eventType: 'task.completed',
-        handler: this.onTaskCompleted.bind(this) as (event: unknown) => Promise<void>,
-        priority: 10,
-      },
       {
         eventType: 'spec.created',
         handler: this.onSpecCreated.bind(this) as (event: unknown) => Promise<void>,
@@ -168,64 +141,13 @@ export class SlackPlugin implements Plugin {
   }
 
   /**
-   * タスク完了通知
-   */
-  private async notifyTaskComplete(
-    params: NotifyTaskCompletedParams
-  ): Promise<SendSlackMessageResult> {
-    // タスク情報を取得
-    const task = await this.db
-      .selectFrom('tasks')
-      .where('id', '=', params.taskId)
-      .selectAll()
-      .executeTakeFirst();
-
-    if (!task) {
-      return { success: false, error: 'Task not found' };
-    }
-
-    const message = `✅ タスク完了: *${task.title}*`;
-
-    return this.sendMessage({
-      channel: params.channel,
-      text: message,
-      attachments: [
-        {
-          color: 'good',
-          fields: [
-            {
-              title: 'タスク',
-              value: task.title,
-              short: false,
-            },
-            {
-              title: 'ステータス',
-              value: task.status,
-              short: true,
-            },
-            {
-              title: '優先度',
-              value: String(task.priority),
-              short: true,
-            },
-          ],
-        },
-      ],
-    });
-  }
-
-  /**
    * Spec作成通知
    */
   private async notifySpecCreated(
     params: NotifySpecCreatedParams
   ): Promise<SendSlackMessageResult> {
-    // Spec情報を取得
-    const spec = await this.db
-      .selectFrom('specs')
-      .where('id', '=', params.specId)
-      .selectAll()
-      .executeTakeFirst();
+    // Spec情報を取得（JSON ストレージから）
+    const spec = getSpec(params.specId);
 
     if (!spec) {
       return { success: false, error: 'Spec not found' };
@@ -258,19 +180,6 @@ export class SlackPlugin implements Plugin {
           ],
         },
       ],
-    });
-  }
-
-  /**
-   * タスク完了イベントハンドラー
-   */
-  private async onTaskCompleted(event: WorkflowEvent<{ taskId: string }>): Promise<void> {
-    if (!this.webhookUrl && !this.botToken) {
-      return; // Slack未設定の場合はスキップ
-    }
-
-    await this.notifyTaskComplete({
-      taskId: event.data.taskId,
     });
   }
 
@@ -308,6 +217,6 @@ export class SlackPlugin implements Plugin {
 /**
  * プラグインのエクスポート
  */
-export default function createPlugin(db: Kysely<Database>): Plugin {
-  return new SlackPlugin(db);
+export default function createPlugin(): Plugin {
+  return new SlackPlugin();
 }

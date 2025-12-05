@@ -5,8 +5,8 @@
 import '../../core/config/env.js';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase, closeDatabase } from '../../core/database/connection.js';
 import { getEventBusAsync, getEventBus, EventBus } from '../../core/workflow/event-bus.js';
+import { getSpec, updateSpec, type SpecPhase } from '../../core/storage/index.js';
 import {
   formatSuccess,
   formatHeading,
@@ -61,15 +61,8 @@ export async function updateSpecPhase(
   // フェーズの検証
   const validatedPhase: Phase = validatePhase(newPhase);
 
-  // データベース取得
-  const db = getDatabase();
-
-  // 仕様書検索（部分一致対応）
-  const spec = await db
-    .selectFrom('specs')
-    .selectAll()
-    .where('id', 'like', `${specId}%`)
-    .executeTakeFirst();
+  // 仕様書取得（JSON ストレージから、前方一致検索対応）
+  const spec = getSpec(specId);
 
   if (!spec) {
     throw createSpecNotFoundError(specId);
@@ -84,7 +77,7 @@ export async function updateSpecPhase(
   console.log('');
 
   // GitHub Issue 自動リカバリー（フェーズ更新前に実行）
-  await ensureGitHubIssue(db, spec.id);
+  await ensureGitHubIssue(spec.id);
 
   // ブランチ切り替え（仕様書の branch_name が設定されている場合のみ）
   if (spec.branch_name) {
@@ -136,21 +129,17 @@ export async function updateSpecPhase(
     }
   }
 
-  // データベース更新
-  console.log(formatInfo('Updating database...', options.color));
+  // JSON ストレージ更新
+  console.log(formatInfo('Updating storage...', options.color));
   const now = new Date().toISOString();
   const formattedDateTime = getCurrentDateTimeForSpec();
 
   try {
-    // 1. データベース更新
-    await db
-      .updateTable('specs')
-      .set({
-        phase: validatedPhase,
-        updated_at: now,
-      })
-      .where('id', '=', spec.id)
-      .execute();
+    // 1. JSON ストレージ更新
+    updateSpec(spec.id, {
+      phase: validatedPhase as SpecPhase,
+      updated_at: now,
+    });
 
     // 2. Markdownファイル更新 + fsync()
     const specPath = join(ccCraftKitDir, 'specs', `${spec.id}.md`);
@@ -226,24 +215,20 @@ export async function updateSpecPhase(
     }
     console.error('');
 
-    // DBレコードを元のフェーズに戻す
+    // JSON ストレージを元のフェーズに戻す
     try {
-      console.error(formatInfo('Rolling back database changes...', options.color));
-      await db
-        .updateTable('specs')
-        .set({
-          phase: oldPhase,
-        })
-        .where('id', '=', spec.id)
-        .execute();
-      console.error(formatSuccess('✓ Database rollback successful', options.color));
-    } catch (dbError) {
-      console.error(formatError('✗ Failed to rollback database record', options.color));
-      console.error(dbError);
+      console.error(formatInfo('Rolling back storage changes...', options.color));
+      updateSpec(spec.id, {
+        phase: oldPhase as SpecPhase,
+      });
+      console.error(formatSuccess('✓ Storage rollback successful', options.color));
+    } catch (rollbackError) {
+      console.error(formatError('✗ Failed to rollback storage', options.color));
+      console.error(rollbackError);
       console.error('');
       console.error(
         formatError(
-          'Warning: Database is now in an inconsistent state. Manual intervention required.',
+          'Warning: Storage is now in an inconsistent state. Manual intervention required.',
           options.color
         )
       );
@@ -346,7 +331,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  updateSpecPhase(specId, phase, options)
-    .catch((error) => handleCLIError(error))
-    .finally(() => closeDatabase());
+  updateSpecPhase(specId, phase, options).catch((error) => handleCLIError(error));
 }

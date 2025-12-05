@@ -75,12 +75,15 @@ export default {
   //
   // 注意: 100% を目指さない（手段の目的化を避ける）
   // 参考: https://gihyo.jp/article/2024/01/automated-test-and-tdd
+  // データベース機能削除後のカバレッジ閾値調整
+  // 削除したコード: src/core/database/, src/commands/db/, etc.
+  // 参照: PR #887 (refactor: データベース機能の削除)
   coverageThreshold: {
     global: {
-      branches: 24,
-      functions: 33,
-      lines: 33,
-      statements: 33,
+      branches: 23,
+      functions: 26,
+      lines: 31,
+      statements: 31,
     },
   },
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],

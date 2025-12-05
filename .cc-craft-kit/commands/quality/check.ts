@@ -12,7 +12,7 @@ import {
   formatError,
 } from '../utils/output.js';
 import { handleCLIError } from '../utils/error-handler.js';
-import { getDatabase } from '../../core/database/connection.js';
+import { getSpec } from '../../core/storage/index.js';
 
 /**
  * 品質チェック不足検出
@@ -30,12 +30,7 @@ export async function checkQualityRequirements(
   let targetPhase: TriggerPhase | null = null;
 
   if (specId) {
-    const db = getDatabase();
-    const spec = await db
-      .selectFrom('specs')
-      .selectAll()
-      .where('id', 'like', `${specId}%`)
-      .executeTakeFirst();
+    const spec = getSpec(specId);
 
     if (!spec) {
       throw new Error(`Spec not found: ${specId}`);
