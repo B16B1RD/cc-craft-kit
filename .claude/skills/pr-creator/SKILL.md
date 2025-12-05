@@ -132,6 +132,34 @@ Edit ツールで仕様書ファイルに PR URL を追記します。
 - <PR URL>
 ```
 
+### 6. ドラフト PR を Ready に変更（レビュー準備完了後）
+
+PR はデフォルトでドラフト状態で作成されます。レビュー準備が完了したら、以下のいずれかの方法で Ready に変更してください。
+
+#### GitHub CLI を使用（推奨）
+
+```bash
+# 現在のブランチの PR を Ready に変更
+gh pr ready
+
+# 特定の PR 番号を指定
+gh pr ready <PR番号>
+
+# 特定の PR URL を指定
+gh pr ready <PR URL>
+```
+
+#### GitHub Web UI を使用
+
+1. PR ページを開く
+2. 「Ready for review」ボタンをクリック
+
+#### 補足事項
+
+- ドラフト状態の間はレビュー依頼を送信できません
+- Ready に変更後、自動的にレビュアーへの通知が送信されます
+- 必要に応じて、Ready 変更時にコメントを追加することを推奨します
+
 ## エラーハンドリング
 
 ### GitHub CLI 未インストール
@@ -270,3 +298,70 @@ gh pr create --title "タイトル" --body "本文"
 
 - [GitHub CLI - PR 作成](https://cli.github.com/manual/gh_pr_create)
 - [CLAUDE.md - スキルシステム](../../CLAUDE.md#サブエージェントとスキルの使用方針)
+
+---
+
+## cc-craft-kit との統合
+
+### 起動方式
+
+このスキルは以下のタイミングで自動実行されます:
+
+- `/cft:spec-phase <spec-id> review` 実行時
+- 仕様書の review フェーズ移行時
+
+手動実行:
+
+```bash
+# Skill ツールで直接実行
+Skill(pr-creator)
+```
+
+### プロジェクト固有設定
+
+| 設定項目 | ファイル | 説明 |
+|---------|--------|------|
+| ベースブランチ | `.env` → `BASE_BRANCH` | PR のマージ先（デフォルト: `develop`） |
+| GitHub 統合設定 | `.env` → `GITHUB_OWNER`, `GITHUB_REPO` | リポジトリ情報 |
+
+### 関連コマンド
+
+| コマンド | 説明 |
+|---------|------|
+| `/cft:spec-phase <spec-id> review` | review フェーズ移行で自動 PR 作成 |
+| `/cft:pr-cleanup <spec-id>` | PR マージ後のブランチ削除と後処理 |
+| `/cft:github-init <owner> <repo>` | GitHub 統合の初期設定 |
+
+### 仕様駆動開発（SDD）との連携
+
+cc-craft-kit の SDD ワークフローでは、以下の流れで PR が作成されます:
+
+```
+requirements → design → implementation → review（PR 作成）→ completed
+```
+
+1. **implementation フェーズ**: コード実装・タスク完了
+2. **review フェーズ移行**: 品質チェック（型チェック・ESLint）通過後、自動 PR 作成
+3. **PR レビュー**: GitHub 上でコードレビュー
+4. **PR マージ**: GitHub Web UI でマージ
+5. **completed フェーズ移行**: `/cft:spec-phase <spec-id> completed` でブランチ削除・Issue クローズ
+
+---
+
+## 関連スキルとサブエージェント
+
+### 関連スキル
+
+| スキル名 | 説明 | 連携ポイント |
+|---------|------|-------------|
+| `git-operations` | Git 操作ヘルパー | ブランチ作成・コミット履歴の確認 |
+| `typescript-eslint` | 型チェック・リント | PR 作成前の品質チェック |
+| `database-schema-validator` | スキーマ検証 | DB 変更を含む PR の検証 |
+
+### 関連サブエージェント
+
+| サブエージェント | 説明 | 連携ポイント |
+|----------------|------|-------------|
+| `code-reviewer` | コードレビュー支援 | PR 作成前のセルフレビュー |
+| `refactoring-assistant` | リファクタリング支援 | PR に含めるリファクタリング内容の確認 |
+| `test-generator` | テスト生成 | PR に含めるテストの自動生成 |
