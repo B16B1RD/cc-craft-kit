@@ -85,11 +85,12 @@ cc-craft-kit は**モジュラーモノリス**パターンを採用した、拡
 │   ├── database-schema-validator/
 │   ├── typescript-eslint/
 │   ├── pr-creator/
-│   └── git-operations/
+│   ├── git-operations/
+│   ├── architecture-diagram/  # 新規追加
+│   └── requirements-doc/      # 新規追加
 └── agents/                    # エージェント
-    ├── refactoring-assistant.md
-    ├── test-generator.md
-    └── code-reviewer.md
+    ├── requirements-analyzer.md  # 新規追加
+    └── architect-designer.md     # 新規追加
 
 .cc-craft-kit/                 # ランタイム専用
 ├── commands/                  # CLI コマンド実装
