@@ -5,11 +5,10 @@
  * このファイルには、PR URL を GitHub Issue に記録する機能のみが残されています。
  */
 
-import { Kysely } from 'kysely';
-import { Database } from '../../core/database/schema.js';
 import { getGitHubClient } from './client.js';
 import { execSync } from 'node:child_process';
 import { getGitHubConfig } from '../../core/config/github-config.js';
+import { getGitHubSyncByEntity } from '../../core/storage/index.js';
 
 /**
  * 現在のリポジトリ名を取得
@@ -42,18 +41,12 @@ function getCurrentRepository(): { owner: string; repo: string } | null {
  * PR URLをGitHub Issueに記録
  */
 export async function recordPullRequestToIssue(
-  db: Kysely<Database>,
   specId: string,
   pullRequestUrl: string
 ): Promise<void> {
   try {
-    // GitHub同期レコードを取得
-    const syncRecord = await db
-      .selectFrom('github_sync')
-      .where('entity_id', '=', specId)
-      .where('entity_type', '=', 'spec')
-      .selectAll()
-      .executeTakeFirst();
+    // GitHub同期レコードを取得（JSON ストレージから）
+    const syncRecord = getGitHubSyncByEntity(specId, 'spec');
 
     if (!syncRecord || !syncRecord.github_number) {
       // Issueが存在しない場合はスキップ

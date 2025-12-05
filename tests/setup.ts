@@ -1,33 +1,30 @@
 /**
  * Jest グローバルセットアップ（ユニットテスト用）
  *
- * E2E テストは独自のデータベースセットアップを行うため、
- * このファイルでは通常のユニットテストのみをサポートします。
+ * JSON ストレージベースのテスト環境をセットアップします。
  */
-import { getDatabase, closeDatabase } from '../src/core/database/connection.js';
-import { migrateToLatest } from '../src/core/database/migrator.js';
 import path from 'path';
 import fs from 'fs';
+import { ensureMetaDir } from '../src/core/storage/index.js';
 
 // E2E テスト専用の環境変数でスキップ判定
 const isE2ETest = process.env.E2E_TEST === 'true';
 
-// テスト専用データベースパスを設定（本番データベースを保護）
-if (!isE2ETest && !process.env.DATABASE_PATH) {
-  const testDbDir = path.join(process.cwd(), '.cc-craft-kit-test');
-  if (!fs.existsSync(testDbDir)) {
-    fs.mkdirSync(testDbDir, { recursive: true });
+// テスト専用ストレージディレクトリを設定
+if (!isE2ETest) {
+  const testStorageDir = path.join(process.cwd(), '.cc-craft-kit-test');
+  if (!fs.existsSync(testStorageDir)) {
+    fs.mkdirSync(testStorageDir, { recursive: true });
   }
-  process.env.DATABASE_PATH = path.join(testDbDir, 'test.db');
+  process.env.CC_CRAFT_KIT_DIR = testStorageDir;
 }
 
-// テスト開始前にデータベースマイグレーションを実行
+// テスト開始前に JSON ストレージを初期化
 beforeAll(async () => {
   if (isE2ETest) {
     return; // E2E テストは各テストファイルで独自にセットアップ
   }
-  const db = getDatabase();
-  await migrateToLatest(db);
+  ensureMetaDir();
 });
 
 // テスト後のクリーンアップ
@@ -35,8 +32,5 @@ afterAll(async () => {
   if (isE2ETest) {
     return; // E2E テストは各テストファイルで独自にクリーンアップ
   }
-  await closeDatabase();
+  // JSON ストレージはクリーンアップ不要（ファイルベース）
 });
-
-// テストタイムアウト設定
-// jest.setTimeout(10000); // ESM モードでは使用できないためコメントアウト

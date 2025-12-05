@@ -1,9 +1,8 @@
-import { Kysely } from 'kysely';
-import { Database } from '../database/schema.js';
 import { SpecFileParser } from './spec-file-parser.js';
 import { PathValidator } from './path-validator.js';
 import { readdir } from 'fs/promises';
 import { getCurrentBranch } from '../git/branch-cache.js';
+import { loadSpecs } from '../storage/index.js';
 
 /**
  * 整合性チェックレポート
@@ -29,17 +28,17 @@ export interface IntegrityReport {
 }
 
 /**
- * 整合性チェッカー - ファイルシステムとデータベース間の整合性をチェック
+ * 整合性チェッカー - ファイルシステムと JSON ストレージ間の整合性をチェック
  */
 export class IntegrityChecker {
   private parser: SpecFileParser;
 
-  constructor(private db: Kysely<Database>) {
+  constructor() {
     this.parser = new SpecFileParser();
   }
 
   /**
-   * 仕様書ファイルとデータベース間の整合性をチェック
+   * 仕様書ファイルと JSON ストレージ間の整合性をチェック
    *
    * @param specsDir - 仕様書ディレクトリのパス
    * @returns 整合性レポート
@@ -50,32 +49,34 @@ export class IntegrityChecker {
     const mdFiles = files.filter((f) => f.endsWith('.md'));
     const fileIds = mdFiles.map((f) => f.replace('.md', ''));
 
-    // 2. データベースから全specsレコードを取得
-    const dbSpecs = await this.db.selectFrom('specs').selectAll().execute();
-    const dbIds = dbSpecs.map((s) => s.id);
+    // 2. JSON ストレージから全specsレコードを取得
+    const storageSpecs = loadSpecs();
+    const storageIds = storageSpecs.map((s) => s.id);
 
     // 3. ブランチフィルタリング用の許可リストを作成
     const currentBranch = getCurrentBranch();
     const allowedBranches = [currentBranch, 'main', 'develop'];
 
     // 4. 差分を検出（ブランチフィルタリングを適用）
-    const filesOnly = fileIds.filter((id) => !dbIds.includes(id));
-    // dbOnly: 別ブランチの仕様書は除外
-    const dbOnly = dbIds.filter((id) => {
+    const filesOnly = fileIds.filter((id) => !storageIds.includes(id));
+    // storageOnly: 別ブランチの仕様書は除外
+    const storageOnly = storageIds.filter((id) => {
       if (fileIds.includes(id)) {
         return false; // ファイルが存在する
       }
-      const dbRecord = dbSpecs.find((s) => s.id === id);
-      if (!dbRecord) {
-        return true; // データベースレコードがない（理論的にはあり得ない）
+      const storageRecord = storageSpecs.find((s) => s.id === id);
+      if (!storageRecord) {
+        return true; // ストレージレコードがない（理論的にはあり得ない）
       }
-      // 別ブランチの仕様書は「dbOnly」に含めない（正常と判定）
+      // 別ブランチの仕様書は「storageOnly」に含めない（正常と判定）
       // branch_name が null の場合は、PR マージ後にクリアされた可能性があるため、許可
-      return dbRecord.branch_name === null || allowedBranches.includes(dbRecord.branch_name);
+      return (
+        storageRecord.branch_name === null || allowedBranches.includes(storageRecord.branch_name)
+      );
     });
 
     // 5. 共通IDでメタデータの一致確認
-    const commonIds = fileIds.filter((id) => dbIds.includes(id));
+    const commonIds = fileIds.filter((id) => storageIds.includes(id));
     const mismatch: Array<{ id: string; differences: string[] }> = [];
     const synced: string[] = [];
 
@@ -83,13 +84,13 @@ export class IntegrityChecker {
       try {
         const filePath = PathValidator.validateFilePath(specsDir, id);
         const metadata = await this.parser.parseFile(filePath);
-        const dbRecord = dbSpecs.find((s) => s.id === id);
+        const storageRecord = storageSpecs.find((s) => s.id === id);
 
-        if (!dbRecord) {
-          continue; // データベースレコードがない（理論的にはあり得ない）
+        if (!storageRecord) {
+          continue; // ストレージレコードがない（理論的にはあり得ない）
         }
 
-        const differences = this.compareMetadata(metadata, dbRecord);
+        const differences = this.compareMetadata(metadata, storageRecord);
         if (differences.length > 0) {
           mismatch.push({ id, differences });
         } else {
@@ -106,53 +107,53 @@ export class IntegrityChecker {
 
     // 6. 同期率を計算
     const totalFiles = fileIds.length;
-    const totalDbRecords = dbIds.length;
+    const totalStorageRecords = storageIds.length;
     const syncRate = totalFiles > 0 ? Math.round((synced.length / totalFiles) * 100) : 0;
 
     return {
       filesOnly,
-      dbOnly,
+      dbOnly: storageOnly,
       mismatch,
       synced,
       totalFiles,
-      totalDbRecords,
+      totalDbRecords: totalStorageRecords,
       syncRate,
     };
   }
 
   /**
-   * メタデータとデータベースレコードを比較
+   * メタデータとストレージレコードを比較
    *
    * @param metadata - ファイルから抽出したメタデータ
-   * @param dbRecord - データベースレコード
+   * @param storageRecord - ストレージレコード
    * @returns 差分リスト
    */
   private compareMetadata(
     metadata: { name: string; phase: string; updated_at: string },
-    dbRecord: { name: string; phase: string; updated_at: Date }
+    storageRecord: { name: string; phase: string; updated_at: string }
   ): string[] {
     const differences: string[] = [];
 
     // 名前の比較
-    if (metadata.name !== dbRecord.name) {
-      differences.push(`Name mismatch: file="${metadata.name}" db="${dbRecord.name}"`);
+    if (metadata.name !== storageRecord.name) {
+      differences.push(`Name mismatch: file="${metadata.name}" storage="${storageRecord.name}"`);
     }
 
     // フェーズの比較
-    if (metadata.phase !== dbRecord.phase) {
-      differences.push(`Phase mismatch: file="${metadata.phase}" db="${dbRecord.phase}"`);
+    if (metadata.phase !== storageRecord.phase) {
+      differences.push(`Phase mismatch: file="${metadata.phase}" storage="${storageRecord.phase}"`);
     }
 
     // 更新日時の比較 (ISO 8601形式に変換して比較)
-    const dbUpdatedAt = new Date(dbRecord.updated_at).toISOString();
+    const storageUpdatedAt = new Date(storageRecord.updated_at).toISOString();
     const fileUpdatedAt = new Date(metadata.updated_at).toISOString();
 
     // 秒単位まで比較（ミリ秒は無視）
-    const dbTime = dbUpdatedAt.slice(0, 19);
+    const storageTime = storageUpdatedAt.slice(0, 19);
     const fileTime = fileUpdatedAt.slice(0, 19);
 
-    if (dbTime !== fileTime) {
-      differences.push(`Updated time mismatch: file="${fileTime}" db="${dbTime}"`);
+    if (storageTime !== fileTime) {
+      differences.push(`Updated time mismatch: file="${fileTime}" storage="${storageTime}"`);
     }
 
     return differences;

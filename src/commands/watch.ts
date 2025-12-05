@@ -4,7 +4,6 @@
 
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase, closeDatabase } from '../core/database/connection.js';
 import { SpecFileWatcher } from '../core/filesystem/watcher.js';
 import { formatHeading, formatInfo, formatSuccess, formatError } from './utils/output.js';
 import { createProjectNotInitializedError, handleCLIError } from './utils/error-handler.js';
@@ -31,11 +30,8 @@ export async function watchSpecFiles(
   console.log(formatInfo('Starting file watcher for spec files...', options.color));
   console.log('');
 
-  // データベース取得
-  const db = getDatabase();
-
   // ウォッチャー作成
-  const watcher = new SpecFileWatcher(db, ccCraftKitDir, {
+  const watcher = new SpecFileWatcher(ccCraftKitDir, {
     debounceMs: 500,
     logLevel: options.logLevel,
   });
@@ -107,7 +103,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       | 'warn'
       | 'error') || 'info';
 
-  watchSpecFiles({ color: true, logLevel })
-    .catch((error) => handleCLIError(error))
-    .finally(() => closeDatabase());
+  watchSpecFiles({ color: true, logLevel }).catch((error) => handleCLIError(error));
 }

@@ -1,11 +1,10 @@
 /**
- * 仕様書ファイルとデータベース間の同期修復コマンド
+ * 仕様書ファイルと JSON ストレージ間の同期修復コマンド
  */
 
 import '../../core/config/env.js';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase, closeDatabase } from '../../core/database/connection.js';
 import { IntegrityChecker, SyncService } from '../../core/sync/index.js';
 import {
   formatHeading,
@@ -40,9 +39,8 @@ export async function repairSync(
   console.log(formatHeading('Spec File Sync Repair', 1, options.color));
   console.log('');
 
-  const db = getDatabase();
-  const checker = new IntegrityChecker(db);
-  const syncService = new SyncService(db);
+  const checker = new IntegrityChecker();
+  const syncService = new SyncService();
 
   try {
     // 1. 整合性チェック
@@ -167,8 +165,6 @@ export async function repairSync(
       )
     );
     throw error;
-  } finally {
-    await closeDatabase();
   }
 }
 

@@ -33,7 +33,7 @@ cc-craft-kit は**モジュラーモノリス**パターンを採用した、拡
 │  │  └────────────────────────────┬────────────────────────────┘   │  │
 │  │                               │                                │  │
 │  │  ┌────────────────────────────▼────────────────────────────┐   │  │
-│  │  │            Database Layer (Kysely + SQLite)             │   │  │
+│  │  │            JSON Storage Layer (File-based)               │   │  │
 │  │  └─────────────────────────────────────────────────────────┘   │  │
 │  └────────────────────────────────────────────────────────────────┘  │
 │                                                                      │
@@ -102,22 +102,32 @@ cc-craft-kit は**モジュラーモノリス**パターンを採用した、拡
 └── specs/                     # 仕様書データ
 ```
 
-### 2. Database Layer
+### 2. JSON Storage Layer
 
-Kysely + SQLite による型安全なデータベース層。
+JSON ファイルベースの軽量ストレージ層。Zod によるスキーマ検証で型安全性を維持。
 
 **責務**。
 
-- スキーマ定義
-- マイグレーション管理
+- JSON ファイル I/O（原子的書き込み）
+- Zod スキーマ検証
 - CRUD 操作
-- トランザクション管理
 
 **主要ファイル**。
 
-- `src/core/database/schema.ts` - スキーマ定義
-- `src/core/database/connection.ts` - 接続管理
-- `src/core/database/migrator.ts` - マイグレーション実行
+- `src/core/storage/index.ts` - エントリポイント
+- `src/core/storage/schemas.ts` - Zod スキーマ定義
+- `src/core/storage/specs-storage.ts` - 仕様書メタデータ管理
+- `src/core/storage/github-sync-storage.ts` - GitHub 同期状態管理
+- `src/core/storage/workflow-state-storage.ts` - ワークフロー状態管理
+- `src/core/storage/logs-storage.ts` - ログ管理（JSONL 形式）
+
+**データファイル**（`.cc-craft-kit/meta/` 配下）。
+
+- `specs.json` - 仕様書メタデータ
+- `github-sync.json` - GitHub 同期状態
+- `workflow-state.json` - ワークフロー状態
+- `tasks.json` - タスク情報
+- `logs.jsonl` - 操作ログ（JSON Lines 形式）
 
 ### 3. Modules (Domain Layer)
 
@@ -191,9 +201,9 @@ interface cc-craft-kitPlugin {
    ↓
 2. Slash Command: .cc-craft-kit/commands/spec/create.ts を npx tsx で実行
    ↓
-3. spec/create.ts: 引数バリデーション
+3. spec/register.ts: 引数バリデーション
    ↓
-4. Database: specs テーブルへ INSERT
+4. JSON Storage: specs.json へ新規レコード追加
    ↓
 5. Event Bus: 'spec.created' イベント発火
    ↓
@@ -216,20 +226,20 @@ interface cc-craft-kitPlugin {
    ↓
 4. Response: Issue ID, number, node_id 取得
    ↓
-5. Database: github_sync テーブルへINSERT
+5. JSON Storage: github-sync.json へレコード追加
    - entity_type: 'spec' または 'task'
    - entity_id: 仕様書/タスクのUUID
    - github_id: API返却のID
    - github_number: Issue番号
    - github_node_id: GraphQL用ノードID
-   - sync_status: 'success'
+   - sync_status: 'synced'
    ↓
 6. Event: 'github.issue_created' 発火
    ↓
-7. Database: logs テーブルへ同期ログ記録
+7. JSON Storage: logs.jsonl へ同期ログ追記
 ```
 
-注意: `specs` テーブルや `tasks` テーブルには GitHub 情報を保存しません。すべて `github_sync` テーブルで一元管理します。
+注意: `specs.json` や `tasks.json` には GitHub 情報を保存しません。すべて `github-sync.json` で一元管理します。
 
 ## 設計原則
 
@@ -282,7 +292,7 @@ interface cc-craft-kitPlugin {
 ### 2. バリデーション
 
 - すべての入力を Zod スキーマでバリデーション
-- SQL インジェクション対策: Kysely のパラメータ化クエリ
+- ファイルパス検証によるパストラバーサル対策
 - UUIDv4 使用 (推測不可能な ID)
 
 ### 3. エラーハンドリング
@@ -293,12 +303,12 @@ interface cc-craft-kitPlugin {
 
 ## パフォーマンス
 
-### 1. データベース最適化
+### 1. ストレージ最適化
 
-- インデックス設計 (phase, status, github_sync.entity_id 等)
-- WAL モード有効化
-- 外部キー制約
-- `github_sync` テーブルによる GitHub 情報の一元管理（データ重複排除）
+- 原子的ファイル書き込み（一時ファイル + リネーム）
+- Zod スキーマ検証によるデータ整合性
+- `github-sync.json` による GitHub 情報の一元管理（データ重複排除）
+- 1000 件以下の仕様書で許容可能なパフォーマンス
 
 ### 2. GitHub API
 
@@ -324,7 +334,7 @@ interface cc-craft-kitPlugin {
 ### 2. 統合テスト
 
 - MCP ツールの E2E テスト
-- データベース統合テスト
+- JSON ストレージ統合テスト
 - GitHub API 統合テスト (モック)
 
 ### 3. E2Eテスト
@@ -376,7 +386,7 @@ cc-craft-kit Gateway
 ### セキュリティ
 
 - 入力バリデーション: Zod スキーマ + SecurityValidator
-- SQL インジェクション対策: Kysely パラメータ化クエリ
+- ファイル操作: 原子的書き込み + パストラバーサル対策
 - XSS 対策: HTML サニタイゼーション実装
 - シークレット検出: パターンマッチング実装
 
@@ -386,5 +396,5 @@ cc-craft-kit Gateway
 
 ---
 
-**最終更新:** 2025-12-05
-**バージョン:** 0.1.10
+**最終更新:** 2025-12-06
+**バージョン:** 0.1.11

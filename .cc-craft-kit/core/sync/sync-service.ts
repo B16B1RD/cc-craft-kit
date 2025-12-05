@@ -1,9 +1,8 @@
-import { Kysely } from 'kysely';
-import { Database, NewSpec } from '../database/schema.js';
 import { SpecFileParser, SpecMetadata } from './spec-file-parser.js';
 import { PathValidator } from './path-validator.js';
 import { readdir } from 'fs/promises';
 import { join } from 'path';
+import { getSpec, addSpec, updateSpec } from '../storage/index.js';
 
 /**
  * 同期結果
@@ -16,12 +15,12 @@ export interface SyncResult {
 }
 
 /**
- * 同期サービス - 仕様書ファイルとデータベース間の同期を管理
+ * 同期サービス - 仕様書ファイルと JSON ストレージ間の同期を管理
  */
 export class SyncService {
   private parser: SpecFileParser;
 
-  constructor(private db: Kysely<Database>) {
+  constructor() {
     this.parser = new SpecFileParser();
   }
 
@@ -63,26 +62,24 @@ export class SyncService {
         }
       }
 
-      // トランザクション内で一括インサート
-      await this.db.transaction().execute(async (trx) => {
-        for (const metadata of metadataList) {
-          try {
-            await this.importSpec(trx, metadata);
-            result.imported++;
-          } catch (error) {
-            // 既存レコードの場合はスキップ
-            if (error instanceof Error && error.message.includes('UNIQUE')) {
-              result.skipped++;
-            } else {
-              result.failed++;
-              result.errors.push({
-                file: `${metadata.id}.md`,
-                error: error instanceof Error ? error.message : 'Unknown error',
-              });
-            }
+      // 順次インポート
+      for (const metadata of metadataList) {
+        try {
+          this.importSpec(metadata);
+          result.imported++;
+        } catch (error) {
+          // 既存レコードの場合はスキップ
+          if (error instanceof Error && error.message.includes('already exists')) {
+            result.skipped++;
+          } else {
+            result.failed++;
+            result.errors.push({
+              file: `${metadata.id}.md`,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            });
           }
         }
-      });
+      }
 
       return result;
     } catch (error) {
@@ -107,68 +104,53 @@ export class SyncService {
       errors: [],
     };
 
-    await this.db.transaction().execute(async (trx) => {
-      for (const fileId of fileIds) {
-        try {
-          const filePath = PathValidator.validateFilePath(specsDir, fileId);
-          const metadata = await this.parser.parseFile(filePath);
-          await this.importSpec(trx, metadata);
-          result.imported++;
-        } catch (error) {
-          if (error instanceof Error && error.message.includes('UNIQUE')) {
-            result.skipped++;
-          } else {
-            result.failed++;
-            result.errors.push({
-              file: `${fileId}.md`,
-              error: error instanceof Error ? error.message : 'Unknown error',
-            });
-          }
+    for (const fileId of fileIds) {
+      try {
+        const filePath = PathValidator.validateFilePath(specsDir, fileId);
+        const metadata = await this.parser.parseFile(filePath);
+        this.importSpec(metadata);
+        result.imported++;
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('already exists')) {
+          result.skipped++;
+        } else {
+          result.failed++;
+          result.errors.push({
+            file: `${fileId}.md`,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
         }
       }
-    });
+    }
 
     return result;
   }
 
   /**
-   * 仕様書メタデータをデータベースにインポート (upsertロジック)
+   * 仕様書メタデータを JSON ストレージにインポート (upsertロジック)
    *
-   * @param trx - トランザクション
    * @param metadata - 仕様書メタデータ
    */
-  private async importSpec(trx: Kysely<Database>, metadata: SpecMetadata): Promise<void> {
+  private importSpec(metadata: SpecMetadata): void {
     // 既存レコード確認
-    const existing = await trx
-      .selectFrom('specs')
-      .selectAll()
-      .where('id', '=', metadata.id)
-      .executeTakeFirst();
+    const existing = getSpec(metadata.id);
 
     if (existing) {
       // 更新 (ファイル優先)
-      await trx
-        .updateTable('specs')
-        .set({
-          name: metadata.name,
-          phase: metadata.phase,
-          updated_at: metadata.updated_at,
-        })
-        .where('id', '=', metadata.id)
-        .execute();
+      updateSpec(metadata.id, {
+        name: metadata.name,
+        phase: metadata.phase,
+        updated_at: metadata.updated_at,
+      });
     } else {
       // 新規挿入
-      const newSpec: NewSpec = {
+      addSpec({
         id: metadata.id,
         name: metadata.name,
-        description: null, // ファイルには description がないためnull
+        description: null,
         phase: metadata.phase,
-        branch_name: 'develop', // TODO: ファイルからブランチ名を取得する仕組みを追加
-        created_at: metadata.created_at,
-        updated_at: metadata.updated_at,
-      };
-
-      await trx.insertInto('specs').values(newSpec).execute();
+        branch_name: 'develop',
+      });
     }
   }
 

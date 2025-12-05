@@ -6,11 +6,10 @@
  */
 
 import { join, basename } from 'node:path';
-import { Kysely } from 'kysely';
-import { Database } from '../database/schema.js';
 import { getEventBusAsync } from '../workflow/event-bus.js';
 import { IFileSystem, IFileWatcherInstance } from '../interfaces/file-system.js';
 import { NodeFileSystem } from './file-system-impl.js';
+import { getSpec, updateSpec } from '../storage/index.js';
 
 /**
  * ウォッチャーオプション
@@ -67,13 +66,11 @@ export class SpecFileWatcher {
   private debounceTimers: Map<string, any> = new Map();
   private isRunning = false;
   private fileSystem: IFileSystem;
+  private ccCraftKitDir: string;
+  private options: WatcherOptions;
 
-  constructor(
-    private db: Kysely<Database>,
-    private ccCraftKitDir: string,
-    private options: WatcherOptions = {},
-    fileSystem?: IFileSystem
-  ) {
+  constructor(ccCraftKitDir: string, options: WatcherOptions = {}, fileSystem?: IFileSystem) {
+    this.ccCraftKitDir = ccCraftKitDir;
     this.options = {
       debounceMs: 500,
       logLevel: 'info',
@@ -205,15 +202,11 @@ export class SpecFileWatcher {
     type: 'change' | 'add' | 'unlink'
   ): Promise<void> {
     try {
-      // 仕様書がデータベースに存在するか確認
-      const spec = await this.db
-        .selectFrom('specs')
-        .where('id', '=', specId)
-        .selectAll()
-        .executeTakeFirst();
+      // JSON ストレージから仕様書情報を取得
+      const spec = getSpec(specId);
 
       if (!spec) {
-        this.log('warn', `Spec not found in database: ${specId}`);
+        this.log('warn', `Spec not found: ${specId}`);
         return;
       }
 
@@ -223,13 +216,9 @@ export class SpecFileWatcher {
         return;
       }
 
-      // データベースの updated_at を更新
+      // JSON ストレージの updated_at を更新
       const now = new Date().toISOString();
-      await this.db
-        .updateTable('specs')
-        .set({ updated_at: now })
-        .where('id', '=', specId)
-        .execute();
+      updateSpec(specId, { updated_at: now });
 
       // spec.updated イベントを発火
       const eventBus = await getEventBusAsync();

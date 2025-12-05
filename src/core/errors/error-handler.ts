@@ -2,9 +2,8 @@
  * 統一エラーハンドリングシステム
  */
 
-import { Kysely } from 'kysely';
-import { Database } from '../database/schema.js';
 import type { ErrorMetadata } from '../types/common.js';
+import { appendLog } from '../storage/index.js';
 
 /**
  * エラーレベル
@@ -163,7 +162,7 @@ export class ExternalAPIError extends AppError {
  * エラーハンドラー
  */
 export class ErrorHandler {
-  constructor(private db?: Kysely<Database>) {}
+  constructor() {}
 
   /**
    * センシティブ情報を含むフィールドを除外
@@ -194,18 +193,18 @@ export class ErrorHandler {
   /**
    * エラーを処理
    */
-  async handle(error: Error, context?: ErrorMetadata): Promise<void> {
+  handle(error: Error, context?: ErrorMetadata): void {
     const appError = this.normalizeError(error);
 
     // ログに記録
-    await this.logError(appError, context);
+    this.logError(appError, context);
 
     // コンソール出力
     this.printError(appError, context);
 
     // 重大なエラーの場合は通知
     if (appError.level === ErrorLevel.FATAL) {
-      await this.notifyFatalError(appError, context);
+      this.notifyFatalError(appError, context);
     }
   }
 
@@ -231,15 +230,11 @@ export class ErrorHandler {
   /**
    * エラーをログに記録
    */
-  private async logError(error: AppError, context?: ErrorMetadata): Promise<void> {
-    if (!this.db) {
-      return;
-    }
-
+  private logError(error: AppError, context?: ErrorMetadata): void {
     try {
-      // DBのログレベルはdebug/info/warn/errorのみ対応
-      // fatalレベルはerrorとして記録
-      const dbLevel: 'debug' | 'info' | 'warn' | 'error' =
+      // ログレベルは debug/info/warn/error のみ対応
+      // fatal レベルは error として記録
+      const logLevel: 'debug' | 'info' | 'warn' | 'error' =
         error.level === ErrorLevel.FATAL
           ? 'error'
           : (error.level as 'debug' | 'info' | 'warn' | 'error');
@@ -252,29 +247,24 @@ export class ErrorHandler {
         ? ErrorHandler.sanitizeMetadata(context as Record<string, unknown>)
         : undefined;
 
-      await this.db
-        .insertInto('logs')
-        .values({
-          id: `error-${Date.now()}-${Math.random()}`,
-          task_id: (context?.taskId as string | undefined) || null,
-          spec_id: (context?.specId as string | undefined) || null,
-          action: 'error',
-          level: dbLevel,
-          message: error.message,
-          metadata: JSON.stringify({
-            code: error.code,
-            category: error.category,
-            statusCode: error.statusCode,
-            originalLevel: error.level, // 元のレベルも保存
-            metadata: sanitizedMetadata,
-            context: sanitizedContext,
-            stack: error.stack,
-          }),
-          timestamp: new Date().toISOString(),
-        })
-        .execute();
-    } catch (dbError) {
-      console.error('Failed to log error to database:', dbError);
+      appendLog({
+        task_id: (context?.taskId as string | undefined) || null,
+        spec_id: (context?.specId as string | undefined) || null,
+        action: 'error',
+        level: logLevel,
+        message: error.message,
+        metadata: {
+          code: error.code,
+          category: error.category,
+          statusCode: error.statusCode,
+          originalLevel: error.level,
+          metadata: sanitizedMetadata,
+          context: sanitizedContext,
+          stack: error.stack,
+        },
+      });
+    } catch (logError) {
+      console.error('Failed to log error:', logError);
     }
   }
 
@@ -326,7 +316,7 @@ export class ErrorHandler {
   /**
    * 致命的エラーを通知
    */
-  private async notifyFatalError(error: AppError, context?: ErrorMetadata): Promise<void> {
+  private notifyFatalError(error: AppError, context?: ErrorMetadata): void {
     // TODO: Slack/Email通知などを実装
     console.error('🔥 FATAL ERROR OCCURRED - Notification would be sent here');
     console.error('Error:', error.toJSON());
@@ -362,8 +352,8 @@ let globalErrorHandler: ErrorHandler | null = null;
 /**
  * グローバルエラーハンドラーを初期化
  */
-export function initializeErrorHandler(db?: Kysely<Database>): ErrorHandler {
-  globalErrorHandler = new ErrorHandler(db);
+export function initializeErrorHandler(): ErrorHandler {
+  globalErrorHandler = new ErrorHandler();
   return globalErrorHandler;
 }
 

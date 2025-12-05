@@ -5,7 +5,6 @@
 import '../../core/config/env.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase, closeDatabase } from '../../core/database/connection.js';
 import { getEventBusAsync } from '../../core/workflow/event-bus.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from '../utils/output.js';
 import {
@@ -15,7 +14,7 @@ import {
   handleCLIError,
 } from '../utils/error-handler.js';
 import { validateSpecId } from '../utils/validation.js';
-import { getSpecWithGitHubInfo } from '../../core/database/helpers.js';
+import { getSpecWithGitHubInfo } from '../../core/storage/index.js';
 
 /**
  * GitHub設定を取得
@@ -68,11 +67,8 @@ export async function recordProgress(
     throw createGitHubNotConfiguredError();
   }
 
-  // データベース取得
-  const db = getDatabase();
-
   // 仕様書検索（部分一致対応）
-  const spec = await getSpecWithGitHubInfo(db, specId);
+  const spec = getSpecWithGitHubInfo(specId);
 
   if (!spec) {
     throw createSpecNotFoundError(specId);
@@ -153,11 +149,8 @@ export async function recordErrorSolution(
     throw createGitHubNotConfiguredError();
   }
 
-  // データベース取得
-  const db = getDatabase();
-
   // 仕様書検索（部分一致対応）
-  const spec = await getSpecWithGitHubInfo(db, specId);
+  const spec = getSpecWithGitHubInfo(specId);
 
   if (!spec) {
     throw createSpecNotFoundError(specId);
@@ -239,11 +232,8 @@ export async function recordTip(
     throw createGitHubNotConfiguredError();
   }
 
-  // データベース取得
-  const db = getDatabase();
-
   // 仕様書検索（部分一致対応）
-  const spec = await getSpecWithGitHubInfo(db, specId);
+  const spec = getSpecWithGitHubInfo(specId);
 
   if (!spec) {
     throw createSpecNotFoundError(specId);
@@ -315,9 +305,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       console.error('Error: message is required');
       process.exit(1);
     }
-    recordProgress(specId, message)
-      .catch((error) => handleCLIError(error))
-      .finally(() => closeDatabase());
+    recordProgress(specId, message).catch((error) => handleCLIError(error));
   } else if (command === 'error') {
     const errorMsg = process.argv[4];
     const solution = process.argv.slice(5).join(' ');
@@ -325,9 +313,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       console.error('Error: error and solution are required');
       process.exit(1);
     }
-    recordErrorSolution(specId, errorMsg, solution)
-      .catch((error) => handleCLIError(error))
-      .finally(() => closeDatabase());
+    recordErrorSolution(specId, errorMsg, solution).catch((error) => handleCLIError(error));
   } else if (command === 'tip') {
     const category = process.argv[4];
     const tip = process.argv.slice(5).join(' ');
@@ -335,9 +321,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       console.error('Error: category and tip are required');
       process.exit(1);
     }
-    recordTip(specId, category, tip)
-      .catch((error) => handleCLIError(error))
-      .finally(() => closeDatabase());
+    recordTip(specId, category, tip).catch((error) => handleCLIError(error));
   } else {
     console.error('Error: command must be "progress", "error", or "tip"');
     process.exit(1);

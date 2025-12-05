@@ -1,5 +1,4 @@
-import { Kysely } from 'kysely';
-import { Database } from '../database/schema.js';
+import { getSpecsWithGitHubInfo, loadGitHubSync } from '../storage/index.js';
 
 /**
  * GitHub同期チェックレポート
@@ -25,31 +24,19 @@ export interface GitHubSyncReport {
  * GitHub同期状態チェッカー
  */
 export class GitHubSyncChecker {
-  constructor(private db: Kysely<Database>) {}
+  constructor() {}
 
   /**
    * GitHub Issue同期状態をチェック
    *
    * @returns GitHub同期レポート
    */
-  async check(): Promise<GitHubSyncReport> {
-    // 1. 全仕様書を取得（github_sync との LEFT JOIN）
-    const allSpecs = await this.db
-      .selectFrom('specs')
-      .leftJoin('github_sync', (join) =>
-        join
-          .onRef('github_sync.entity_id', '=', 'specs.id')
-          .on('github_sync.entity_type', '=', 'spec')
-      )
-      .select(['specs.id', 'specs.name', 'github_sync.github_number as github_issue_number'])
-      .execute();
+  check(): GitHubSyncReport {
+    // 1. 全仕様書を取得（GitHub 同期情報付き）
+    const allSpecs = getSpecsWithGitHubInfo();
 
-    // 2. GitHub同期テーブルから同期済み仕様書を取得
-    const syncRecords = await this.db
-      .selectFrom('github_sync')
-      .selectAll()
-      .where('entity_type', '=', 'spec')
-      .execute();
+    // 2. GitHub同期レコードを取得
+    const syncRecords = loadGitHubSync().filter((r) => r.entity_type === 'spec');
 
     // 3. 同期済み・未同期の分類
     const synced = allSpecs.filter((s) => s.github_issue_number !== null);

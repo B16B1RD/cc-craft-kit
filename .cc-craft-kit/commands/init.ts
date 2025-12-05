@@ -4,10 +4,9 @@
 
 import { mkdirSync, existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase, closeDatabase } from '../core/database/connection.js';
-import { migrateToLatest } from '../core/database/migrator.js';
 import { formatSuccess, formatHeading, formatKeyValue, formatInfo } from './utils/output.js';
 import { createProjectAlreadyInitializedError, handleCLIError } from './utils/error-handler.js';
+import { ensureMetaDir } from '../core/storage/index.js';
 
 /**
  * プロジェクト設定
@@ -53,10 +52,9 @@ export async function initProject(
   mkdirSync(ccCraftKitDir, { recursive: true });
   mkdirSync(specsDir, { recursive: true });
 
-  // データベース初期化
-  console.log(formatInfo('Initializing database...', options.color));
-  const db = getDatabase();
-  await migrateToLatest(db);
+  // JSON ストレージ初期化（meta/ ディレクトリと初期ファイル作成）
+  console.log(formatInfo('Initializing JSON storage...', options.color));
+  ensureMetaDir(ccCraftKitDir);
 
   // 設定ファイル生成
   console.log(formatInfo('Creating configuration file...', options.color));
@@ -73,7 +71,7 @@ export async function initProject(
   console.log('');
   console.log(formatKeyValue('Project name', name, options.color));
   console.log(formatKeyValue('Directory', ccCraftKitDir, options.color));
-  console.log(formatKeyValue('Database', join(ccCraftKitDir, 'cc-craft-kit.db'), options.color));
+  console.log(formatKeyValue('Storage', join(ccCraftKitDir, 'meta'), options.color));
   console.log(formatKeyValue('Config', configPath, options.color));
   console.log('');
   console.log('Next steps:');
@@ -86,7 +84,5 @@ export async function initProject(
 if (import.meta.url === `file://${process.argv[1]}`) {
   const projectName = process.argv[2];
 
-  initProject(projectName)
-    .catch((error) => handleCLIError(error))
-    .finally(() => closeDatabase());
+  initProject(projectName).catch((error) => handleCLIError(error));
 }
