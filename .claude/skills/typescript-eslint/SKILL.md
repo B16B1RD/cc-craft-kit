@@ -233,3 +233,158 @@ When reporting analysis results, use this format:
 - **Use ESLint auto-fix carefully** - review changes before committing
 - **Configure rules appropriate for the project** - don't over-lint
 - **Integrate into CI/CD pipeline** for continuous quality checks
+
+---
+
+## cc-craft-kit Configuration Reference
+
+This section describes the specific TypeScript and ESLint configuration used in cc-craft-kit.
+
+### Configuration Files
+
+| File | Description |
+|------|-------------|
+| `tsconfig.json` | TypeScript compiler configuration |
+| `eslint.config.mjs` | ESLint configuration (flat config format) |
+
+### TypeScript Configuration Highlights
+
+```json
+// tsconfig.json key settings
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
+```
+
+### ESLint Configuration Highlights
+
+cc-craft-kit uses ESLint flat config (`eslint.config.mjs`):
+
+```javascript
+// Key rules enforced
+export default [
+  {
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-unused-vars': ['error', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_'
+      }],
+      '@typescript-eslint/explicit-function-return-type': 'off'
+    }
+  }
+];
+```
+
+### Common Validation Commands
+
+```bash
+# TypeScript type checking
+npm run typecheck
+
+# ESLint checking
+npm run lint
+
+# ESLint with auto-fix
+npm run lint -- --fix
+```
+
+### Source File Location
+
+- TypeScript source: `src/` directory
+- Runtime files: `.cc-craft-kit/` directory (synced from src)
+- Test files: `src/**/*.test.ts`
+
+---
+
+## cc-craft-kit Integration
+
+### Invocation Method
+
+This skill is invoked automatically at key points in the SDD workflow:
+
+```bash
+# Via slash command
+/cft:lint-check
+
+# Via Skill tool
+Skill(typescript-eslint)
+```
+
+### Automatic Invocation Points
+
+| Timing | Trigger | Purpose |
+|--------|---------|---------|
+| implementation Phase Start | `/cft:spec-phase <id> impl` | Baseline code quality check |
+| review Phase Transition | `/cft:spec-phase <id> review` | Pre-PR quality gate |
+| PR Creation | `pr-creator` skill | Final quality verification |
+
+### Project-Specific Settings
+
+| Setting | File | Description |
+|---------|------|-------------|
+| TypeScript Config | `tsconfig.json` | Compiler options |
+| ESLint Config | `eslint.config.mjs` | Linting rules (flat config) |
+
+### Related Commands
+
+| Command | Description |
+|---------|-------------|
+| `/cft:lint-check` | Run TypeScript/ESLint check |
+| `npm run typecheck` | TypeScript compilation check |
+| `npm run lint` | ESLint check |
+| `npm run lint -- --fix` | Auto-fix ESLint issues |
+
+### Integration with SDD Workflow
+
+```text
+implementation Phase
+├── Baseline Check: npm run typecheck && npm run lint
+├── Implementation work
+└── Incremental checks as needed
+
+review Phase Transition
+├── Quality Gate: All checks must pass
+├── If fail → Block PR creation, show errors
+└── If pass → Proceed to PR creation
+```
+
+### Quality Gate Behavior
+
+When transitioning to review phase, this skill acts as a **quality gate**:
+
+1. **TypeScript Check**: `npm run typecheck` must exit with code 0
+2. **ESLint Check**: `npm run lint` must exit with code 0
+3. **If any check fails**: PR creation is blocked with error details
+
+---
+
+## Related Skills and Subagents
+
+### Related Skills
+
+| Skill | Description | Integration Point |
+|-------|-------------|-------------------|
+| `database-schema-validator` | Schema validation | Validates schema.ts types |
+| `git-operations` | Git command helpers | Quality check before commit |
+| `pr-creator` | PR creation | Quality gate before PR |
+
+### Related Subagents
+
+| Subagent | Description | Integration Point |
+|----------|-------------|-------------------|
+| `code-reviewer` | Code review support | Review type errors and lint issues |
+| `refactoring-assistant` | Refactoring support | Fix lint violations via refactoring |
+| `test-generator` | Test generation | Ensure test code passes lint checks |

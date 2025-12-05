@@ -460,3 +460,146 @@ git commit -m "Message"
 git reflog  # Find lost commit
 git checkout abc123f  # Restore commit
 ```
+
+---
+
+## cc-craft-kit Branch Strategy
+
+cc-craft-kit uses **GitHub Flow with a develop branch** (2-branch model).
+
+### Main Branches
+
+| Branch | Role | Protection Level |
+|--------|------|------------------|
+| `main` | Production-released stable code | Highest |
+| `develop` | Integration branch for next release | High |
+
+### Working Branches
+
+| Prefix | Purpose | Base Branch |
+|--------|---------|-------------|
+| `feature/` | New feature development | develop |
+| `fix/` or `bugfix/` | Bug fixes | develop |
+| `hotfix/` | Emergency fixes (production issues) | main |
+| `refactor/` | Refactoring | develop |
+| `docs/` | Documentation updates only | develop |
+| `chore/` | Maintenance (dependency updates, etc.) | develop |
+
+### cc-craft-kit Specific Naming
+
+When working with specifications (SDD), branch names follow this pattern:
+
+```text
+<prefix>/spec-<short-spec-id>-<description>
+
+Examples:
+feature/spec-45a7f0d7-improve-skill-documentation
+fix/spec-3e313ec5-github-issue-not-recognized
+docs/spec-e88d9153-v0-1-6-release-prep
+```
+
+### Commit Message Convention
+
+cc-craft-kit uses **Conventional Commits** in Japanese:
+
+```text
+feat: 新機能追加
+fix: バグ修正
+refactor: リファクタリング
+docs: ドキュメント変更
+test: テスト追加・修正
+chore: 雑務（依存関係更新など）
+```
+
+### Merge Strategy
+
+**Squash and Merge** is recommended:
+
+1. `develop` → Working branch (feature/, fix/, etc.)
+2. Complete work → Create PR to `develop`
+3. Review and CI pass → Squash and Merge to `develop`
+4. When `develop` is stable → Create PR to `main`
+5. Review and CI pass → Squash and Merge to `main`
+
+### Hotfix Flow
+
+For emergency production fixes:
+
+1. Create `hotfix/` branch from `main`
+2. Complete fix → Create PR to `main`
+3. Review and CI pass → Squash and Merge to `main`
+4. Backport to `develop` (PR or direct merge)
+
+---
+
+## cc-craft-kit Integration
+
+### Invocation Method
+
+This skill is available for reference and guidance. Git commands are executed directly via Bash tool.
+
+```bash
+# Via Skill tool for guidance
+Skill(git-operations)
+```
+
+### Project-Specific Settings
+
+| Setting | File | Description |
+|---------|------|-------------|
+| Base Branch | `.env` → `BASE_BRANCH` | Default branch for new branches (default: `develop`) |
+| GitHub Info | `.env` → `GITHUB_OWNER`, `GITHUB_REPO` | Repository information |
+
+### Related Commands
+
+| Command | Description |
+|---------|-------------|
+| `/cft:spec-phase <spec-id> <phase>` | Creates/switches to spec-related branches automatically |
+| `/cft:pr-cleanup <spec-id>` | Deletes local and remote branches after PR merge |
+| `/cft:github-init <owner> <repo>` | Initializes GitHub integration |
+
+### Integration with SDD Workflow
+
+Git operations are automated at various points in the SDD workflow:
+
+1. **Spec Creation**: Branch auto-created with `<prefix>/spec-<id>-<name>` pattern
+2. **Phase Transitions**: Automatic branch switching
+3. **review Phase**: Auto-commit before PR creation
+4. **completed Phase**: Automatic branch deletion
+
+### Common Workflows in cc-craft-kit
+
+```bash
+# Start new spec implementation
+/cft:spec-create "Feature name"
+/cft:spec-phase <spec-id> impl
+# (Branch auto-created and switched)
+
+# Complete implementation, create PR
+/cft:spec-phase <spec-id> review
+# (Auto-commit, quality check, PR created)
+
+# After PR merged, cleanup
+/cft:spec-phase <spec-id> completed
+# (Branch deleted, Issue closed)
+```
+
+---
+
+## Related Skills and Subagents
+
+### Related Skills
+
+| Skill | Description | Integration Point |
+|-------|-------------|-------------------|
+| `pr-creator` | PR creation | Creates PR from current branch |
+| `typescript-eslint` | Type checking and linting | Quality check before commit |
+| `database-schema-validator` | Schema validation | Validate DB changes before commit |
+
+### Related Subagents
+
+| Subagent | Description | Integration Point |
+|----------|-------------|-------------------|
+| `code-reviewer` | Code review support | Review changes before commit |
+| `refactoring-assistant` | Refactoring support | Refactoring before commit |
+| `test-generator` | Test generation | Generate tests before commit |
