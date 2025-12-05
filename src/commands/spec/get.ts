@@ -5,12 +5,10 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import chalk from 'chalk';
-import { getDatabase, closeDatabase } from '../../core/database/connection.js';
-import { getSpecsWithGitHubInfo } from '../../core/database/helpers.js';
+import { getSpecsWithGitHubInfo, type SpecWithGitHub } from '../../core/storage/index.js';
 import { formatHeading, formatKeyValue, formatMarkdown } from '../utils/output.js';
 import { createProjectNotInitializedError, handleCLIError } from '../utils/error-handler.js';
 import { validateSpecId } from '../utils/validation.js';
-import { ensureGitHubIssue } from '../../integrations/github/ensure-issue.js';
 import { getCurrentBranch } from '../../core/git/branch-cache.js';
 import { promptBranchSwitch, switchBranch, ERROR_MESSAGES } from './branch-switch.js';
 
@@ -18,7 +16,7 @@ import { promptBranchSwitch, switchBranch, ERROR_MESSAGES } from './branch-switc
  * ブランチ不一致を処理する
  */
 async function handleBranchMismatch(
-  spec: Awaited<ReturnType<typeof getSpecsWithGitHubInfo>>[0],
+  spec: SpecWithGitHub,
   currentBranch: string,
   ccCraftKitDir: string,
   options: { color: boolean }
@@ -60,21 +58,18 @@ async function handleBranchMismatch(
   console.log('');
 
   // 再度仕様書を表示
-  await displaySpec(spec, ccCraftKitDir, options);
+  displaySpec(spec, ccCraftKitDir, options);
 }
 
 /**
  * 仕様書を表示する
  */
-async function displaySpec(
-  spec: Awaited<ReturnType<typeof getSpecsWithGitHubInfo>>[0],
+function displaySpec(
+  spec: SpecWithGitHub,
   ccCraftKitDir: string,
   options: { color: boolean }
-): Promise<void> {
-  const db = getDatabase();
-
-  // GitHub Issue 自動リカバリー
-  await ensureGitHubIssue(db, spec.id);
+): void {
+  // TODO: GitHub Issue 自動リカバリーは Phase 3 で JSON ストレージ対応後に再実装
 
   // Markdownファイル読み込み
   const specPath = join(ccCraftKitDir, 'specs', `${spec.id}.md`);
@@ -138,14 +133,11 @@ export async function getSpec(
   // 仕様書IDの検証
   validateSpecId(specId);
 
-  // データベース取得
-  const db = getDatabase();
-
   // 現在のブランチを取得
   const currentBranch = getCurrentBranch();
 
-  // すべての仕様書を取得
-  const allSpecs = await getSpecsWithGitHubInfo(db);
+  // JSON ストレージからすべての仕様書を取得
+  const allSpecs = getSpecsWithGitHubInfo();
 
   // 仕様書 ID で検索
   const matchedSpec = allSpecs.find((s) => s.id.startsWith(specId));
@@ -171,7 +163,7 @@ export async function getSpec(
   }
 
   // 仕様書を表示
-  await displaySpec(matchedSpec, ccCraftKitDir, options);
+  displaySpec(matchedSpec, ccCraftKitDir, options);
 }
 
 // CLI エントリポイント
@@ -184,7 +176,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  getSpec(specId)
-    .catch((error) => handleCLIError(error))
-    .finally(() => closeDatabase());
+  getSpec(specId).catch((error) => handleCLIError(error));
 }
