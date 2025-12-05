@@ -45,12 +45,21 @@ export {
 } from './schemas.js';
 
 // 各ストレージモジュール
-export { loadSpecs, saveSpecs, getSpec, addSpec, updateSpec, deleteSpec } from './specs-storage.js';
+export {
+  loadSpecs,
+  saveSpecs,
+  getSpec,
+  findSpecByIdPrefix,
+  addSpec,
+  updateSpec,
+  deleteSpec,
+} from './specs-storage.js';
 
 export {
   loadGitHubSync,
   saveGitHubSync,
   getGitHubSyncByEntity,
+  getGitHubSyncBySpecId,
   getGitHubSyncByIssueNumber,
   addGitHubSync,
   updateGitHubSync,
