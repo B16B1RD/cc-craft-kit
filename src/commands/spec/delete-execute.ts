@@ -9,7 +9,12 @@
 import '../../core/config/env.js';
 import { existsSync, unlinkSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getDatabase, closeDatabase } from '../../core/database/connection.js';
+import {
+  getSpec,
+  deleteSpec,
+  getGitHubSyncBySpecId,
+  deleteGitHubSync,
+} from '../../core/storage/index.js';
 import { getEventBusAsync } from '../../core/workflow/event-bus.js';
 import { GitHubClient } from '../../integrations/github/client.js';
 import { GitHubIssues } from '../../integrations/github/issues.js';
@@ -127,10 +132,8 @@ export async function executeDelete(
     };
   }
 
-  const db = getDatabase();
-
   // 仕様書取得
-  const spec = await db.selectFrom('specs').selectAll().where('id', '=', specId).executeTakeFirst();
+  const spec = getSpec(specId);
 
   if (!spec) {
     return {
@@ -141,14 +144,8 @@ export async function executeDelete(
   }
 
   // GitHub Issue 番号を取得
-  const githubSync = await db
-    .selectFrom('github_sync')
-    .select(['issue_number'])
-    .where('entity_type', '=', 'spec')
-    .where('entity_id', '=', specId)
-    .executeTakeFirst();
-
-  const issueNumber = githubSync?.issue_number ?? null;
+  const githubSync = getGitHubSyncBySpecId(specId);
+  const issueNumber = githubSync?.github_number ?? null;
   let githubIssueStatus: 'closed' | 'warning' | 'skipped' = 'skipped';
 
   // 1. GitHub Issue クローズ（オプション）
@@ -172,16 +169,12 @@ export async function executeDelete(
   }
 
   try {
-    // 2. DB レコード削除
-    await db.deleteFrom('specs').where('id', '=', specId).execute();
+    // 2. JSON ストレージからレコード削除
+    deleteSpec(specId);
 
     // github_sync レコードも削除
     if (githubSync) {
-      await db
-        .deleteFrom('github_sync')
-        .where('entity_type', '=', 'spec')
-        .where('entity_id', '=', specId)
-        .execute();
+      deleteGitHubSync('spec', specId);
     }
 
     // 3. ファイル削除
@@ -212,7 +205,7 @@ export async function executeDelete(
     return {
       success: false,
       error: `削除処理に失敗しました: ${message}`,
-      errorCode: 'DB_ERROR',
+      errorCode: 'FILE_ERROR',
     };
   }
 }
@@ -241,9 +234,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   executeDelete(specId, { closeGitHubIssue })
     .then((result) => {
       console.log(JSON.stringify(result, null, 2));
-      if (!result.success) {
-        process.exit(1);
-      }
+      process.exit(result.success ? 0 : 1);
     })
     .catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
@@ -253,6 +244,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       };
       console.log(JSON.stringify(errorOutput, null, 2));
       process.exit(1);
-    })
-    .finally(() => closeDatabase());
+    });
 }
