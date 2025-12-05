@@ -188,10 +188,74 @@ Glob ツールで以下のパターンを検索:
 
 ##### Step SC2: スキルの作成
 
-Bash ツールで以下を実行:
+1. **ディレクトリ作成**:
+   - Bash ツールで `mkdir -p .claude/skills/{NAME}` を実行
 
-```bash
-npx tsx .cc-craft-kit/commands/skill/create.ts "$3" "$4"
+2. **重複チェック**:
+   - Glob ツールで `.claude/skills/{NAME}/SKILL.md` が存在するか確認
+   - 存在する場合はエラーを表示して処理を中断
+
+3. **テンプレート生成**:
+   - Write ツールで `.claude/skills/{NAME}/SKILL.md` を作成
+   - 以下のテンプレートを使用:
+
+```markdown
+---
+name: {NAME}
+description: {DESCRIPTION}
+---
+
+# {NAME（パスカルケースに変換）} Skill
+
+This skill provides {DESCRIPTION（小文字）}.
+
+## Capabilities
+
+- [Capability 1]
+- [Capability 2]
+- [Capability 3]
+
+## Usage Examples
+
+### Example 1: [Use Case]
+
+\`\`\`bash
+# Command to demonstrate usage
+\`\`\`
+
+**Expected output:**
+\`\`\`
+[Example output]
+\`\`\`
+
+## Common Patterns
+
+### Pattern 1: [Pattern Name]
+
+Description of the pattern and when to use it.
+
+## Best Practices
+
+- [Best practice 1]
+- [Best practice 2]
+- [Best practice 3]
+
+## Output Format
+
+When using this skill, provide results in the following format:
+
+\`\`\`markdown
+# [Result Title]
+
+## Summary
+[Brief overview]
+
+## Details
+[Detailed information]
+
+## Recommendations
+[Suggestions]
+\`\`\`
 ```
 
 ##### Step SC3: 結果の表示
