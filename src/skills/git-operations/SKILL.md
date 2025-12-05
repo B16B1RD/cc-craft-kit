@@ -460,3 +460,72 @@ git commit -m "Message"
 git reflog  # Find lost commit
 git checkout abc123f  # Restore commit
 ```
+
+---
+
+## cc-craft-kit Branch Strategy
+
+cc-craft-kit uses **GitHub Flow with a develop branch** (2-branch model).
+
+### Main Branches
+
+| Branch | Role | Protection Level |
+|--------|------|------------------|
+| `main` | Production-released stable code | Highest |
+| `develop` | Integration branch for next release | High |
+
+### Working Branches
+
+| Prefix | Purpose | Base Branch |
+|--------|---------|-------------|
+| `feature/` | New feature development | develop |
+| `fix/` or `bugfix/` | Bug fixes | develop |
+| `hotfix/` | Emergency fixes (production issues) | main |
+| `refactor/` | Refactoring | develop |
+| `docs/` | Documentation updates only | develop |
+| `chore/` | Maintenance (dependency updates, etc.) | develop |
+
+### cc-craft-kit Specific Naming
+
+When working with specifications (SDD), branch names follow this pattern:
+
+```text
+<prefix>/spec-<short-spec-id>-<description>
+
+Examples:
+feature/spec-45a7f0d7-improve-skill-documentation
+fix/spec-3e313ec5-github-issue-not-recognized
+docs/spec-e88d9153-v0-1-6-release-prep
+```
+
+### Commit Message Convention
+
+cc-craft-kit uses **Conventional Commits** in Japanese:
+
+```text
+feat: 新機能追加
+fix: バグ修正
+refactor: リファクタリング
+docs: ドキュメント変更
+test: テスト追加・修正
+chore: 雑務（依存関係更新など）
+```
+
+### Merge Strategy
+
+**Squash and Merge** is recommended:
+
+1. `develop` → Working branch (feature/, fix/, etc.)
+2. Complete work → Create PR to `develop`
+3. Review and CI pass → Squash and Merge to `develop`
+4. When `develop` is stable → Create PR to `main`
+5. Review and CI pass → Squash and Merge to `main`
+
+### Hotfix Flow
+
+For emergency production fixes:
+
+1. Create `hotfix/` branch from `main`
+2. Complete fix → Create PR to `main`
+3. Review and CI pass → Squash and Merge to `main`
+4. Backport to `develop` (PR or direct merge)
