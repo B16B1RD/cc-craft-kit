@@ -89,6 +89,10 @@
 | テスト生成       | プロンプト     | Task で test-generator 起動        |
 | リファクタリング | プロンプト     | Task で refactoring-assistant 起動 |
 | 型チェック       | プロンプト     | Skill で typescript-eslint 起動    |
+| 要件分析         | プロンプト     | Task で requirements-analyzer 起動 |
+| 設計             | プロンプト     | Task で architect-designer 起動    |
+| 図生成           | プロンプト     | Skill で architecture-diagram 起動 |
+| 要件定義書生成   | プロンプト     | Skill で requirements-doc 起動     |
 | Bash 実行        | プロンプト     | Bash ツールで直接実行              |
 | ガイダンス表示   | プロンプト     | メッセージ出力のみ                 |
 | DB 操作          | スクリプト     | Kysely が必要                      |

@@ -111,13 +111,21 @@ argument-hint: "<type> <subcommand> [args...]"
 
 ##### Step SL1: スキル一覧の取得
 
-Bash ツールで以下を実行:
+Glob ツールで以下のパターンを検索:
 
-```bash
-npx tsx .cc-craft-kit/commands/skill/list.ts
+```
+.claude/skills/*/SKILL.md
 ```
 
-##### Step SL2: 結果の表示
+##### Step SL2: 各ファイルの情報抽出
+
+見つかった各 `SKILL.md` ファイルに対して Read ツールで先頭 50 行を読み込み、以下の情報を抽出:
+
+- **名前**: 親ディレクトリ名（例: `.claude/skills/pr-creator/SKILL.md` → `pr-creator`）
+- **説明**: ファイル冒頭の `# {タイトル}` の直後の段落（1行目の説明文）
+- **場所**: `.claude/skills/{名前}/`
+
+##### Step SL3: 結果の表示
 
 ```
 # スキル一覧
@@ -180,10 +188,74 @@ npx tsx .cc-craft-kit/commands/skill/list.ts
 
 ##### Step SC2: スキルの作成
 
-Bash ツールで以下を実行:
+1. **ディレクトリ作成**:
+   - Bash ツールで `mkdir -p .claude/skills/{NAME}` を実行
 
-```bash
-npx tsx .cc-craft-kit/commands/skill/create.ts "$3" "$4"
+2. **重複チェック**:
+   - Glob ツールで `.claude/skills/{NAME}/SKILL.md` が存在するか確認
+   - 存在する場合はエラーを表示して処理を中断
+
+3. **テンプレート生成**:
+   - Write ツールで `.claude/skills/{NAME}/SKILL.md` を作成
+   - 以下のテンプレートを使用:
+
+```markdown
+---
+name: {NAME}
+description: {DESCRIPTION}
+---
+
+# {NAME（パスカルケースに変換）} Skill
+
+This skill provides {DESCRIPTION（小文字）}.
+
+## Capabilities
+
+- [Capability 1]
+- [Capability 2]
+- [Capability 3]
+
+## Usage Examples
+
+### Example 1: [Use Case]
+
+\`\`\`bash
+# Command to demonstrate usage
+\`\`\`
+
+**Expected output:**
+\`\`\`
+[Example output]
+\`\`\`
+
+## Common Patterns
+
+### Pattern 1: [Pattern Name]
+
+Description of the pattern and when to use it.
+
+## Best Practices
+
+- [Best practice 1]
+- [Best practice 2]
+- [Best practice 3]
+
+## Output Format
+
+When using this skill, provide results in the following format:
+
+\`\`\`markdown
+# [Result Title]
+
+## Summary
+[Brief overview]
+
+## Details
+[Detailed information]
+
+## Recommendations
+[Suggestions]
+\`\`\`
 ```
 
 ##### Step SC3: 結果の表示
@@ -219,13 +291,22 @@ npx tsx .cc-craft-kit/commands/skill/create.ts "$3" "$4"
 
 ##### Step AL1: サブエージェント一覧の取得
 
-Bash ツールで以下を実行:
+Glob ツールで以下のパターンを検索:
 
-```bash
-npx tsx .cc-craft-kit/commands/agent/list.ts
+```
+.claude/agents/*.md
 ```
 
-##### Step AL2: 結果の表示
+##### Step AL2: 各ファイルの情報抽出
+
+見つかった各 `.md` ファイルに対して Read ツールで先頭 50 行を読み込み、以下の情報を抽出:
+
+- **名前**: ファイル名から `.md` を除去（例: `code-reviewer.md` → `code-reviewer`）
+- **説明**: ファイル冒頭の `# {タイトル}` の直後の段落（1行目の説明文）
+- **モデル**: frontmatter の `model` フィールド（デフォルト: `sonnet`）
+- **ツール**: frontmatter の `tools` フィールドまたは本文中の `## Tools` セクション
+
+##### Step AL3: 結果の表示
 
 ```
 # サブエージェント一覧
@@ -287,10 +368,72 @@ npx tsx .cc-craft-kit/commands/agent/list.ts
 
 ##### Step AC2: サブエージェントの作成
 
-Bash ツールで以下を実行:
+1. **ディレクトリ確認**:
+   - `.claude/agents/` ディレクトリが存在するか確認
+   - 存在しない場合は Bash で `mkdir -p .claude/agents` を実行
 
-```bash
-npx tsx .cc-craft-kit/commands/agent/create.ts "$3" "$4"
+2. **重複チェック**:
+   - Glob ツールで `.claude/agents/{NAME}.md` が存在するか確認
+   - 存在する場合はエラーを表示して処理を中断
+
+3. **テンプレート生成**:
+   - Write ツールで `.claude/agents/{NAME}.md` を作成
+   - 以下のテンプレートを使用:
+
+```markdown
+---
+name: {NAME}
+description: {DESCRIPTION}
+tools: Read, Grep, Glob, Edit, Write, Bash
+model: sonnet
+---
+
+# {NAME（パスカルケースに変換）} Agent
+
+You are a specialized agent for {DESCRIPTION（小文字）}.
+
+## Your Responsibilities
+
+1. **[Responsibility 1]**
+   - [Detail 1]
+   - [Detail 2]
+
+2. **[Responsibility 2]**
+   - [Detail 1]
+   - [Detail 2]
+
+## Guidelines
+
+- [Guideline 1]
+- [Guideline 2]
+- [Guideline 3]
+
+## Output Format
+
+Provide your output in a clear, structured format:
+
+\`\`\`markdown
+# [Report Title]
+
+## Summary
+[Brief overview]
+
+## Details
+[Detailed information]
+
+## Recommendations
+[Actionable suggestions]
+\`\`\`
+
+## Examples
+
+### Example 1: [Use Case]
+
+[Description of how to use this agent]
+
+### Example 2: [Use Case]
+
+[Description of another use case]
 ```
 
 ##### Step AC3: 結果の表示
