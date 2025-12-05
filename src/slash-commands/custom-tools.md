@@ -296,10 +296,72 @@ Glob ツールで以下のパターンを検索:
 
 ##### Step AC2: サブエージェントの作成
 
-Bash ツールで以下を実行:
+1. **ディレクトリ確認**:
+   - `.claude/agents/` ディレクトリが存在するか確認
+   - 存在しない場合は Bash で `mkdir -p .claude/agents` を実行
 
-```bash
-npx tsx .cc-craft-kit/commands/agent/create.ts "$3" "$4"
+2. **重複チェック**:
+   - Glob ツールで `.claude/agents/{NAME}.md` が存在するか確認
+   - 存在する場合はエラーを表示して処理を中断
+
+3. **テンプレート生成**:
+   - Write ツールで `.claude/agents/{NAME}.md` を作成
+   - 以下のテンプレートを使用:
+
+```markdown
+---
+name: {NAME}
+description: {DESCRIPTION}
+tools: Read, Grep, Glob, Edit, Write, Bash
+model: sonnet
+---
+
+# {NAME（パスカルケースに変換）} Agent
+
+You are a specialized agent for {DESCRIPTION（小文字）}.
+
+## Your Responsibilities
+
+1. **[Responsibility 1]**
+   - [Detail 1]
+   - [Detail 2]
+
+2. **[Responsibility 2]**
+   - [Detail 1]
+   - [Detail 2]
+
+## Guidelines
+
+- [Guideline 1]
+- [Guideline 2]
+- [Guideline 3]
+
+## Output Format
+
+Provide your output in a clear, structured format:
+
+\`\`\`markdown
+# [Report Title]
+
+## Summary
+[Brief overview]
+
+## Details
+[Detailed information]
+
+## Recommendations
+[Actionable suggestions]
+\`\`\`
+
+## Examples
+
+### Example 1: [Use Case]
+
+[Description of how to use this agent]
+
+### Example 2: [Use Case]
+
+[Description of another use case]
 ```
 
 ##### Step AC3: 結果の表示
