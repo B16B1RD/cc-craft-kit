@@ -233,3 +233,76 @@ When reporting analysis results, use this format:
 - **Use ESLint auto-fix carefully** - review changes before committing
 - **Configure rules appropriate for the project** - don't over-lint
 - **Integrate into CI/CD pipeline** for continuous quality checks
+
+---
+
+## cc-craft-kit Configuration Reference
+
+This section describes the specific TypeScript and ESLint configuration used in cc-craft-kit.
+
+### Configuration Files
+
+| File | Description |
+|------|-------------|
+| `tsconfig.json` | TypeScript compiler configuration |
+| `eslint.config.mjs` | ESLint configuration (flat config format) |
+
+### TypeScript Configuration Highlights
+
+```json
+// tsconfig.json key settings
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
+```
+
+### ESLint Configuration Highlights
+
+cc-craft-kit uses ESLint flat config (`eslint.config.mjs`):
+
+```javascript
+// Key rules enforced
+export default [
+  {
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-unused-vars': ['error', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_'
+      }],
+      '@typescript-eslint/explicit-function-return-type': 'off'
+    }
+  }
+];
+```
+
+### Common Validation Commands
+
+```bash
+# TypeScript type checking
+npm run typecheck
+
+# ESLint checking
+npm run lint
+
+# ESLint with auto-fix
+npm run lint -- --fix
+```
+
+### Source File Location
+
+- TypeScript source: `src/` directory
+- Runtime files: `.cc-craft-kit/` directory (synced from src)
+- Test files: `src/**/*.test.ts`
