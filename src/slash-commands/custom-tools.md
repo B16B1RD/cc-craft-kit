@@ -111,13 +111,21 @@ argument-hint: "<type> <subcommand> [args...]"
 
 ##### Step SL1: スキル一覧の取得
 
-Bash ツールで以下を実行:
+Glob ツールで以下のパターンを検索:
 
-```bash
-npx tsx .cc-craft-kit/commands/skill/list.ts
+```
+.claude/skills/*/SKILL.md
 ```
 
-##### Step SL2: 結果の表示
+##### Step SL2: 各ファイルの情報抽出
+
+見つかった各 `SKILL.md` ファイルに対して Read ツールで先頭 50 行を読み込み、以下の情報を抽出:
+
+- **名前**: 親ディレクトリ名（例: `.claude/skills/pr-creator/SKILL.md` → `pr-creator`）
+- **説明**: ファイル冒頭の `# {タイトル}` の直後の段落（1行目の説明文）
+- **場所**: `.claude/skills/{名前}/`
+
+##### Step SL3: 結果の表示
 
 ```
 # スキル一覧
