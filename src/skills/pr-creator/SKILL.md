@@ -345,3 +345,23 @@ requirements → design → implementation → review（PR 作成）→ complete
 3. **PR レビュー**: GitHub 上でコードレビュー
 4. **PR マージ**: GitHub Web UI でマージ
 5. **completed フェーズ移行**: `/cft:spec-phase <spec-id> completed` でブランチ削除・Issue クローズ
+
+---
+
+## 関連スキルとサブエージェント
+
+### 関連スキル
+
+| スキル名 | 説明 | 連携ポイント |
+|---------|------|-------------|
+| `git-operations` | Git 操作ヘルパー | ブランチ作成・コミット履歴の確認 |
+| `typescript-eslint` | 型チェック・リント | PR 作成前の品質チェック |
+| `database-schema-validator` | スキーマ検証 | DB 変更を含む PR の検証 |
+
+### 関連サブエージェント
+
+| サブエージェント | 説明 | 連携ポイント |
+|----------------|------|-------------|
+| `code-reviewer` | コードレビュー支援 | PR 作成前のセルフレビュー |
+| `refactoring-assistant` | リファクタリング支援 | PR に含めるリファクタリング内容の確認 |
+| `test-generator` | テスト生成 | PR に含めるテストの自動生成 |
