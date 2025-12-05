@@ -544,3 +544,59 @@ npx tsx .cc-craft-kit/core/migrations/run.ts
 # Check database integrity
 sqlite3 .cc-craft-kit/cc-craft-kit.db "PRAGMA integrity_check;"
 ```
+
+---
+
+## cc-craft-kit Integration
+
+### Invocation Method
+
+This skill is invoked manually when needed:
+
+```bash
+# Via slash command
+/cft:schema-validate
+
+# Via Skill tool
+Skill(database-schema-validator)
+```
+
+### Project-Specific Settings
+
+| Setting | File | Description |
+|---------|------|-------------|
+| Schema Definition | `src/core/schema.ts` | Kysely type definitions |
+| Migrations | `.cc-craft-kit/core/migrations/` | Database migration files |
+| Database File | `.cc-craft-kit/cc-craft-kit.db` | SQLite database |
+
+### Related Commands
+
+| Command | Description |
+|---------|-------------|
+| `/cft:lint-check` | Run TypeScript/ESLint checks (includes schema type validation) |
+| `npm run typecheck` | Validate TypeScript types including schema |
+| `npm run sync:dogfood` | Sync source files (includes schema.ts) |
+
+### Integration with SDD Workflow
+
+Database schema validation is typically used at the following points:
+
+1. **design Phase**: Validate schema changes before implementation
+2. **implementation Phase**: Ensure migrations match schema types
+3. **review Phase**: Final schema consistency check before PR
+
+### Typical Workflow
+
+```bash
+# 1. Check current schema types
+npm run typecheck
+
+# 2. Validate database integrity
+sqlite3 .cc-craft-kit/cc-craft-kit.db "PRAGMA integrity_check;"
+
+# 3. Run schema validation skill
+Skill(database-schema-validator)
+
+# 4. If issues found, fix schema.ts or migrations
+# 5. Re-run validation
+```
