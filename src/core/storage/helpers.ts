@@ -77,14 +77,20 @@ export function getSpecWithGitHubInfo(
  * @param baseDir - ベースディレクトリ
  * @returns Spec と GitHub 情報の配列
  */
+/**
+ * getSpecsWithGitHubInfo のオプション
+ */
+export interface GetSpecsWithGitHubInfoOptions {
+  phase?: SpecPhase;
+  branchName?: string;
+  includeAllBranches?: boolean;
+  limit?: number;
+  orderBy?: 'created_at' | 'updated_at';
+  orderDirection?: 'asc' | 'desc';
+}
+
 export function getSpecsWithGitHubInfo(
-  options?: {
-    phase?: SpecPhase;
-    branchName?: string;
-    limit?: number;
-    orderBy?: 'created_at' | 'updated_at';
-    orderDirection?: 'asc' | 'desc';
-  },
+  options?: GetSpecsWithGitHubInfoOptions,
   baseDir?: string
 ): SpecWithGitHub[] {
   let specs = loadSpecs(baseDir);
@@ -103,8 +109,8 @@ export function getSpecsWithGitHubInfo(
     specs = specs.filter((s) => s.phase === options.phase);
   }
 
-  // ブランチフィルタリング
-  if (options?.branchName) {
+  // ブランチフィルタリング（includeAllBranches が true の場合はスキップ）
+  if (options?.branchName && !options?.includeAllBranches) {
     const branchName = options.branchName;
     specs = specs.filter(
       (s) => s.branch_name === branchName || s.branch_name === 'main' || s.branch_name === 'develop'
