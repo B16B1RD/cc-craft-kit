@@ -3,10 +3,6 @@ import { Kysely, SqliteDialect, sql } from 'kysely';
 import type { Database as DatabaseSchema } from './schema.js';
 import path from 'path';
 import fs from 'fs';
-import {
-  checkDatabaseIntegrity,
-  formatIntegrityCheckResult,
-} from '../validators/database-integrity-checker.js';
 
 /**
  * データベース接続設定
@@ -67,67 +63,12 @@ let dbInstance: Kysely<DatabaseSchema> | null = null;
 let dbPath: string | null = null;
 
 /**
- * 整合性チェック実行フラグ（初回のみ実行）
- */
-let integrityCheckDone = false;
-
-/**
  * データベース整合性チェック（非ブロッキング）
  *
- * バックグラウンドで整合性チェックを実行し、警告があれば表示します。
- * データベース破損やファイル不整合が検出された場合のみエラーメッセージを出力します。
+ * @deprecated JSON ストレージへの移行に伴い、この機能は無効化されています。
  */
-async function runIntegrityCheck(db: Kysely<DatabaseSchema>): Promise<void> {
-  if (integrityCheckDone) {
-    return; // 既にチェック済み
-  }
-
-  integrityCheckDone = true;
-
-  // テスト実行時はスキップ（独自のデータベースセットアップを行うため）
-  if (process.env.E2E_TEST === 'true' || process.env.NODE_ENV === 'test') {
-    return;
-  }
-
-  try {
-    const specsDir = path.join(process.cwd(), '.cc-craft-kit', 'specs');
-
-    // ディレクトリが存在しない場合はスキップ
-    if (!fs.existsSync(specsDir)) {
-      return;
-    }
-
-    const result = await checkDatabaseIntegrity(db, specsDir);
-
-    // エラーがある場合は警告表示
-    if (!result.isValid) {
-      console.warn('\n⚠️  Database integrity check failed:');
-      console.warn(formatIntegrityCheckResult(result));
-      console.warn(
-        '\nRun `npx tsx .cc-craft-kit/scripts/repair-database.ts` to repair the database.\n'
-      );
-    }
-
-    // 警告のみの場合は簡潔に表示
-    if (result.isValid && result.warnings.length > 0) {
-      console.warn('\n⚠️  Database integrity warnings:');
-      for (const warning of result.warnings) {
-        console.warn(`  - ${warning}`);
-      }
-      console.warn(
-        '\nRun `npx tsx .cc-craft-kit/scripts/repair-database.ts` to fix these issues.\n'
-      );
-    }
-  } catch (error) {
-    // テーブルが存在しない場合はスキップ（マイグレーション前の状態）
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes('no such table')) {
-      return;
-    }
-
-    // 整合性チェック自体の失敗は警告のみ（データベース操作は継続）
-    console.warn('⚠️  Integrity check failed:', errorMessage);
-  }
+async function runIntegrityCheck(_db: Kysely<DatabaseSchema>): Promise<void> {
+  // JSON ストレージ移行後は整合性チェックは不要
 }
 
 /**
@@ -191,7 +132,6 @@ export async function closeDatabase(): Promise<void> {
     await dbInstance.destroy();
     dbInstance = null;
     dbPath = null;
-    integrityCheckDone = false; // 次回接続時に再度チェック
   }
 }
 
