@@ -298,3 +298,50 @@ gh pr create --title "タイトル" --body "本文"
 
 - [GitHub CLI - PR 作成](https://cli.github.com/manual/gh_pr_create)
 - [CLAUDE.md - スキルシステム](../../CLAUDE.md#サブエージェントとスキルの使用方針)
+
+---
+
+## cc-craft-kit との統合
+
+### 起動方式
+
+このスキルは以下のタイミングで自動実行されます:
+
+- `/cft:spec-phase <spec-id> review` 実行時
+- 仕様書の review フェーズ移行時
+
+手動実行:
+
+```bash
+# Skill ツールで直接実行
+Skill(pr-creator)
+```
+
+### プロジェクト固有設定
+
+| 設定項目 | ファイル | 説明 |
+|---------|--------|------|
+| ベースブランチ | `.env` → `BASE_BRANCH` | PR のマージ先（デフォルト: `develop`） |
+| GitHub 統合設定 | `.env` → `GITHUB_OWNER`, `GITHUB_REPO` | リポジトリ情報 |
+
+### 関連コマンド
+
+| コマンド | 説明 |
+|---------|------|
+| `/cft:spec-phase <spec-id> review` | review フェーズ移行で自動 PR 作成 |
+| `/cft:pr-cleanup <spec-id>` | PR マージ後のブランチ削除と後処理 |
+| `/cft:github-init <owner> <repo>` | GitHub 統合の初期設定 |
+
+### 仕様駆動開発（SDD）との連携
+
+cc-craft-kit の SDD ワークフローでは、以下の流れで PR が作成されます:
+
+```
+requirements → design → implementation → review（PR 作成）→ completed
+```
+
+1. **implementation フェーズ**: コード実装・タスク完了
+2. **review フェーズ移行**: 品質チェック（型チェック・ESLint）通過後、自動 PR 作成
+3. **PR レビュー**: GitHub 上でコードレビュー
+4. **PR マージ**: GitHub Web UI でマージ
+5. **completed フェーズ移行**: `/cft:spec-phase <spec-id> completed` でブランチ削除・Issue クローズ
