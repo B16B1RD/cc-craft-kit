@@ -583,3 +583,23 @@ Git operations are automated at various points in the SDD workflow:
 /cft:spec-phase <spec-id> completed
 # (Branch deleted, Issue closed)
 ```
+
+---
+
+## Related Skills and Subagents
+
+### Related Skills
+
+| Skill | Description | Integration Point |
+|-------|-------------|-------------------|
+| `pr-creator` | PR creation | Creates PR from current branch |
+| `typescript-eslint` | Type checking and linting | Quality check before commit |
+| `database-schema-validator` | Schema validation | Validate DB changes before commit |
+
+### Related Subagents
+
+| Subagent | Description | Integration Point |
+|----------|-------------|-------------------|
+| `code-reviewer` | Code review support | Review changes before commit |
+| `refactoring-assistant` | Refactoring support | Refactoring before commit |
+| `test-generator` | Test generation | Generate tests before commit |
