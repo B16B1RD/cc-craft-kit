@@ -74,13 +74,7 @@ npx tsx .cc-craft-kit/commands/status/info.ts
 gh repo view {github.owner}/{github.repo} --json name,description,url --jq '.name + " (" + .url + ")"' 2>/dev/null || echo "GitHub CLI not configured"
 ```
 
-### Step 3: DB 整合性チェック
-
-Skill ツールで `database-schema-validator` スキルを実行し、DB 整合性を確認。
-
-警告がある場合は、警告メッセージを記録。
-
-### Step 4: 結果の表示
+### Step 3: 結果の表示
 
 以下のフォーマットで結果を表示してください。
 
