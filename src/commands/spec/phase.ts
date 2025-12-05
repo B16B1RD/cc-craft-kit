@@ -84,7 +84,7 @@ export async function updateSpecPhase(
   console.log('');
 
   // GitHub Issue 自動リカバリー（フェーズ更新前に実行）
-  await ensureGitHubIssue(db, spec.id);
+  await ensureGitHubIssue(spec.id);
 
   // ブランチ切り替え（仕様書の branch_name が設定されている場合のみ）
   if (spec.branch_name) {

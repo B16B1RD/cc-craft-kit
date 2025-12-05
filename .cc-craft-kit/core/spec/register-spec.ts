@@ -1,12 +1,12 @@
 /**
  * 仕様書登録コア機能
  *
- * 責務: DB INSERT + イベント発火のみ
+ * 責務: JSON ストレージへの追加 + イベント発火のみ
  * CLI エントリポイントとは分離してテスト可能にする
  */
 
 import { z } from 'zod';
-import { getDatabase } from '../database/connection.js';
+import { addSpec } from '../storage/index.js';
 import { getEventBusAsync } from '../workflow/event-bus.js';
 
 /**
@@ -33,50 +33,35 @@ export interface RegisterResult {
 }
 
 /**
- * 仕様書をデータベースに登録し、イベントを発火
+ * 仕様書を JSON ストレージに登録し、イベントを発火
  */
 export async function registerSpec(args: RegisterArgs): Promise<RegisterResult> {
-  const db = getDatabase();
-  const now = new Date().toISOString();
-
   try {
-    // 1. DB INSERT
-    await db
-      .insertInto('specs')
-      .values({
-        id: args.id,
-        name: args.name,
-        description: args.description || null,
-        phase: 'requirements',
-        branch_name: args.branchName,
-        created_at: now,
-        updated_at: now,
-      })
-      .execute();
+    // 1. JSON ストレージに追加
+    const spec = addSpec({
+      id: args.id,
+      name: args.name,
+      description: args.description || null,
+      phase: 'requirements',
+      branch_name: args.branchName,
+    });
 
     // 2. spec.created イベント発火
     const eventBus = await getEventBusAsync();
     await eventBus.emit(
-      eventBus.createEvent('spec.created', args.id, {
-        name: args.name,
-        description: args.description || null,
-        phase: 'requirements',
+      eventBus.createEvent('spec.created', spec.id, {
+        name: spec.name,
+        description: spec.description,
+        phase: spec.phase,
       })
     );
 
     return {
       success: true,
-      specId: args.id,
+      specId: spec.id,
       message: 'Spec registered successfully',
     };
   } catch (error) {
-    // エラー時は DB レコードを削除（ロールバック）
-    try {
-      await db.deleteFrom('specs').where('id', '=', args.id).execute();
-    } catch {
-      // ロールバック失敗は無視（レコードが存在しない可能性）
-    }
-
     return {
       success: false,
       error: error instanceof Error ? error.message : String(error),

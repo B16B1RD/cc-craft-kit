@@ -63,9 +63,10 @@ export interface GetStatusOptions {
  * @param options - オプション（ブランチ名など）
  * @returns specs と logs 情報
  */
-export function getStatusFromStorage(
-  options: GetStatusOptions = {}
-): { specs: SpecsInfo; logs: LogsInfo } {
+export function getStatusFromStorage(options: GetStatusOptions = {}): {
+  specs: SpecsInfo;
+  logs: LogsInfo;
+} {
   // 現在のブランチの仕様書のみ取得（別ブランチの仕様書ファイル読み取りエラーを防止）
   const branchName = options.branchName ?? getCurrentBranch();
   const allSpecs = getSpecsWithGitHubInfo({ branchName });

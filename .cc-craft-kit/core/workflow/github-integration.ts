@@ -4,8 +4,6 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { Kysely } from 'kysely';
-import { Database } from '../database/schema.js';
 import { EventBus, WorkflowEvent } from './event-bus.js';
 import { GitHubClient } from '../../integrations/github/client.js';
 import { GitHubIssues } from '../../integrations/github/issues.js';
@@ -13,11 +11,14 @@ import { GitHubProjects } from '../../integrations/github/projects.js';
 import { GitHubSyncService } from '../../integrations/github/sync.js';
 import { resolveProjectId } from '../../integrations/github/project-resolver.js';
 import { DynamicStatusMapper } from '../../integrations/github/phase-status-mapper.js';
-import type { SpecPhase } from '../database/schema.js';
 import { SubIssueManager } from '../../integrations/github/sub-issues.js';
 import { parseTaskListFromSpec } from '../utils/task-parser.js';
 import { getErrorHandler } from '../errors/error-handler.js';
-import { getSpecWithGitHubInfo } from '../database/helpers.js';
+import {
+  getSpecWithGitHubInfo,
+  getGitHubSyncByEntity,
+  type SpecPhase,
+} from '../storage/index.js';
 import {
   detectChanges,
   buildChangelogComment,
@@ -88,7 +89,7 @@ function getGitHubConfig(ccCraftKitDir: string): { owner: string; repo: string }
 /**
  * GitHub統合のイベントハンドラーを登録
  */
-export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely<Database>): void {
+export function registerGitHubIntegrationHandlers(eventBus: EventBus): void {
   // spec.created → GitHub Issue自動作成
   eventBus.on<{ name: string; description: string | null; phase: string }>(
     'spec.created',
@@ -144,7 +145,7 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
         const client = new GitHubClient({ token: githubToken });
         const issues = new GitHubIssues(client);
         const projects = new GitHubProjects(client);
-        const syncService = new GitHubSyncService(db, issues, projects);
+        const syncService = new GitHubSyncService(issues, projects);
 
         // syncSpecToIssue メソッドで Issue 作成（重複チェック込み）
         const issueNumber = await syncService.syncSpecToIssue({
@@ -223,7 +224,7 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
           return;
         }
 
-        const spec = await getSpecWithGitHubInfo(db, event.specId);
+        const spec = getSpecWithGitHubInfo(event.specId);
 
         if (!spec || !spec.github_issue_number) {
           return;
@@ -368,13 +369,8 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
         // ========== ここから新規追加: Project ステータス更新 ==========
 
         // Project ステータス更新
-        // github_sync テーブルから project_item_id を取得
-        const projectSync = await db
-          .selectFrom('github_sync')
-          .where('entity_id', '=', spec.id)
-          .where('entity_type', '=', 'project')
-          .selectAll()
-          .executeTakeFirst();
+        // JSON ストレージから project_item_id を取得
+        const projectSync = getGitHubSyncByEntity(spec.id, 'project');
 
         if (projectSync) {
           try {
@@ -507,7 +503,7 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
             }
 
             // Sub Issue を作成（specId を含めて親 Issue 関連性を記録）
-            const subIssueManager = new SubIssueManager(db);
+            const subIssueManager = new SubIssueManager();
             await subIssueManager.createSubIssuesFromTaskList({
               owner: githubConfig.owner,
               repo: githubConfig.repo,
@@ -535,11 +531,11 @@ export function registerGitHubIntegrationHandlers(eventBus: EventBus, db: Kysely
         // completed フェーズで pr-cleanup 処理を実行し、Issue をクローズ
         if (event.data.newPhase === 'completed') {
           try {
-            // pr-cleanup 処理を実行（ブランチ削除、DB 更新）
+            // pr-cleanup 処理を実行（ブランチ削除、JSON ストレージ更新）
             const { cleanupMergedPullRequest } = await import(
               '../../integrations/github/pr-cleanup.js'
             );
-            const cleanupResult = await cleanupMergedPullRequest(db, spec.id);
+            const cleanupResult = await cleanupMergedPullRequest(spec.id);
 
             if (cleanupResult.success) {
               console.log(`✓ PR cleanup completed: PR #${cleanupResult.prNumber}`);
@@ -619,7 +615,7 @@ ${cleanupResult.success ? `**PR:** #${cleanupResult.prNumber} (merged at ${clean
         return;
       }
 
-      const spec = await getSpecWithGitHubInfo(db, event.specId);
+      const spec = getSpecWithGitHubInfo(event.specId);
 
       if (!spec || !spec.github_issue_number) {
         return;
@@ -674,7 +670,7 @@ ${data.message}
         return;
       }
 
-      const spec = await getSpecWithGitHubInfo(db, event.specId);
+      const spec = getSpecWithGitHubInfo(event.specId);
 
       if (!spec || !spec.github_issue_number) {
         return;
@@ -738,7 +734,7 @@ ${data.solution}
         return;
       }
 
-      const spec = await getSpecWithGitHubInfo(db, event.specId);
+      const spec = getSpecWithGitHubInfo(event.specId);
 
       if (!spec || !spec.github_issue_number) {
         return;
@@ -800,7 +796,7 @@ ${data.content}
         return;
       }
 
-      const spec = await getSpecWithGitHubInfo(db, event.specId);
+      const spec = getSpecWithGitHubInfo(event.specId);
 
       if (!spec || !spec.github_issue_number) {
         return;
@@ -907,13 +903,8 @@ ${data.content}
         return;
       }
 
-      // GitHub Projects 同期情報を取得
-      const projectSync = await db
-        .selectFrom('github_sync')
-        .select(['github_id'])
-        .where('entity_id', '=', event.specId)
-        .where('entity_type', '=', 'project')
-        .executeTakeFirst();
+      // GitHub Projects 同期情報を取得（JSON ストレージから）
+      const projectSync = getGitHubSyncByEntity(event.specId, 'project');
 
       if (!projectSync) {
         // Project に追加されていない場合はスキップ
@@ -1014,13 +1005,8 @@ ${data.content}
           return;
         }
 
-        // Project 同期情報を取得
-        const projectSync = await db
-          .selectFrom('github_sync')
-          .where('entity_id', '=', event.specId)
-          .where('entity_type', '=', 'project')
-          .selectAll()
-          .executeTakeFirst();
+        // Project 同期情報を取得（JSON ストレージから）
+        const projectSync = getGitHubSyncByEntity(event.specId, 'project');
 
         if (!projectSync) {
           // Project に追加されていない場合はスキップ
@@ -1131,13 +1117,13 @@ ${data.content}
         console.log(
           `[task.completed] SubIssueManager.handleTaskCompletion 呼び出し: taskId=${taskId}`
         );
-        const subIssueManager = new SubIssueManager(db);
+        const subIssueManager = new SubIssueManager();
         await subIssueManager.handleTaskCompletion(taskId, githubToken);
 
         console.log(`[task.completed] ハンドラー完了: taskId=${taskId}`);
 
         // GitHub Projects ステータス更新を試みる（Done）
-        await updateSubIssueProjectStatus(db, taskId, githubConfig, githubToken, 'Done');
+        await updateSubIssueProjectStatus(taskId, githubConfig, githubToken, 'Done');
       } catch (error) {
         // Sub Issue が存在しない場合は警告のみ
         if (error instanceof Error && error.message.includes('Sub issue not found')) {
@@ -1200,7 +1186,7 @@ ${data.content}
 
         // GitHub Projects ステータスを In Progress に更新
         console.log(`[task.started] Projects ステータスを In Progress に更新: taskId=${taskId}`);
-        await updateSubIssueProjectStatus(db, taskId, githubConfig, githubToken, 'In Progress');
+        await updateSubIssueProjectStatus(taskId, githubConfig, githubToken, 'In Progress');
 
         console.log(`[task.started] ハンドラー完了: taskId=${taskId}`);
       } catch (error) {
@@ -1229,7 +1215,6 @@ ${data.content}
  * @param status 'In Progress' または 'Done'
  */
 async function updateSubIssueProjectStatus(
-  db: Kysely<Database>,
   taskId: string,
   githubConfig: { owner: string; repo: string },
   githubToken: string,
@@ -1253,13 +1238,8 @@ async function updateSubIssueProjectStatus(
       return;
     }
 
-    // 2. github_sync から Sub Issue の node_id を取得
-    const syncRecord = await db
-      .selectFrom('github_sync')
-      .selectAll()
-      .where('entity_id', '=', taskId)
-      .where('entity_type', '=', 'sub_issue')
-      .executeTakeFirst();
+    // 2. JSON ストレージから Sub Issue の node_id を取得
+    const syncRecord = getGitHubSyncByEntity(taskId, 'sub_issue');
 
     if (!syncRecord || !syncRecord.github_node_id) {
       console.log('No Sub Issue node_id found, skipping Projects status update');

@@ -3,10 +3,9 @@
  */
 
 import { execSync, spawnSync } from 'node:child_process';
-import { Kysely } from 'kysely';
-import { Database } from '../database/schema.js';
 import { EventBus, WorkflowEvent } from './event-bus.js';
 import { getErrorHandler } from '../errors/error-handler.js';
+import { getSpec } from '../storage/index.js';
 
 /**
  * フェーズ型定義
@@ -247,8 +246,7 @@ async function gitCommit(
  * フェーズ変更時の自動コミット処理
  */
 async function handlePhaseChangeCommit(
-  event: WorkflowEvent<{ oldPhase: string; newPhase: string }>,
-  db: Kysely<Database>
+  event: WorkflowEvent<{ oldPhase: string; newPhase: string }>
 ): Promise<void> {
   try {
     // Gitリポジトリ確認
@@ -271,12 +269,8 @@ async function handlePhaseChangeCommit(
       return;
     }
 
-    // 仕様書取得
-    const spec = await db
-      .selectFrom('specs')
-      .where('id', '=', event.specId)
-      .selectAll()
-      .executeTakeFirst();
+    // 仕様書取得（JSON ストレージから）
+    const spec = getSpec(event.specId);
 
     if (!spec) {
       return;
@@ -347,8 +341,7 @@ async function handlePhaseChangeCommit(
  * 仕様書作成時の自動コミット処理
  */
 async function handleSpecCreatedCommit(
-  event: WorkflowEvent<{ name: string; description: string | null; phase: string }>,
-  db: Kysely<Database>
+  event: WorkflowEvent<{ name: string; description: string | null; phase: string }>
 ): Promise<void> {
   try {
     // Gitリポジトリ確認
@@ -364,12 +357,8 @@ async function handleSpecCreatedCommit(
       return;
     }
 
-    // 仕様書取得
-    const spec = await db
-      .selectFrom('specs')
-      .where('id', '=', event.specId)
-      .selectAll()
-      .executeTakeFirst();
+    // 仕様書取得（JSON ストレージから）
+    const spec = getSpec(event.specId);
 
     if (!spec) {
       return;
@@ -417,12 +406,12 @@ async function handleSpecCreatedCommit(
 /**
  * Git統合のイベントハンドラーを登録
  */
-export function registerGitIntegrationHandlers(eventBus: EventBus, db: Kysely<Database>): void {
+export function registerGitIntegrationHandlers(eventBus: EventBus): void {
   // spec.created → Git自動コミット
   eventBus.on<{ name: string; description: string | null; phase: string }>(
     'spec.created',
     async (event: WorkflowEvent<{ name: string; description: string | null; phase: string }>) => {
-      await handleSpecCreatedCommit(event, db);
+      await handleSpecCreatedCommit(event);
     }
   );
 
@@ -430,7 +419,7 @@ export function registerGitIntegrationHandlers(eventBus: EventBus, db: Kysely<Da
   eventBus.on<{ oldPhase: string; newPhase: string }>(
     'spec.phase_changed',
     async (event: WorkflowEvent<{ oldPhase: string; newPhase: string }>) => {
-      await handlePhaseChangeCommit(event, db);
+      await handlePhaseChangeCommit(event);
     }
   );
 }

@@ -179,7 +179,7 @@ export class GitHubSyncService {
       if (existsSync(specPath)) {
         try {
           const checkboxSync = new CheckboxSyncService();
-          const result = await checkboxSync.syncToSpec(spec.id, specPath, issue.body);
+          const result = await checkboxSync.syncToSpec(spec.id, specPath, issue.body as string);
 
           if (result.success && result.changes.length > 0) {
             const summary = formatCheckboxChangeSummary(result.changes);

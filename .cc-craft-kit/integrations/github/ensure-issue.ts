@@ -7,13 +7,12 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { Kysely } from 'kysely';
-import { Database } from '../../core/database/schema.js';
 import { GitHubClient } from './client.js';
 import { GitHubIssues } from './issues.js';
 import { GitHubProjects } from './projects.js';
 import { GitHubSyncService } from './sync.js';
 import { resolveProjectId } from './project-resolver.js';
+import { getSpecWithGitHubInfo, appendLog } from '../../core/storage/index.js';
 
 /**
  * GitHub設定を取得
@@ -54,14 +53,10 @@ export interface EnsureGitHubIssueResult {
  * 仕様書に対応する GitHub Issue が存在するか確認し、
  * 存在しない場合は自動的に作成する
  *
- * @param db - Kysely データベースインスタンス
  * @param specId - 仕様書 ID
  * @returns Issue 番号と作成フラグ
  */
-export async function ensureGitHubIssue(
-  db: Kysely<Database>,
-  specId: string
-): Promise<EnsureGitHubIssueResult> {
+export async function ensureGitHubIssue(specId: string): Promise<EnsureGitHubIssueResult> {
   // 1. GitHub 設定チェック
   const githubToken = process.env.GITHUB_TOKEN;
   if (!githubToken) {
@@ -75,20 +70,11 @@ export async function ensureGitHubIssue(
     return { issueNumber: null, wasCreated: false };
   }
 
-  // 2. 仕様書情報を取得（github_sync との JOIN）
-  const specWithGitHub = await db
-    .selectFrom('specs')
-    .leftJoin('github_sync', (join) =>
-      join
-        .onRef('github_sync.entity_id', '=', 'specs.id')
-        .on('github_sync.entity_type', '=', 'spec')
-    )
-    .where('specs.id', '=', specId)
-    .select(['specs.phase', 'specs.name', 'github_sync.github_number as github_issue_number'])
-    .executeTakeFirst();
+  // 2. 仕様書情報を取得（JSON ストレージから）
+  const specWithGitHub = getSpecWithGitHubInfo(specId);
 
   if (!specWithGitHub) {
-    console.warn(`⚠️  Spec ${specId} not found in database`);
+    console.warn(`⚠️  Spec ${specId} not found in storage`);
     return { issueNumber: null, wasCreated: false };
   }
 
@@ -100,7 +86,7 @@ export async function ensureGitHubIssue(
 
   // 4. Issue 存在チェック
   if (specWithGitHub.github_issue_number) {
-    // データベースに Issue 番号が記録されている場合は、そのまま返す（API 呼び出しを削減）
+    // JSON ストレージに Issue 番号が記録されている場合は、そのまま返す（API 呼び出しを削減）
     // Issue の状態確認は必要時のみ行う（status コマンド等）
     return { issueNumber: specWithGitHub.github_issue_number, wasCreated: false };
   }
@@ -113,7 +99,7 @@ export async function ensureGitHubIssue(
     const client = new GitHubClient({ token: githubToken });
     const issues = new GitHubIssues(client);
     const projects = new GitHubProjects(client);
-    const syncService = new GitHubSyncService(db, issues, projects);
+    const syncService = new GitHubSyncService(issues, projects);
 
     // Issue 作成
     const issueNumber = await syncService.syncSpecToIssue({
@@ -145,19 +131,15 @@ export async function ensureGitHubIssue(
 
     console.log(`✓ GitHub Issue created automatically: #${issueNumber}`);
 
-    // 7. リカバリーログ記録
-    await db
-      .insertInto('logs')
-      .values({
-        spec_id: specId,
-        task_id: null,
-        action: 'auto_recover_github_issue',
-        level: 'info',
-        message: `Auto-recovered GitHub Issue #${issueNumber} for spec ${specId}`,
-        metadata: JSON.stringify({ specId, issueNumber }),
-        timestamp: new Date().toISOString(),
-      })
-      .execute();
+    // 7. リカバリーログ記録（JSON ストレージ）
+    appendLog({
+      spec_id: specId,
+      task_id: null,
+      action: 'auto_recover_github_issue',
+      level: 'info',
+      message: `Auto-recovered GitHub Issue #${issueNumber} for spec ${specId}`,
+      metadata: { specId, issueNumber },
+    });
 
     return { issueNumber, wasCreated: true };
   } catch (error) {
@@ -165,18 +147,14 @@ export async function ensureGitHubIssue(
     console.error(`✗ Failed to auto-create GitHub Issue for spec ${specId}:`, error);
     console.log(`  Manual creation: /cft:github-issue-create ${specId.substring(0, 8)}`);
 
-    await db
-      .insertInto('logs')
-      .values({
-        spec_id: specId,
-        task_id: null,
-        action: 'auto_recover_github_issue_failed',
-        level: 'error',
-        message: `Failed to auto-create GitHub Issue for spec ${specId}`,
-        metadata: JSON.stringify({ specId, error: String(error) }),
-        timestamp: new Date().toISOString(),
-      })
-      .execute();
+    appendLog({
+      spec_id: specId,
+      task_id: null,
+      action: 'auto_recover_github_issue_failed',
+      level: 'error',
+      message: `Failed to auto-create GitHub Issue for spec ${specId}`,
+      metadata: { specId, error: String(error) },
+    });
 
     return { issueNumber: null, wasCreated: false };
   }

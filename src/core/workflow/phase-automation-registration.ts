@@ -1,12 +1,10 @@
-import { Kysely } from 'kysely';
-import { Database } from '../database/schema.js';
 import { EventBus } from './event-bus.js';
 import { PhaseAutomationHandler } from './phase-automation.js';
 
 /**
  * フェーズ自動処理のイベントハンドラーを登録
  */
-export function registerPhaseAutomationHandlers(bus: EventBus, _db: Kysely<Database>): void {
+export function registerPhaseAutomationHandlers(bus: EventBus): void {
   // PhaseAutomationHandler を作成
   const handler = new PhaseAutomationHandler();
 

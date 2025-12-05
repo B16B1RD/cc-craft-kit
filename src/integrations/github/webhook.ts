@@ -258,7 +258,7 @@ export class GitHubWebhookHandler {
 
       if (existsSync(specPath)) {
         try {
-          const checkboxSync = new CheckboxSyncService(this.db);
+          const checkboxSync = new CheckboxSyncService();
           const result = await checkboxSync.syncToSpec(specId, specPath, issue.body);
 
           if (result.success && result.changes.length > 0) {
