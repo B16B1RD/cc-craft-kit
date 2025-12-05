@@ -14,11 +14,7 @@ import { DynamicStatusMapper } from '../../integrations/github/phase-status-mapp
 import { SubIssueManager } from '../../integrations/github/sub-issues.js';
 import { parseTaskListFromSpec } from '../utils/task-parser.js';
 import { getErrorHandler } from '../errors/error-handler.js';
-import {
-  getSpecWithGitHubInfo,
-  getGitHubSyncByEntity,
-  type SpecPhase,
-} from '../storage/index.js';
+import { getSpecWithGitHubInfo, getGitHubSyncByEntity, type SpecPhase } from '../storage/index.js';
 import {
   detectChanges,
   buildChangelogComment,
