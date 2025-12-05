@@ -3,23 +3,21 @@
  * PreCompact フック処理
  *
  * Claude Code のコンテキスト圧縮（自動/手動）直前に呼び出され、
- * 実行中のワークフロー状態をデータベースに保存します。
+ * 実行中のワークフロー状態を JSON ストレージに保存します。
  *
  * このフックは .claude/settings.json の hooks.PreCompact で設定されます。
  *
  * フックの動作:
  * 1. implementation フェーズの仕様書を検索
  * 2. 仕様書の「## 8. 実装タスクリスト」から現在のタスク状態を取得
- * 3. workflow_state テーブルに UPSERT
+ * 3. workflow-state.json に UPSERT
  * 4. 標準出力に保存完了メッセージ（Claude Code へのフィードバック）
  */
 
 import '../core/config/env.js';
-import { getDatabase, closeDatabase } from '../core/database/connection.js';
-import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
-import type { WorkflowNextAction } from '../core/database/schema.js';
+import { loadSpecs, setWorkflowState, type WorkflowNextAction } from '../core/storage/index.js';
 
 interface TaskInfo {
   taskNumber: number;
@@ -112,15 +110,10 @@ function determineNextAction(tasks: TaskInfo[], currentTask: TaskInfo | null): W
 /**
  * implementation フェーズの仕様書を検索し、ワークフロー状態を取得
  */
-async function getActiveWorkflowState(): Promise<WorkflowStateInfo | null> {
-  const db = getDatabase();
-
-  // implementation フェーズの仕様書を取得
-  const implementingSpecs = await db
-    .selectFrom('specs')
-    .select(['id', 'name'])
-    .where('phase', '=', 'implementation')
-    .execute();
+function getActiveWorkflowState(): WorkflowStateInfo | null {
+  // implementation フェーズの仕様書を取得（JSON ストレージから）
+  const allSpecs = loadSpecs();
+  const implementingSpecs = allSpecs.filter((spec) => spec.phase === 'implementation');
 
   if (implementingSpecs.length === 0) {
     return null;
@@ -157,57 +150,24 @@ async function getActiveWorkflowState(): Promise<WorkflowStateInfo | null> {
 }
 
 /**
- * ワークフロー状態をデータベースに保存
+ * ワークフロー状態を JSON ストレージに保存
  */
-async function saveWorkflowState(state: WorkflowStateInfo): Promise<void> {
-  const db = getDatabase();
-  const now = new Date().toISOString();
-
-  // 既存のレコードを確認
-  const existing = await db
-    .selectFrom('workflow_state')
-    .select(['id'])
-    .where('spec_id', '=', state.specId)
-    .executeTakeFirst();
-
-  if (existing) {
-    // UPDATE
-    await db
-      .updateTable('workflow_state')
-      .set({
-        current_task_number: state.currentTaskNumber,
-        current_task_title: state.currentTaskTitle,
-        next_action: state.nextAction,
-        github_issue_number: state.githubIssueNumber,
-        saved_at: now,
-        updated_at: now,
-      })
-      .where('spec_id', '=', state.specId)
-      .execute();
-  } else {
-    // INSERT
-    await db
-      .insertInto('workflow_state')
-      .values({
-        id: randomUUID(),
-        spec_id: state.specId,
-        current_task_number: state.currentTaskNumber,
-        current_task_title: state.currentTaskTitle,
-        next_action: state.nextAction,
-        github_issue_number: state.githubIssueNumber,
-        saved_at: now,
-        updated_at: now,
-      })
-      .execute();
-  }
+function saveWorkflowStateToStorage(state: WorkflowStateInfo): void {
+  // JSON ストレージに保存（UPSERT）
+  setWorkflowState(state.specId, {
+    current_task_number: state.currentTaskNumber,
+    current_task_title: state.currentTaskTitle,
+    next_action: state.nextAction,
+    github_issue_number: state.githubIssueNumber,
+  });
 }
 
 /**
  * メイン処理
  */
-async function main(): Promise<void> {
+function main(): void {
   try {
-    const state = await getActiveWorkflowState();
+    const state = getActiveWorkflowState();
 
     if (!state) {
       // アクティブなワークフローがない場合は何も出力しない
@@ -215,7 +175,7 @@ async function main(): Promise<void> {
     }
 
     // ワークフロー状態を保存
-    await saveWorkflowState(state);
+    saveWorkflowStateToStorage(state);
 
     // Claude Code へのフィードバック（標準出力）
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -233,8 +193,6 @@ async function main(): Promise<void> {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   } catch (error) {
     console.error('PreCompact hook error:', error instanceof Error ? error.message : String(error));
-  } finally {
-    await closeDatabase();
   }
 }
 

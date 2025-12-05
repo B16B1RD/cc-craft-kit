@@ -5,7 +5,7 @@
  * 例: req → requirements, impl → implementation
  */
 
-import type { SpecPhase } from '../database/schema.js';
+import type { SpecPhase } from '../storage/index.js';
 
 /**
  * フェーズの省略形マッピング
