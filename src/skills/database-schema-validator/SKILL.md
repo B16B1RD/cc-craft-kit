@@ -482,3 +482,65 @@ When reporting validation results, use this format:
 - [ ] Foreign keys have proper `onDelete` behavior
 - [ ] Frequently queried columns are indexed
 - [ ] No unsafe migrations without data migration plan
+
+---
+
+## cc-craft-kit Schema Reference
+
+This section describes the specific schema structure used in cc-craft-kit.
+
+### Schema Definition File
+
+**Location:** `src/core/schema.ts`
+
+```typescript
+// cc-craft-kit Database Schema
+export interface Database {
+  specs: SpecsTable;
+  github_issues: GitHubIssuesTable;
+  // ... additional tables
+}
+```
+
+### Migration Files
+
+**Location:** `.cc-craft-kit/core/migrations/`
+
+```text
+.cc-craft-kit/core/migrations/
+├── 001_initial_schema.ts
+├── 002_add_github_issues.ts
+└── ...
+```
+
+### Key Tables
+
+| Table | Description | Primary Key |
+|-------|-------------|-------------|
+| `specs` | Specification documents | `id` (UUID) |
+| `github_issues` | GitHub Issue associations | `id` (auto-increment) |
+| `sub_issues` | Sub-issues for task tracking | `id` (auto-increment) |
+
+### cc-craft-kit Specific Conventions
+
+1. **UUID for Spec IDs**: Specs use UUID as primary key for uniqueness across systems
+2. **Timestamp Storage**: ISO 8601 format in TEXT columns
+3. **Foreign Key Naming**: `{entity}_id` pattern (e.g., `spec_id`, `github_issue_number`)
+4. **Nullable Fields**: Use `| null` in TypeScript, allow NULL in migrations
+
+### Database File Location
+
+**Production:** `.cc-craft-kit/cc-craft-kit.db` (SQLite)
+
+### Common Validation Commands
+
+```bash
+# Validate schema types
+npm run typecheck
+
+# Run migrations
+npx tsx .cc-craft-kit/core/migrations/run.ts
+
+# Check database integrity
+sqlite3 .cc-craft-kit/cc-craft-kit.db "PRAGMA integrity_check;"
+```
