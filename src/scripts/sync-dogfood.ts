@@ -486,6 +486,68 @@ export async function cleanDevScripts(options: SyncOptions = {}): Promise<SyncRe
 }
 
 /**
+ * 不要ディレクトリを削除（.cc-craft-kit/ 直下の不要ディレクトリ）
+ */
+export async function cleanUnusedDirectories(options: SyncOptions = {}): Promise<SyncResult> {
+  const { dryRun = false, verbose = false, baseDir = process.cwd() } = options;
+
+  const result: SyncResult = {
+    success: true,
+    copiedFiles: 0,
+    deletedFiles: 0,
+    errors: [],
+  };
+
+  // 削除対象ディレクトリリスト（固定）
+  // - backups/: 古いバックアップファイル
+  // - skills/: .claude/skills/ に統一したため不要
+  const unusedDirectories = ['backups', 'skills'];
+
+  try {
+    if (verbose) {
+      console.log('🧹 Cleaning unused directories from .cc-craft-kit/...\n');
+    }
+
+    const ccCraftKitDir = path.join(baseDir, '.cc-craft-kit');
+
+    for (const dirName of unusedDirectories) {
+      const dirPath = path.join(ccCraftKitDir, dirName);
+
+      // ディレクトリが存在するか確認
+      try {
+        await fs.access(dirPath);
+      } catch {
+        // ディレクトリが存在しない場合はスキップ
+        continue;
+      }
+
+      if (dryRun) {
+        if (verbose) {
+          console.log(`[DRY RUN] Would delete directory: ${dirPath}`);
+        }
+      } else {
+        await fs.rm(dirPath, { recursive: true, force: true });
+        if (verbose) {
+          console.log(`✓ Deleted directory: ${dirPath}`);
+        }
+      }
+      result.deletedFiles++;
+    }
+
+    if (verbose) {
+      console.log('\n📊 Unused Directories Cleanup Summary:');
+      console.log(`   Deleted: ${result.deletedFiles} directories\n`);
+    }
+
+    return result;
+  } catch (error) {
+    console.error('❌ Unused directories cleanup failed:', error);
+    result.success = false;
+    return result;
+  }
+}
+
+/**
  * 不要ファイルを削除（.cc-craft-kit/ 直下のゴミファイル）
  */
 export async function cleanUnusedFiles(options: SyncOptions = {}): Promise<SyncResult> {
@@ -573,13 +635,17 @@ export async function syncAll(options: SyncOptions = {}): Promise<boolean> {
   // 不要ファイル削除（.cc-craft-kit/ 直下）
   const unusedFilesResult = await cleanUnusedFiles(options);
 
+  // 不要ディレクトリ削除（.cc-craft-kit/ 直下の backups/, skills/ など）
+  const unusedDirsResult = await cleanUnusedDirectories(options);
+
   const success =
     sourceResult.success &&
     commandsResult.success &&
     skillsResult.success &&
     agentsResult.success &&
     cleanupResult.success &&
-    unusedFilesResult.success;
+    unusedFilesResult.success &&
+    unusedDirsResult.success;
 
   const totalCopied =
     sourceResult.copiedFiles +
@@ -588,7 +654,10 @@ export async function syncAll(options: SyncOptions = {}): Promise<boolean> {
     agentsResult.copiedFiles;
 
   const totalDeleted =
-    sourceResult.deletedFiles + cleanupResult.deletedFiles + unusedFilesResult.deletedFiles;
+    sourceResult.deletedFiles +
+    cleanupResult.deletedFiles +
+    unusedFilesResult.deletedFiles +
+    unusedDirsResult.deletedFiles;
 
   const totalErrors =
     sourceResult.errors.length +
