@@ -306,3 +306,65 @@ npm run lint -- --fix
 - TypeScript source: `src/` directory
 - Runtime files: `.cc-craft-kit/` directory (synced from src)
 - Test files: `src/**/*.test.ts`
+
+---
+
+## cc-craft-kit Integration
+
+### Invocation Method
+
+This skill is invoked automatically at key points in the SDD workflow:
+
+```bash
+# Via slash command
+/cft:lint-check
+
+# Via Skill tool
+Skill(typescript-eslint)
+```
+
+### Automatic Invocation Points
+
+| Timing | Trigger | Purpose |
+|--------|---------|---------|
+| implementation Phase Start | `/cft:spec-phase <id> impl` | Baseline code quality check |
+| review Phase Transition | `/cft:spec-phase <id> review` | Pre-PR quality gate |
+| PR Creation | `pr-creator` skill | Final quality verification |
+
+### Project-Specific Settings
+
+| Setting | File | Description |
+|---------|------|-------------|
+| TypeScript Config | `tsconfig.json` | Compiler options |
+| ESLint Config | `eslint.config.mjs` | Linting rules (flat config) |
+
+### Related Commands
+
+| Command | Description |
+|---------|-------------|
+| `/cft:lint-check` | Run TypeScript/ESLint check |
+| `npm run typecheck` | TypeScript compilation check |
+| `npm run lint` | ESLint check |
+| `npm run lint -- --fix` | Auto-fix ESLint issues |
+
+### Integration with SDD Workflow
+
+```text
+implementation Phase
+├── Baseline Check: npm run typecheck && npm run lint
+├── Implementation work
+└── Incremental checks as needed
+
+review Phase Transition
+├── Quality Gate: All checks must pass
+├── If fail → Block PR creation, show errors
+└── If pass → Proceed to PR creation
+```
+
+### Quality Gate Behavior
+
+When transitioning to review phase, this skill acts as a **quality gate**:
+
+1. **TypeScript Check**: `npm run typecheck` must exit with code 0
+2. **ESLint Check**: `npm run lint` must exit with code 0
+3. **If any check fails**: PR creation is blocked with error details
