@@ -1,6 +1,6 @@
 import { readFile } from 'fs/promises';
 import { basename } from 'path';
-import { SpecPhase } from '../database/schema.js';
+import type { SpecPhase } from '../storage/index.js';
 
 /**
  * 仕様書ファイルから抽出されたメタデータ
