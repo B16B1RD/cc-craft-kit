@@ -600,3 +600,23 @@ Skill(database-schema-validator)
 # 4. If issues found, fix schema.ts or migrations
 # 5. Re-run validation
 ```
+
+---
+
+## Related Skills and Subagents
+
+### Related Skills
+
+| Skill | Description | Integration Point |
+|-------|-------------|-------------------|
+| `typescript-eslint` | Type checking and linting | Schema type validation via `npm run typecheck` |
+| `git-operations` | Git command helpers | Track schema/migration file changes |
+| `pr-creator` | PR creation | Include schema validation in PR checklist |
+
+### Related Subagents
+
+| Subagent | Description | Integration Point |
+|----------|-------------|-------------------|
+| `code-reviewer` | Code review support | Review schema changes and migrations |
+| `refactoring-assistant` | Refactoring support | Schema refactoring suggestions |
+| `test-generator` | Test generation | Generate tests for database operations |
