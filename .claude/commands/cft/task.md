@@ -520,7 +520,66 @@ gh pr create --title "$ISSUE_TITLE" --body "Closes #$ISSUE_NUMBER" --repo "$REPO
 
 `--ready` フラグがある場合は `--draft` オプションを削除し、Ready 状態で PR を作成。
 
-#### Step D9: Issue のクローズ
+#### Step D8.5: 対応する仕様書の特定
+
+完了した Sub Issue に対応する仕様書を特定します。
+
+Glob ツールで `.cc-craft-kit/specs/*.md` を検索し、各ファイルを Read ツールで確認:
+- 「## 8. 実装タスクリスト」セクション内に `(#$ISSUE_NUMBER)` が含まれるファイルを探す
+
+仕様書が見つかった場合:
+- `SPEC_PATH` として記録
+- 次のステップ（Step D8.6）に進む
+
+仕様書が見つからない場合:
+```
+⚠️ 対応する仕様書が見つかりません（Issue #$ISSUE_NUMBER）
+   Sub Issue のクローズはスキップします
+```
+Step D8.6, D8.7 をスキップし、Step D9 に進む。
+
+#### Step D8.6: タスクリストから Sub Issue 番号の抽出
+
+仕様書の「## 8. 実装タスクリスト」セクションから、完了したタスク（`- [x]`）に紐づく Issue 番号を抽出します。
+
+正規表現パターン: `- \[x\].*\(#(\d+)\)`
+
+抽出した Issue 番号のリストを `SUB_ISSUE_NUMBERS` として記録。
+
+現在クローズ対象の Issue（`$ISSUE_NUMBER`）が `SUB_ISSUE_NUMBERS` に含まれている場合:
+- 対象 Issue は Sub Issue であると判断
+- `SUB_ISSUE_TO_CLOSE` = `$ISSUE_NUMBER`
+
+含まれていない場合:
+- 親 Issue のクローズと判断
+- Step D8.7 をスキップ
+
+#### Step D8.7: Sub Issue のクローズ
+
+`SUB_ISSUE_TO_CLOSE` が設定されている場合、Bash ツールで以下を実行:
+
+```bash
+gh issue close $SUB_ISSUE_TO_CLOSE --repo "$REPO" --comment "タスクを完了しました。PR: $PR_URL"
+```
+
+成功した場合:
+```
+✓ Sub Issue #$SUB_ISSUE_TO_CLOSE をクローズしました
+```
+
+失敗した場合（警告のみ、処理は継続）:
+```
+⚠️ Sub Issue #$SUB_ISSUE_TO_CLOSE のクローズに失敗しました（処理を継続）
+```
+
+#### Step D9: 親 Issue のクローズ（該当する場合）
+
+**注意**: Step D8.5〜D8.7 で Sub Issue をクローズした場合、このステップは**スキップ**します。
+Sub Issue のクローズ時に親 Issue をクローズすると、他の未完了タスクがある場合に問題が生じます。
+
+親 Issue のクローズは、すべてのタスクが完了し、completed フェーズに移行する際に行います（`/cft:spec phase <id> completed`）。
+
+元の実装（Sub Issue でない場合のみ実行）:
 
 Bash ツールで以下を実行:
 
