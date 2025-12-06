@@ -437,9 +437,31 @@ git commit -m "feat: $SPEC_NAME の<フェーズ日本語名>を完了"
 - PR 作成（`gh pr create`）
 
 **completed フェーズ:**
-- ベースブランチ（develop）に切り替え・最新化（`git checkout develop && git pull origin develop`）
-- ローカル作業ブランチを削除（`git branch -D "$BRANCH_NAME"`）
-- GitHub Issue クローズ（`gh issue close`）
+
+**重要**: 以下の順序で**必ず**実行すること。順序を変えてはならない。
+
+1. **まず仕様書ファイルの変更をコミット**（Step 6 の実行を確認）:
+   ```bash
+   git add ".cc-craft-kit/specs/$SPEC_ID.md"
+   git commit -m "feat: $SPEC_NAME を完了"
+   ```
+   ※ このコミットが完了するまで、次のステップに進んではならない。
+
+2. **次にベースブランチに切り替え・最新化**:
+   ```bash
+   git checkout develop
+   git pull origin develop
+   ```
+
+3. **最後にローカル作業ブランチを削除**:
+   ```bash
+   git branch -D "$BRANCH_NAME"
+   ```
+
+4. **GitHub Issue がある場合はクローズ**:
+   ```bash
+   gh issue close $GITHUB_ISSUE_NUMBER --comment "✅ 仕様書が完了しました"
+   ```
 
 ### 成功メッセージ
 
