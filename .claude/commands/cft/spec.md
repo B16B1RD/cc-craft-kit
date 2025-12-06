@@ -488,18 +488,29 @@ gh pr view "$BRANCH_NAME" --json state -q '.state' 2>/dev/null
    ```
    ※ このコミットが完了するまで、次のステップに進んではならない。
 
-2. **次にベースブランチに切り替え・最新化**:
+2. **ベースブランチに切り替え・最新化**:
    ```bash
    git checkout develop
    git pull origin develop
    ```
 
-3. **最後にローカル作業ブランチを削除**:
+3. **作業ブランチを develop にマージ**:
+   ```bash
+   git merge "$BRANCH_NAME"
+   ```
+   ※ コンフリクトが発生した場合は、エラーメッセージを表示して処理を中断する。
+
+4. **develop をプッシュ**:
+   ```bash
+   git push origin develop
+   ```
+
+5. **ローカル作業ブランチを削除**:
    ```bash
    git branch -D "$BRANCH_NAME"
    ```
 
-4. **GitHub Issue がある場合はクローズ**:
+6. **GitHub Issue がある場合はクローズ**:
    ```bash
    gh issue close $GITHUB_ISSUE_NUMBER --comment "✅ 仕様書が完了しました"
    ```
@@ -619,6 +630,20 @@ Glob + Read で仕様書ファイルを特定し、メタデータを抽出。
 1. 未コミットの変更を確認: git status
 2. 変更をスタッシュ: git stash
 3. 手動で操作: git checkout $BRANCH_NAME
+```
+
+### マージコンフリクト
+
+```
+❌ マージコンフリクトが発生しました
+
+作業ブランチを develop にマージする際にコンフリクトが発生しました。
+
+対処方法:
+1. コンフリクトを手動で解決: git status でコンフリクトファイルを確認
+2. 解決後: git add <ファイル> && git commit
+3. develop をプッシュ: git push origin develop
+4. 作業ブランチを削除: git branch -D $BRANCH_NAME
 ```
 
 ### gh CLI が見つからない
