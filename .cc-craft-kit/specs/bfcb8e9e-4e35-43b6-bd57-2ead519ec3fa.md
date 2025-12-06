@@ -1,11 +1,16 @@
+---
+id: "bfcb8e9e-4e35-43b6-bd57-2ead519ec3fa"
+name: "WebUIダッシュボード仕様書"
+phase: "completed"
+branch_name: "main"
+github_issue_number: null
+pr_url: null
+created_at: "2025-11-15T17:56:43Z"
+updated_at: "2025-11-19T22:39:18Z"
+---
+
 # WebUIダッシュボード仕様書
 
-**仕様書 ID:** bfcb8e9e-4e35-43b6-bd57-2ead519ec3fa
-**フェーズ:** completed
-**作成日時:** 2025/11/15 17:56:43
-**更新日時:** 2025/11/19 22:39:18
-
----
 
 ## 概要
 

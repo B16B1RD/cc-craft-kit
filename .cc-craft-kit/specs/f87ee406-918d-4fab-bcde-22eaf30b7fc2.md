@@ -1,11 +1,16 @@
+---
+id: "f87ee406-918d-4fab-bcde-22eaf30b7fc2"
+name: "GitHub Issue が自動で更新されない"
+phase: "completed"
+branch_name: "main"
+github_issue_number: null
+pr_url: null
+created_at: "2025-11-17T10:08:01Z"
+updated_at: "2025-11-17T10:24:53Z"
+---
+
 # GitHub Issue が自動で更新されない
 
-**仕様書 ID:** f87ee406-918d-4fab-bcde-22eaf30b7fc2
-**フェーズ:** completed
-**作成日時:** 2025/11/17 10:08:01
-**更新日時:** 2025/11/17 10:24:53
-
----
 
 ## 1. 背景と目的
 
@@ -78,14 +83,12 @@
 2. **completed フェーズでの Issue 自動クローズ**: フェーズ移行時に自動でクローズ
 3. **拡張性の向上**: プラグインがイベントを購読して独自の処理を追加可能
 4. **一貫性の向上**: すべてのコマンドが統一されたイベントフローに従う
-
 ---
 
 ## 2. 対象ユーザー
 
 - **cc-craft-kit 開発者**: 仕様駆動開発を実践する開発者
 - **プラグイン開発者**: イベントを購読してカスタム処理を追加したい開発者
-
 ---
 
 ## 3. 受け入れ基準
@@ -130,7 +133,6 @@
 - [ ] イベント発火後、ハンドラーのエラーはコマンド実行を失敗させない（現在と同じ動作）
 - [ ] GitHub API エラー時は警告のみ表示し、処理を継続
 - [ ] イベントハンドラーの処理時間は平均 500ms 以内（API 呼び出し含む）
-
 ---
 
 ## 4. 制約条件
@@ -138,7 +140,6 @@
 - **後方互換性**: 既存のコマンド動作を変更しない（イベント発火を追加するのみ）
 - **GitHub API レート制限**: 過度な API 呼び出しを避ける（バッチ処理は不要）
 - **エラーハンドリング**: イベントハンドラーのエラーはログ出力のみ、コマンド実行は継続
-
 ---
 
 ## 5. 依存関係
@@ -147,7 +148,6 @@
 - **GitHub統合ハンドラー**: `src/core/workflow/github-integration.ts`
 - **ナレッジベースコマンド**: `src/commands/knowledge/`
 - **フェーズ変更コマンド**: `src/commands/spec/phase.ts`
-
 ---
 
 ## 6. 参考情報
@@ -175,7 +175,6 @@ CLAUDE.md には既に以下の記述があります:
 > - `github.issue_updated` - GitHub Issue 更新時
 
 この仕様では、ナレッジベース系のイベント (`knowledge.*`) を追加します。
-
 ---
 
 ## 7. 設計 (Design Phase)
@@ -492,7 +491,6 @@ eventBus.on('event.type', async (event) => {
 
 5. **Phase 5: テスト実装**
    - 単体テスト、統合テスト
-
 ---
 
 ## 8. タスク分解 (Tasks Phase)
@@ -530,7 +528,6 @@ eventBus.on('event.type', async (event) => {
 - **受け入れ基準**:
   - [ ] `/cft:spec-create` 実行時に Issue が自動作成される
   - [ ] `/cft:spec-phase` 実行時に Issue が自動更新される
-
 ---
 
 ### Phase 2: completed 時の Issue クローズ
@@ -567,7 +564,6 @@ eventBus.on('event.type', async (event) => {
 - **受け入れ基準**:
   - [ ] `/cft:spec-phase <spec-id> completed` 実行時に Issue がクローズされる
   - [ ] クローズコメントが正しく追加される
-
 ---
 
 ### Phase 3: 新規イベント追加
@@ -595,7 +591,6 @@ eventBus.on('event.type', async (event) => {
 - **受け入れ基準**:
   - [ ] 各イベントデータの型定義が実装されている
   - [ ] エクスポートされている
-
 ---
 
 ### Phase 4: GitHub統合ハンドラー実装
@@ -630,7 +625,6 @@ eventBus.on('event.type', async (event) => {
 - **受け入れ基準**:
   - [ ] イベント発火時に GitHub Issue コメントが追加される
   - [ ] Tips フォーマットが正しい
-
 ---
 
 ### Phase 5: コマンド実装の修正
@@ -666,7 +660,6 @@ eventBus.on('event.type', async (event) => {
 - **受け入れ基準**:
   - [ ] `/cft:knowledge-tip` 実行時にイベントが発火される
   - [ ] GitHub Issue コメントが追加される
-
 ---
 
 ### Phase 6: テスト実装
@@ -700,7 +693,6 @@ eventBus.on('event.type', async (event) => {
 - **受け入れ基準**:
   - [ ] 完全なワークフローが正しく動作することをテスト
   - [ ] エラーケースもテスト
-
 ---
 
 ### Phase 7: ドキュメント更新
@@ -714,7 +706,6 @@ eventBus.on('event.type', async (event) => {
 - **受け入れ基準**:
   - [ ] 新規イベントがドキュメントに記載されている
   - [ ] `getEventBusAsync()` 使用の推奨が明記されている
-
 ---
 
 ### タスク総数と所要時間の見積もり
