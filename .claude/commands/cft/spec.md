@@ -426,6 +426,20 @@ git commit -m "feat: $SPEC_NAME の<フェーズ日本語名>を完了"
 - 設計詳細セクション（7.1〜7.5）を自動生成
 - タスクリストセクション（8）を自動生成
 - GitHub Sub Issue 作成（`gh issue create`）
+- **GitHub Projects に追加**（config.json の `github.project_v2.id` がある場合）:
+  ```bash
+  # 作成した Issue の Global Node ID を取得
+  ISSUE_NODE_ID=$(gh issue view <issue_number> --json id -q .id)
+  # Projects に追加
+  gh api graphql -f query='
+    mutation($projectId: ID!, $contentId: ID!) {
+      addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
+        item { id }
+      }
+    }
+  ' -f projectId="$PROJECT_V2_ID" -f contentId="$ISSUE_NODE_ID"
+  ```
+  - 失敗時は警告のみで続行（Issue 作成は成功扱い）
 
 **implementation フェーズ:**
 - タスクリストを TodoWrite に登録
