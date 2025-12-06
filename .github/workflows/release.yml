@@ -14,48 +14,32 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          cache: 'npm'
+      - name: Validate structure
+        run: |
+          echo "Validating release structure..."
 
-      - name: Install dependencies
-        run: npm ci
+          # Check required directories
+          for dir in ".claude/commands/cft" ".claude/skills" ".claude/agents" ".cc-craft-kit"; do
+            if [ ! -d "$dir" ]; then
+              echo "❌ Missing directory: $dir"
+              exit 1
+            fi
+          done
 
-      - name: Sync to dogfood environment
-        run: npm run sync:dogfood
+          echo "✅ All required directories exist"
 
       - name: Copy .env.example to archive directory
         run: cp .env.example .cc-craft-kit/.env.example
 
-      - name: Cleanup unnecessary files before archiving
+      - name: Cleanup user data before archiving
         run: |
-          # Remove development scripts
-          rm -f .cc-craft-kit/scripts/add-*.ts 2>/dev/null || true
-          rm -f .cc-craft-kit/scripts/check-*.ts 2>/dev/null || true
-          rm -f .cc-craft-kit/scripts/cleanup-*.ts 2>/dev/null || true
-          rm -f .cc-craft-kit/scripts/close-*.ts 2>/dev/null || true
-          rm -f .cc-craft-kit/scripts/delete-*.ts 2>/dev/null || true
-          rm -f .cc-craft-kit/scripts/fix-*.ts 2>/dev/null || true
-          rm -f .cc-craft-kit/scripts/import-*.ts 2>/dev/null || true
-          rm -f .cc-craft-kit/scripts/migrate-*.ts 2>/dev/null || true
-          rm -f .cc-craft-kit/scripts/monitor-*.ts 2>/dev/null || true
-          rm -f .cc-craft-kit/scripts/rebuild-*.ts 2>/dev/null || true
-          rm -f .cc-craft-kit/scripts/repair-*.ts 2>/dev/null || true
-          rm -f .cc-craft-kit/scripts/run-*.ts 2>/dev/null || true
-          rm -f .cc-craft-kit/scripts/sync-github-*.ts 2>/dev/null || true
-          rm -f .cc-craft-kit/scripts/test-*.ts 2>/dev/null || true
-          rm -f .cc-craft-kit/scripts/update-*.ts 2>/dev/null || true
-          # Remove backup and test directories
-          rm -rf .cc-craft-kit/backups 2>/dev/null || true
-          rm -rf .cc-craft-kit/quality-templates 2>/dev/null || true
           # Remove specs directory (user data)
           rm -rf .cc-craft-kit/specs 2>/dev/null || true
-          # Remove database file (user data)
-          rm -f .cc-craft-kit/cc-craft-kit.db 2>/dev/null || true
+          # Create empty specs directory
+          mkdir -p .cc-craft-kit/specs
+          touch .cc-craft-kit/specs/.gitkeep
 
       - name: Create archive
         run: |
@@ -86,7 +70,21 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: ./.cc-craft-kit.tar.gz
-          body: ${{ steps.changelog.outputs.changelog }}
+          body: |
+            ## cc-craft-kit ${{ github.ref_name }}
+
+            ### Changes
+            ${{ steps.changelog.outputs.changelog }}
+
+            ### Installation
+
+            ```bash
+            curl -fsSL https://raw.githubusercontent.com/B16B1RD/cc-craft-kit/main/scripts/install.sh | sh
+            ```
+
+            ### Requirements
+            - Claude Code CLI
+            - gh CLI (GitHub CLI)
           draft: false
           prerelease: false
           token: ${{ secrets.GITHUB_TOKEN }}

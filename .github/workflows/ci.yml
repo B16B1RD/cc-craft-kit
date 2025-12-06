@@ -7,113 +7,101 @@ on:
     branches: [main, develop]
 
 jobs:
-  lint:
+  validate:
     runs-on: ubuntu-latest
-    name: Lint
+    name: Validate Structure
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
+      - name: Validate required directories exist
+        run: |
+          echo "Checking required directories..."
 
-      - name: Install dependencies
-        run: npm ci
+          # Check .claude/commands/cft/
+          if [ ! -d ".claude/commands/cft" ]; then
+            echo "❌ Missing .claude/commands/cft/"
+            exit 1
+          fi
+          echo "✅ .claude/commands/cft/ exists"
 
-      - name: Run ESLint
-        run: npm run lint
+          # Check .claude/skills/
+          if [ ! -d ".claude/skills" ]; then
+            echo "❌ Missing .claude/skills/"
+            exit 1
+          fi
+          echo "✅ .claude/skills/ exists"
 
-  typecheck:
-    runs-on: ubuntu-latest
-    name: Type Check
+          # Check .claude/agents/
+          if [ ! -d ".claude/agents" ]; then
+            echo "❌ Missing .claude/agents/"
+            exit 1
+          fi
+          echo "✅ .claude/agents/ exists"
 
-    steps:
-      - uses: actions/checkout@v4
+          # Check .cc-craft-kit/
+          if [ ! -d ".cc-craft-kit" ]; then
+            echo "❌ Missing .cc-craft-kit/"
+            exit 1
+          fi
+          echo "✅ .cc-craft-kit/ exists"
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
+          echo ""
+          echo "All required directories exist!"
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Validate slash commands
+        run: |
+          echo "Checking slash commands..."
 
-      - name: Run TypeScript compiler
-        run: npm run typecheck
+          REQUIRED_COMMANDS="spec task github session knowledge review test status sync quality custom-tools init"
+          MISSING=""
 
-  test:
-    runs-on: ubuntu-latest
-    name: Test
+          for cmd in $REQUIRED_COMMANDS; do
+            if [ ! -f ".claude/commands/cft/${cmd}.md" ]; then
+              MISSING="$MISSING $cmd"
+            else
+              echo "✅ ${cmd}.md"
+            fi
+          done
 
-    strategy:
-      matrix:
-        node-version: [18, 20]
+          if [ -n "$MISSING" ]; then
+            echo ""
+            echo "❌ Missing commands:$MISSING"
+            exit 1
+          fi
 
-    steps:
-      - uses: actions/checkout@v4
+          echo ""
+          echo "All required slash commands exist!"
 
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+      - name: Validate skills
+        run: |
+          echo "Checking skills..."
 
-      - name: Install dependencies
-        run: npm ci
+          REQUIRED_SKILLS="pr-creator typescript-eslint database-schema-validator git-operations"
+          MISSING=""
 
-      - name: Run tests with coverage
-        run: npm run test:coverage
+          for skill in $REQUIRED_SKILLS; do
+            if [ ! -d ".claude/skills/${skill}" ]; then
+              MISSING="$MISSING $skill"
+            else
+              echo "✅ ${skill}/"
+            fi
+          done
 
-      - name: Upload coverage
-        if: matrix.node-version == 18
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage/lcov.info
-          flags: unittests
-          name: codecov-cc-craft-kit
+          if [ -n "$MISSING" ]; then
+            echo ""
+            echo "❌ Missing skills:$MISSING"
+            exit 1
+          fi
 
-  sync-check:
-    runs-on: ubuntu-latest
-    name: Sync Check
+          echo ""
+          echo "All required skills exist!"
 
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Check src/ and .cc-craft-kit/ sync
-        run: npm run check:sync
-
-  security:
-    runs-on: ubuntu-latest
-    name: Security Audit
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Run npm audit
-        run: npm audit --audit-level=moderate
-        continue-on-error: true
-
-      - name: Run Snyk security scan
-        uses: snyk/actions/node@master
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      - name: Count files
+        run: |
+          echo "=== File Statistics ==="
+          echo ""
+          echo "Slash commands: $(ls -1 .claude/commands/cft/*.md 2>/dev/null | wc -l)"
+          echo "Skills: $(ls -1d .claude/skills/*/ 2>/dev/null | wc -l)"
+          echo "Agents: $(ls -1 .claude/agents/*.md 2>/dev/null | wc -l)"
+          echo "Specs: $(ls -1 .cc-craft-kit/specs/*.md 2>/dev/null | wc -l)"
