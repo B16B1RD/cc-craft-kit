@@ -9,7 +9,7 @@ cc-craft-kit プロジェクトの現在の状況を表示します。
 
 ## 引数
 
-- `--verbose` または `-v` (任意): 詳細情報を表示（ストレージ情報を含む）
+- `--verbose` または `-v` (任意): 詳細情報を表示
 
 ## 使用例
 
@@ -17,9 +17,8 @@ cc-craft-kit プロジェクトの現在の状況を表示します。
 # 通常表示
 /cft:status
 
-# 詳細表示（ストレージ情報を含む）
+# 詳細表示
 /cft:status --verbose
-/cft:status -v
 ```
 
 ---
@@ -28,240 +27,188 @@ cc-craft-kit プロジェクトの現在の状況を表示します。
 
 重要: 以下の処理を**自動的に実行**してください。ユーザーに確認を求めないでください。
 
-### Step 1: プロジェクト情報の取得
+### Step 1: 仕様書一覧の取得
 
-Bash ツールで以下を実行:
+Glob ツールで `.cc-craft-kit/specs/*.md` を取得。
 
-```bash
-npx tsx .cc-craft-kit/commands/status/info.ts
+各ファイルを Read ツールで読み込み、YAML フロントマターを解析:
+
+- id
+- name
+- phase
+- branch_name
+- github_issue_number
+
+フェーズ別に集計:
+
+```
+SPECS_BY_PHASE = {
+  requirements: N,
+  design: N,
+  implementation: N,
+  review: N,
+  completed: N
+}
+SPECS_TOTAL = 合計数
+SPECS_WITHOUT_ISSUE = github_issue_number が null の仕様書リスト
 ```
 
-出力（JSON）を解析し、以下の情報を記録:
+### Step 2: config.json から GitHub 設定取得
 
-- `project`: プロジェクト情報
-- `github`: GitHub 連携情報
-- `specs`: 仕様書情報
-- `logs`: ログ情報
+Read ツールで `.cc-craft-kit/config.json` を読み込み:
 
-エラーの場合は、エラーメッセージを表示して処理を中断。
-
-### Step 1.5: 実装中仕様書の進捗バー表示
-
-`specs.byPhase.implementation` が 1 件以上の場合、各仕様書の進捗バーを生成:
-
-1. 各実装中仕様書のファイルを Read ツールで読み込み
-2. 「## 8. 実装タスクリスト」セクションを解析
-3. チェックボックスの状態を集計:
-   - 完了タスク数（`- [x]`）
-   - 総タスク数
-   - 完了率 = 完了タスク数 / 総タスク数 * 100
-
-4. 進捗バーを生成:
-   ```
-   進捗バー生成ルール:
-   - 全体幅: 20 文字
-   - 完了部分: █（完了率に応じた数）
-   - 未完了部分: ░（残りの数）
-
-   例: 40% の場合 → [████████░░░░░░░░░░░░] 40%
-   ```
-
-### Step 2: GitHub 連携状態の確認
-
-`github.configured` が `true` の場合、Bash ツールで以下を実行して追加情報を取得:
-
-```bash
-gh repo view {github.owner}/{github.repo} --json name,description,url --jq '.name + " (" + .url + ")"' 2>/dev/null || echo "GitHub CLI not configured"
+```json
+{
+  "github": {
+    "owner": "...",
+    "repo": "..."
+  }
+}
 ```
 
-### Step 3: 結果の表示
+ファイルが存在しない場合は `GITHUB_CONFIGURED = false`。
 
-以下のフォーマットで結果を表示してください。
+### Step 3: GitHub 連携状態確認
+
+`GITHUB_CONFIGURED` が true の場合:
+
+```bash
+gh auth status 2>&1 | head -1
+```
+
+認証状態を確認。
+
+### Step 4: 実装中仕様書の進捗計算
+
+`SPECS_BY_PHASE.implementation` が 1 以上の場合:
+
+各実装中仕様書の「## 8. 実装タスクリスト」セクションを解析:
+- 完了タスク数（`- [x]`）
+- 総タスク数（`- [ ]` + `- [x]`）
+- 完了率 = 完了タスク数 / 総タスク数 * 100
+
+進捗バー生成:
+```
+全体幅: 20 文字
+完了部分: █（完了率に応じた数）
+未完了部分: ░（残りの数）
+
+例: 40% → [████████░░░░░░░░░░░░] 40%
+```
+
+### Step 5: 結果表示
 
 ---
 
 ## 出力フォーマット
 
 ```markdown
-# プロジェクト状況
-
-## プロジェクト情報
-
-- **名前**: {project.name}
-- **ディレクトリ**: {project.directory}
-- **初期化日時**: {project.initialized_at を日本語形式で表示}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 プロジェクト状況
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ## GitHub 連携
 
-{github.configured が true の場合}
-- **リポジトリ**: {github.owner}/{github.repo}
-- **プロジェクト番号**: #{github.project_number} (未設定の場合は "未設定")
-- **認証状態**: GITHUB_TOKEN が設定されていれば ✓ 設定済み、なければ ✗ 未設定
+{GITHUB_CONFIGURED が true の場合}
+- リポジトリ: {owner}/{repo}
+- 認証状態: ✓ 認証済み
 
-{github.configured が false の場合}
-ℹ️ GitHub 連携は未設定です。設定するには: `/cft:github-init <owner> <repo>`
+{GITHUB_CONFIGURED が false の場合}
+ℹ️ GitHub 連携は未設定です
+設定するには: /cft:github init <owner> <repo>
 
 ## 仕様書状況
 
-**合計**: {specs.total} 件
+合計: {SPECS_TOTAL} 件
 
 | フェーズ | 件数 |
-|---|---:|
-| requirements | {specs.byPhase.requirements} |
-| design | {specs.byPhase.design} |
-| tasks | {specs.byPhase.tasks} |
-| implementation | {specs.byPhase.implementation} |
-| testing | {specs.byPhase.testing} |
-| completed | {specs.byPhase.completed} |
+|---------|-----:|
+| requirements | {N} |
+| design | {N} |
+| implementation | {N} |
+| review | {N} |
+| completed | {N} |
 
-{specs.withoutIssue が 1 件以上の場合}
+{SPECS_WITHOUT_ISSUE が 1 件以上の場合}
 ### Issue 未作成の仕様書
 
-| ID | 名前 | フェーズ |
-|---|---|---|
-{specs.withoutIssue の各仕様書を表形式で表示（最大 5 件）}
+| ID (短縮) | 名前 | フェーズ |
+|-----------|------|---------|
+{各仕様書を表形式で表示（最大 5 件）}
 
-ヒント: `/cft:github-issue-create <spec-id>` で Issue を作成できます。
+ヒント: /cft:github issue <spec-id> で Issue を作成
 
-{specs.byPhase.implementation が 1 件以上の場合}
+{SPECS_BY_PHASE.implementation が 1 件以上の場合}
 ## 実装進捗
 
 {各実装中仕様書について}
-### {仕様書名}
+### {仕様書名} ({短縮ID})
 
-```
-[████████░░░░░░░░░░░░] {完了率}% ({完了数}/{総数} タスク完了)
-```
+[████████░░░░░░░░░░░░] {完了率}% ({完了数}/{総数} タスク)
 
-{specs.recent が 1 件以上の場合}
 ## 最近の仕様書
 
-| ID | 名前 | フェーズ | GitHub | 進捗 |
-|---|---|---|---|---|
-{specs.recent の各仕様書を表形式で表示}
-- ID は最初の 8 文字 + "..."
-- GitHub は Issue 番号があれば "#番号"、なければ "-"
-- PR があれば " (PR #番号)" を追加
-- 進捗は implementation フェーズの場合のみ表示（例: "40%"）
-
-{logs.errors が 1 件以上の場合}
-## 最近のエラー/警告
-
-| 時刻 | レベル | メッセージ |
-|---|---|---|
-{logs.errors の各ログを表形式で表示（最大 5 件）}
-- 時刻は HH:mm:ss 形式
-- メッセージは 60 文字で切り捨て
-
-{logs.recent が 1 件以上の場合}
-## 最近のアクティビティ
-
-| 時刻 | レベル | メッセージ |
-|---|---|---|
-{logs.recent の各ログを表形式で表示}
-- 時刻は HH:mm:ss 形式
-- メッセージは 60 文字で切り捨て
+| ID (短縮) | 名前 | フェーズ | GitHub |
+|-----------|------|---------|--------|
+{更新日時順で最新 5 件を表示}
 
 ## 次のアクション
 
-{specs.total が 0 の場合}
-- 最初の仕様書を作成: `/cft:spec-create "<name>"`
+{SPECS_TOTAL が 0 の場合}
+- 最初の仕様書を作成: /cft:spec create "名前"
 
-{github.configured が false の場合}
-- GitHub 連携を設定: `/cft:github-init <owner> <repo>`
+{GITHUB_CONFIGURED が false の場合}
+- GitHub 連携を設定: /cft:github init <owner> <repo>
 
-{specs.withoutIssue が 1 件以上の場合}
-- Issue 未作成の仕様書があります。Issue を作成してください: `/cft:github-issue-create <spec-id>`
+{SPECS_WITHOUT_ISSUE が 1 件以上の場合}
+- Issue を作成: /cft:github issue <spec-id>
 
-{specs.byPhase.implementation が 1 件以上の場合}
-- 実装中の仕様書があります: `/cft:spec-list implementation`
+{SPECS_BY_PHASE.implementation が 1 件以上の場合}
+- 実装を続ける: /cft:session start <spec-id>
 
-{上記以外の場合}
-- 仕様書一覧を表示: `/cft:spec-list`
-- 新しい仕様書を作成: `/cft:spec-create "<name>"`
-
-{セッション情報がある場合}
-## セッション情報
-
-最新のセッション情報を表示（セッション開始コマンドで自動記録）
-
-- セッション開始: `/cft:session-start`
-- セッション終了: `/cft:session-end`
-```
-
----
-
-## エラーハンドリング
-
-### プロジェクトが初期化されていない場合
-
-```
-❌ プロジェクトが初期化されていません
-
-cc-craft-kit を使用するには、まずプロジェクトを初期化してください:
-
-/cft:init <project-name>
-```
-
-### JSON パースエラーの場合
-
-```
-❌ ステータス情報の取得に失敗しました
-
-エラー: {エラーメッセージ}
-
-対処法:
-1. JSON ストレージを確認: `ls -la .cc-craft-kit/meta/`
-2. 設定ファイルを確認: `.cc-craft-kit/config.json`
-3. 整合性チェック: `/cft:sync check`
+{上記以外}
+- 仕様書一覧: /cft:spec list
+- 新規作成: /cft:spec create "名前"
 ```
 
 ---
 
 ## --verbose オプション
 
-`--verbose` または `-v` フラグが指定された場合、以下の追加情報を表示します。
+追加で以下の情報を表示:
 
-### Step V1: ストレージ情報の取得
-
-Bash ツールで以下を実行:
+### 仕様書ファイル詳細
 
 ```bash
-# meta ディレクトリのファイル一覧とサイズを取得
-ls -la .cc-craft-kit/meta/ 2>/dev/null || echo "meta directory not found"
-
-# specs.json のエントリ数を取得
-if [ -f .cc-craft-kit/meta/specs.json ]; then
-  echo "specs_count=$(cat .cc-craft-kit/meta/specs.json | grep -c '"id":')"
-fi
-
-# logs.jsonl の行数を取得
-if [ -f .cc-craft-kit/meta/logs.jsonl ]; then
-  echo "logs_count=$(wc -l < .cc-craft-kit/meta/logs.jsonl)"
-fi
+ls -la .cc-craft-kit/specs/*.md 2>/dev/null | wc -l
+du -sh .cc-craft-kit/specs/ 2>/dev/null
 ```
 
-### Step V2: 詳細情報の表示
+### Git 状態
 
-```markdown
-## ストレージ情報
+```bash
+git status --short
+git log --oneline -5
+```
 
-- **メタディレクトリ**: `.cc-craft-kit/meta/`
+---
 
-### ファイル統計
+## エラーハンドリング
 
-| ファイル | サイズ | エントリ数 |
-|---------|--------|----------:|
-| specs.json | {サイズ} | {specs_count} 件 |
-| github-sync.json | {サイズ} | - |
-| logs.jsonl | {サイズ} | {logs_count} 行 |
+### 仕様書ディレクトリが存在しない
 
-### 仕様書ファイル
+```
+ℹ️ 仕様書が見つかりません
 
-- **ディレクトリ**: `.cc-craft-kit/specs/`
-- **ファイル数**: {specs ディレクトリ内の .md ファイル数} 件
+cc-craft-kit を使い始めるには:
+  /cft:spec create "最初の仕様書"
+```
 
-### 整合性チェック
+### config.json が存在しない
 
-整合性チェックを実行するには: `/cft:sync check`
+```
+ℹ️ 設定ファイルが見つかりません
+
+GitHub 連携を設定するには:
+  /cft:github init <owner> <repo>
 ```

@@ -92,20 +92,56 @@ argument-hint: "<subcommand> <spec-id> [args...]"
    ```
    処理を中断。
 
-#### Step P2: 進捗記録の実行
+#### Step P2: 仕様書解決
 
-Bash ツールで以下を実行:
+Glob + Read で仕様書ファイルを特定:
 
-```bash
-npx tsx .cc-craft-kit/commands/knowledge/progress.ts "$2" "$3"
+```
+パターン: .cc-craft-kit/specs/$2*.md
 ```
 
-出力（JSON）を解析:
+YAML フロントマターを解析:
 
-- `success: true` の場合: 次のステップへ
-- `success: false` の場合: エラーメッセージを表示して処理を中断
+```yaml
+---
+id: "uuid"
+name: "仕様書名"
+github_issue_number: 123
+---
+```
 
-#### Step P3: 結果の表示
+`github_issue_number` が設定されていない場合:
+
+```
+⚠️ この仕様書には GitHub Issue が紐づいていません
+
+知識記録は GitHub Issue コメントとして保存されます。
+先に GitHub Issue を作成してください:
+
+/cft:github issue $SPEC_ID
+```
+
+処理を中断。
+
+#### Step P3: コメント投稿
+
+`gh` CLI で Issue にコメントを投稿:
+
+```bash
+gh issue comment $GITHUB_ISSUE_NUMBER --body "$(cat <<'EOF'
+## 進捗報告
+
+**日時**: $(date '+%Y/%m/%d %H:%M')
+
+$MESSAGE
+
+---
+*自動記録 by cc-craft-kit*
+EOF
+)"
+```
+
+#### Step P4: 結果の表示
 
 ```
 ✓ 進捗を記録しました
@@ -124,7 +160,7 @@ Issue #{GITHUB_ISSUE_NUMBER} にコメントを追加しました。
 
 - エラー解決策の記録: /cft:knowledge error <spec-id> "<error>" "<solution>"
 - Tips の記録: /cft:knowledge tip <spec-id> "<category>" "<tip>"
-- 仕様書の詳細確認: /cft:spec-get <spec-id>
+- 仕様書の詳細確認: /cft:spec get <spec-id>
 ```
 
 ---
@@ -167,20 +203,33 @@ Issue #{GITHUB_ISSUE_NUMBER} にコメントを追加しました。
    ```
    処理を中断。
 
-#### Step E2: エラー記録の実行
+#### Step E2: 仕様書解決
 
-Bash ツールで以下を実行:
+progress サブコマンドと同様に仕様書を解決。
+
+#### Step E3: コメント投稿
+
+`gh` CLI で Issue にコメントを投稿:
 
 ```bash
-npx tsx .cc-craft-kit/commands/knowledge/error.ts "$2" "$3" "$4"
+gh issue comment $GITHUB_ISSUE_NUMBER --body "$(cat <<'EOF'
+## エラー解決策
+
+**日時**: $(date '+%Y/%m/%d %H:%M')
+
+### エラー内容
+$ERROR
+
+### 解決策
+$SOLUTION
+
+---
+*自動記録 by cc-craft-kit*
+EOF
+)"
 ```
 
-出力（JSON）を解析:
-
-- `success: true` の場合: 次のステップへ
-- `success: false` の場合: エラーメッセージを表示して処理を中断
-
-#### Step E3: 結果の表示
+#### Step E4: 結果の表示
 
 ```
 ✓ エラー解決策を記録しました
@@ -200,7 +249,7 @@ Issue #{GITHUB_ISSUE_NUMBER} にコメントを追加しました。
 
 - 進捗の記録: /cft:knowledge progress <spec-id> "<message>"
 - Tips の記録: /cft:knowledge tip <spec-id> "<category>" "<tip>"
-- 仕様書の詳細確認: /cft:spec-get <spec-id>
+- 仕様書の詳細確認: /cft:spec get <spec-id>
 ```
 
 ---
@@ -256,20 +305,30 @@ Issue #{GITHUB_ISSUE_NUMBER} にコメントを追加しました。
    ```
    処理を中断。
 
-#### Step T2: Tips 記録の実行
+#### Step T2: 仕様書解決
 
-Bash ツールで以下を実行:
+progress サブコマンドと同様に仕様書を解決。
+
+#### Step T3: コメント投稿
+
+`gh` CLI で Issue にコメントを投稿:
 
 ```bash
-npx tsx .cc-craft-kit/commands/knowledge/tip.ts "$2" "$3" "$4"
+gh issue comment $GITHUB_ISSUE_NUMBER --body "$(cat <<'EOF'
+## 開発 Tips
+
+**日時**: $(date '+%Y/%m/%d %H:%M')
+**カテゴリー**: $CATEGORY
+
+$TIP
+
+---
+*自動記録 by cc-craft-kit*
+EOF
+)"
 ```
 
-出力（JSON）を解析:
-
-- `success: true` の場合: 次のステップへ
-- `success: false` の場合: エラーメッセージを表示して処理を中断
-
-#### Step T3: 結果の表示
+#### Step T4: 結果の表示
 
 ```
 ✓ Tips を記録しました
@@ -289,7 +348,7 @@ Issue #{GITHUB_ISSUE_NUMBER} にコメントを追加しました。
 
 - 進捗の記録: /cft:knowledge progress <spec-id> "<message>"
 - エラー解決策の記録: /cft:knowledge error <spec-id> "<error>" "<solution>"
-- 仕様書の詳細確認: /cft:spec-get <spec-id>
+- 仕様書の詳細確認: /cft:spec get <spec-id>
 ```
 
 ---
@@ -303,7 +362,7 @@ Issue #{GITHUB_ISSUE_NUMBER} にコメントを追加しました。
 
 確認事項:
 - 仕様書 ID は最低 8 文字必要です
-- /cft:spec-list で仕様書一覧を確認してください
+- /cft:spec list で仕様書一覧を確認してください
 ```
 
 ### GitHub Issue が紐づいていない場合
@@ -314,7 +373,7 @@ Issue #{GITHUB_ISSUE_NUMBER} にコメントを追加しました。
 知識記録は GitHub Issue コメントとして保存されます。
 先に GitHub Issue を作成してください:
 
-/cft:github-issue-create $SPEC_ID
+/cft:github issue $SPEC_ID
 ```
 
 ### gh CLI が利用できない場合
@@ -328,6 +387,15 @@ Issue #{GITHUB_ISSUE_NUMBER} にコメントを追加しました。
 - Windows: winget install GitHub.cli
 
 認証: gh auth login
+```
+
+### gh CLI が認証されていない場合
+
+```
+❌ GitHub 認証が必要です
+
+以下のコマンドで認証してください:
+gh auth login
 ```
 
 ---
