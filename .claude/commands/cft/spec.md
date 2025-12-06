@@ -440,6 +440,35 @@ git commit -m "feat: $SPEC_NAME の<フェーズ日本語名>を完了"
 
 **重要**: 以下の順序で**必ず**実行すること。順序を変えてはならない。
 
+#### ケース A: PR がマージ済みの場合
+
+PR がマージ済みかどうかを確認:
+
+```bash
+gh pr view "$BRANCH_NAME" --json state -q '.state' 2>/dev/null
+```
+
+結果が `MERGED` の場合は以下を実行:
+
+1. **ベースブランチに切り替え・最新化**:
+   ```bash
+   git checkout develop
+   git pull origin develop
+   ```
+   ※ これにより、マージ済みの仕様書（completed 状態）が取得される
+
+2. **ローカル作業ブランチを削除**:
+   ```bash
+   git branch -D "$BRANCH_NAME"
+   ```
+
+3. **GitHub Issue がある場合はクローズ**:
+   ```bash
+   gh issue close $GITHUB_ISSUE_NUMBER --comment "✅ 仕様書が完了しました"
+   ```
+
+#### ケース B: PR がマージされていない、または PR がない場合
+
 1. **まず仕様書ファイルの変更をコミット**（Step 6 の実行を確認）:
    ```bash
    git add ".cc-craft-kit/specs/$SPEC_ID.md"
