@@ -434,21 +434,13 @@ git commit -m "feat: $SPEC_NAME の<フェーズ日本語名>を完了"
 
 **review フェーズ:**
 - 品質チェック（npm run typecheck && npm run lint && npm test）
+- **仕様書のフェーズを completed に更新してコミット**（PR マージ後に develop で completed 状態になるようにするため）
 - PR 作成（`gh pr create`）
 
 **completed フェーズ:**
 
-**重要**: 以下の順序で**必ず**実行すること。順序を変えてはならない。
-
-#### ケース A: PR がマージ済みの場合
-
-PR がマージ済みかどうかを確認:
-
-```bash
-gh pr view "$BRANCH_NAME" --json state -q '.state' 2>/dev/null
-```
-
-結果が `MERGED` の場合は以下を実行:
+**注意**: review フェーズで PR を作成する際に、仕様書のフェーズは既に `completed` に更新されています。
+このフェーズは PR マージ後のクリーンアップ処理のみを行います。
 
 1. **ベースブランチに切り替え・最新化**:
    ```bash
@@ -456,50 +448,12 @@ gh pr view "$BRANCH_NAME" --json state -q '.state' 2>/dev/null
    git pull origin develop
    ```
 
-2. **仕様書を completed に更新してコミット**:
-   Edit ツールで YAML フロントマターを更新:
-   ```
-   phase: "review" → phase: "completed"
-   updated_at: <old> → updated_at: <current ISO8601>
-   ```
-   コミット:
-   ```bash
-   git add ".cc-craft-kit/specs/$SPEC_ID.md"
-   git commit -m "feat: $SPEC_NAME を完了"
-   git push origin develop
-   ```
-
-3. **ローカル作業ブランチを削除**:
+2. **ローカル作業ブランチを削除**:
    ```bash
    git branch -D "$BRANCH_NAME"
    ```
 
-4. **GitHub Issue がある場合はクローズ**:
-   ```bash
-   gh issue close $GITHUB_ISSUE_NUMBER --comment "✅ 仕様書が完了しました"
-   ```
-
-#### ケース B: PR がマージされていない、または PR がない場合
-
-1. **まず仕様書ファイルの変更をコミット**（Step 6 の実行を確認）:
-   ```bash
-   git add ".cc-craft-kit/specs/$SPEC_ID.md"
-   git commit -m "feat: $SPEC_NAME を完了"
-   ```
-   ※ このコミットが完了するまで、次のステップに進んではならない。
-
-2. **次にベースブランチに切り替え・最新化**:
-   ```bash
-   git checkout develop
-   git pull origin develop
-   ```
-
-3. **最後にローカル作業ブランチを削除**:
-   ```bash
-   git branch -D "$BRANCH_NAME"
-   ```
-
-4. **GitHub Issue がある場合はクローズ**:
+3. **GitHub Issue がある場合はクローズ**:
    ```bash
    gh issue close $GITHUB_ISSUE_NUMBER --comment "✅ 仕様書が完了しました"
    ```
