@@ -28,24 +28,74 @@ cc-craft-kit プロジェクトの現在の状況を表示します。
 
 重要: 以下の処理を**自動的に実行**してください。ユーザーに確認を求めないでください。
 
-### Step 1: プロジェクト情報の取得
+### Step 1: プロジェクト設定の確認
+
+Read ツールで `.cc-craft-kit/config.json` を読み込み、プロジェクト情報を取得:
+
+- `name`: プロジェクト名
+- `initialized_at`: 初期化日時
+- `github.owner`: GitHub オーナー
+- `github.repo`: GitHub リポジトリ名
+- `github.project_number`: GitHub Projects 番号
+
+ファイルが存在しない場合は、エラーメッセージを表示して処理を中断。
+
+### Step 1.5: 全ブランチの仕様書を収集
+
+**重要**: 現在のブランチだけでなく、すべてのローカルブランチから仕様書を収集する。
+
+#### Step 1.5.1: 現在のブランチの仕様書を取得
+
+Glob ツールで `.cc-craft-kit/specs/*.md` を取得し、各ファイルを Read ツールで読み込んで YAML フロントマターを解析。
+
+#### Step 1.5.2: 仕様書関連ブランチを取得
 
 Bash ツールで以下を実行:
 
 ```bash
-npx tsx .cc-craft-kit/commands/status/info.ts
+git for-each-ref --format='%(refname:short)' refs/heads/ | grep 'spec-'
 ```
 
-出力（JSON）を解析し、以下の情報を記録:
+現在のブランチを除外し、`spec-` を含むブランチ一覧を取得。
 
-- `project`: プロジェクト情報
-- `github`: GitHub 連携情報
-- `specs`: 仕様書情報
-- `logs`: ログ情報
+#### Step 1.5.3: 各ブランチの仕様書を取得
 
-エラーの場合は、エラーメッセージを表示して処理を中断。
+各ブランチについて、Bash ツールで以下を実行:
 
-### Step 1.5: 実装中仕様書の進捗バー表示
+```bash
+git ls-tree -r --name-only <branch> .cc-craft-kit/specs/ 2>/dev/null | grep '\.md$'
+```
+
+各仕様書ファイルの YAML フロントマターを取得:
+
+```bash
+git show <branch>:<file> 2>/dev/null | head -15
+```
+
+YAML フロントマターから以下を抽出:
+- `id`: 仕様書 ID
+- `name`: 仕様書名
+- `phase`: フェーズ
+- `branch_name`: ブランチ名
+- `github_issue_number`: GitHub Issue 番号
+- `updated_at`: 更新日時
+
+#### Step 1.5.4: 重複排除
+
+同じ ID の仕様書が複数ブランチにある場合:
+- 現在のブランチの仕様書を優先
+- それ以外は `updated_at` が新しい方を採用
+
+#### Step 1.5.5: 集計
+
+収集した仕様書を以下のように集計:
+- `total`: 総件数（重複排除後）
+- `byPhase`: フェーズごとの件数
+- `otherBranchCount`: 他ブランチにある仕様書の件数（フェーズごと）
+- `withoutIssue`: GitHub Issue が未作成の仕様書リスト
+- `recent`: 最近更新された仕様書（最大 5 件）
+
+### Step 1.6: 実装中仕様書の進捗バー表示
 
 `specs.byPhase.implementation` が 1 件以上の場合、各仕様書の進捗バーを生成:
 
@@ -105,14 +155,15 @@ gh repo view {github.owner}/{github.repo} --json name,description,url --jq '.nam
 
 **合計**: {specs.total} 件
 
-| フェーズ | 件数 |
-|---|---:|
-| requirements | {specs.byPhase.requirements} |
-| design | {specs.byPhase.design} |
-| tasks | {specs.byPhase.tasks} |
-| implementation | {specs.byPhase.implementation} |
-| testing | {specs.byPhase.testing} |
-| completed | {specs.byPhase.completed} |
+| フェーズ | 件数 | うち他ブランチ |
+|---|---:|---:|
+| requirements | {specs.byPhase.requirements} | {specs.otherBranchCount.requirements} |
+| design | {specs.byPhase.design} | {specs.otherBranchCount.design} |
+| implementation | {specs.byPhase.implementation} | {specs.otherBranchCount.implementation} |
+| review | {specs.byPhase.review} | {specs.otherBranchCount.review} |
+| completed | {specs.byPhase.completed} | {specs.otherBranchCount.completed} |
+
+※「うち他ブランチ」は現在のブランチに存在しない仕様書の件数
 
 {specs.withoutIssue が 1 件以上の場合}
 ### Issue 未作成の仕様書
@@ -136,10 +187,12 @@ gh repo view {github.owner}/{github.repo} --json name,description,url --jq '.nam
 {specs.recent が 1 件以上の場合}
 ## 最近の仕様書
 
-| ID | 名前 | フェーズ | GitHub | 進捗 |
-|---|---|---|---|---|
+| ID | 名前 | フェーズ | ブランチ | GitHub | 進捗 |
+|---|---|---|---|---|---|
 {specs.recent の各仕様書を表形式で表示}
+
 - ID は最初の 8 文字 + "..."
+- ブランチは現在のブランチにある場合は "-"、他ブランチの場合はブランチ名（短縮形）
 - GitHub は Issue 番号があれば "#番号"、なければ "-"
 - PR があれば " (PR #番号)" を追加
 - 進捗は implementation フェーズの場合のみ表示（例: "40%"）
