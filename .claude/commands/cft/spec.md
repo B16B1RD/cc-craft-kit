@@ -455,14 +455,26 @@ gh pr view "$BRANCH_NAME" --json state -q '.state' 2>/dev/null
    git checkout develop
    git pull origin develop
    ```
-   ※ これにより、マージ済みの仕様書（completed 状態）が取得される
 
-2. **ローカル作業ブランチを削除**:
+2. **仕様書を completed に更新してコミット**:
+   Edit ツールで YAML フロントマターを更新:
+   ```
+   phase: "review" → phase: "completed"
+   updated_at: <old> → updated_at: <current ISO8601>
+   ```
+   コミット:
+   ```bash
+   git add ".cc-craft-kit/specs/$SPEC_ID.md"
+   git commit -m "feat: $SPEC_NAME を完了"
+   git push origin develop
+   ```
+
+3. **ローカル作業ブランチを削除**:
    ```bash
    git branch -D "$BRANCH_NAME"
    ```
 
-3. **GitHub Issue がある場合はクローズ**:
+4. **GitHub Issue がある場合はクローズ**:
    ```bash
    gh issue close $GITHUB_ISSUE_NUMBER --comment "✅ 仕様書が完了しました"
    ```
