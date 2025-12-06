@@ -1,11 +1,16 @@
+---
+id: "20a0ff2e-bab4-43f3-838a-decfd71a96da"
+name: "各フェーズ完了時未コミットのファイルがある（主に仕様書ファイル）"
+phase: "completed"
+branch_name: "main"
+github_issue_number: null
+pr_url: null
+created_at: "2025-11-22T09:46:45.524Z"
+updated_at: "2025-11-22T19:21:12Z"
+---
+
 # 各フェーズ完了時未コミットのファイルがある（主に仕様書ファイル）
 
-**仕様書 ID:** 20a0ff2e-bab4-43f3-838a-decfd71a96da
-**フェーズ:** completed
-**作成日時:** 2025/11/22 18:46:45
-**更新日時:** 2025/11/22 19:21:12
-
----
 
 ## 1. 背景と目的
 
@@ -38,7 +43,6 @@
 2. **pre-commit フック対応**: textlint エラーを自動修正してからコミット実行
 3. **エラーハンドリング強化**: コミット失敗時の適切なエラーメッセージと復旧手順の提示
 4. **手動介入の最小化**: ユーザーが手動でコミットする必要をなくす
-
 ---
 
 ## 2. 対象ユーザー
@@ -46,7 +50,6 @@
 - cc-craft-kit を使用するすべての開発者
 - 特に、仕様駆動開発（SDD）ワークフローを実践する開発チーム
 - Git による変更履歴管理を重視するプロジェクト
-
 ---
 
 ## 3. 受け入れ基準
@@ -107,7 +110,6 @@
     - pre-commit フックでの textlint/markdownlint が大量のエラーを検出した場合
 - [ ] **信頼性**: コミット失敗時、データベースやファイルシステムの状態を破壊しないこと
 - [ ] **保守性**: エラーメッセージは開発者が問題を特定しやすい内容であること
-
 ---
 
 ## 4. 制約条件
@@ -116,7 +118,6 @@
 - **Node.js 環境**: textlint/markdownlint は Node.js パッケージのため、`npx` コマンドを使用可能にする必要がある
 - **既存コミット履歴への影響**: 過去のコミットには影響を与えず、新規コミットのみが対象
 - **pre-commit フック互換性**: husky + lint-staged の既存設定と互換性を保つこと
-
 ---
 
 ## 5. 依存関係
@@ -135,7 +136,6 @@
 - markdownlint-cli2 - Markdown ファイルのスタイルチェック
 - husky - Git フック管理
 - lint-staged - ステージングファイルへのリンター適用
-
 ---
 
 ## 6. 参考情報
@@ -145,7 +145,6 @@
 - [markdownlint Documentation](https://github.com/DavidAnson/markdownlint)
 - [husky Documentation](https://typicode.github.io/husky/)
 - [lint-staged Documentation](https://github.com/okonet/lint-staged)
-
 ---
 
 ## 7. 設計
@@ -455,7 +454,6 @@ logger.error('Auto-commit failed', {
 
 - イベント発火ロジックは既存のまま維持
 - ハンドラー登録は `getEventBusAsync()` で自動実行
-
 ---
 
 ## 8. 実装タスクリスト

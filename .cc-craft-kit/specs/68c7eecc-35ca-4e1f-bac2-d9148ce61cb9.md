@@ -1,11 +1,16 @@
+---
+id: "68c7eecc-35ca-4e1f-bac2-d9148ce61cb9"
+name: ".env の GITHUB_TOKEN が認識されない"
+phase: "completed"
+branch_name: "main"
+github_issue_number: null
+pr_url: null
+created_at: "2025-11-15T20:36:40Z"
+updated_at: "2025-11-16T20:46:01Z"
+---
+
 # .env の GITHUB_TOKEN が認識されない
 
-**仕様書 ID:** 68c7eecc-35ca-4e1f-bac2-d9148ce61cb9
-**フェーズ:** completed
-**作成日時:** 2025/11/15 20:36:40
-**更新日時:** 2025/11/16 20:46:01
-
----
 
 ## 1. 背景と目的
 
@@ -22,14 +27,12 @@ cc-craft-kit CLI で GitHub 統合機能を使用する際、プロジェクト�
 ### 目的
 
 CLI のエントリーポイントで dotenv を適切に初期化し、`.env` ファイルから環境変数を確実に読み込めるようにする。
-
 ---
 
 ## 2. 対象ユーザー
 
 - cc-craft-kit CLI を使用して GitHub 統合機能を利用する開発者
 - ローカル環境で `.env` ファイルによる環境変数管理を行っている開発者
-
 ---
 
 ## 3. 受け入れ基準
@@ -51,7 +54,6 @@ CLI のエントリーポイントで dotenv を適切に初期化し、`.env` �
 - [x] 既存のコード動作に影響を与えない
 - [x] パフォーマンスへの影響が最小限である
 - [x] TypeScript ビルドが正常に通る
-
 ---
 
 ## 4. 設計詳細
@@ -179,7 +181,6 @@ import 'reflect-metadata';
 - ES Modules では `--require` ではなく `--import` が必要
 
 **結論:** 採用しない
-
 ---
 
 ## 5. 実装計画
@@ -237,7 +238,6 @@ takumi github init B16B1RD takumi
 
 - dotenv は `.env` ファイルが存在しない場合でもエラーを出さない
 - 環境変数がシェルから設定されている場合は、そちらが優先される
-
 ---
 
 ## 6. 制約条件
@@ -245,7 +245,6 @@ takumi github init B16B1RD takumi
 - Node.js 18 以上が必須（既存の制約）
 - ES Modules 環境（`"type": "module"`）を維持する
 - 既存のコマンド動作に影響を与えない
-
 ---
 
 ## 7. 依存関係
@@ -264,7 +263,6 @@ takumi github init B16B1RD takumi
 - プラグインシステム
   - `src/plugins/official/slack/index.ts`
   - `src/plugins/official/backlog/index.ts`
-
 ---
 
 ## 8. 参考情報
