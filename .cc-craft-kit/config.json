@@ -7,10 +7,11 @@
     "owner": "B16B1RD",
     "repo": "cc-craft-kit",
     "initialized_at": "2025-11-15T11:51:52.039Z",
-    "project_name_cache": {
+    "project_v2": {
       "name": "cc-craft-kit",
-      "resolved_number": 1,
-      "cached_at": "2025-11-16T07:16:01.351Z"
+      "number": 1,
+      "id": "PVT_kwHOAA1CPM4BIPQk",
+      "cached_at": "2025-12-07T07:45:00.000Z"
     }
   }
 }

@@ -1,34 +1,33 @@
-# cc-craft-kit- 統合開発キット
+# cc-craft-kit - 統合開発キット
 
 Claude Code 上で**仕様駆動開発（SDD）**、**GitHub Projects/Issues 完全連携**を実現する開発支援ツールキット。
 
-## 🎯 コンセプト
+## コンセプト
 
-cc-craft-kit は、Claude Code 上のカスタムスラッシュコマンドで動作する軽量な開発支援ツールキットです。
+cc-craft-kit は、Claude Code 上のカスタムスラッシュコマンドで動作する**ゼロ依存**の開発支援ツールキットです。
 
 ### 核心的特徴
 
-- スラッシュコマンド設計により、MCP サーバー不要でコンテキスト効率的なアーキテクチャを実現（MCP 比 99%削減）
-- GitHub Projects v2、Issue、Milestone の完全統合による自動管理
-- Issue をナレッジベース化し、課題管理＋途中経過＋エラー対策＋Tips を統合記録
-- Requirements → Design → Implementation → Completed の構造化ワークフローによる仕様駆動開発（4フェーズモデル）
-- **ブランチ保護機能**により、統合ブランチ（main、develop など）での直接編集を防止し、適切なブランチ戦略を強制
-- すべての機能を `.cc-craft-kit/` ディレクトリに集約し、既存プロジェクトと競合しない設計
+- **TypeScript 不要**: スラッシュコマンド + スキル + サブエージェントのみで構成
+- **ゼロ依存**: npm install 不要、Claude Code と gh CLI のみで動作
+- **YAML フロントマター**: 仕様書は Markdown ファイルに YAML メタデータを埋め込み（Single Source of Truth）
+- **GitHub 完全統合**: Issue、Projects v2、PR を `gh` CLI で操作
+- **4フェーズモデル**: Requirements → Design → Implementation → Completed の構造化ワークフロー
+- **ブランチ保護**: 統合ブランチ（main、develop など）での直接編集を防止
 
-## 🚀 クイックスタート
+## クイックスタート
 
 ### 前提条件
 
-- Node.js 18 以上
-- TypeScript 5.0 以上
 - Claude Code CLI
-- GitHub Personal Access Token
-  - 個人アカウントの場合、Classic Personal Access Token が必須（スコープ: `repo`, `project`）
-  - Organization の場合、Fine-grained PAT または Classic PAT を使用（スコープ: `repo`, `project`）
+- gh CLI（GitHub CLI）がインストール・認証済み
+
+```bash
+# gh CLI の確認
+gh auth status
+```
 
 ### インストール
-
-#### 方法1: curl コマンド経由（推奨）
 
 ```bash
 # カレントディレクトリにインストール
@@ -43,51 +42,15 @@ curl -fsSL https://raw.githubusercontent.com/B16B1RD/cc-craft-kit/main/scripts/i
 
 インストール後、Claude Code で `/cft:init` を実行してプロジェクトを初期化します。
 
-#### 方法2: 開発者向けクローン
-
-開発に参加する場合や、最新のソースコードから実行する場合は、以下の手順でクローンします。
+### GitHub 統合の設定
 
 ```bash
-git clone https://github.com/B16B1RD/cc-craft-kit.git
-cd cc-craft-kit
-npm install
-npm run sync:dogfood
+# gh CLI で認証
+gh auth login
+
+# リポジトリの確認
+gh repo view
 ```
-
-### 環境変数設定
-
-**個人アカウントで Projects v2 を使用する場合**、Classic Personal Access Token が必要です。
-
-1. GitHub → Settings → Developer settings → Personal access tokens → **Tokens (classic)**
-2. "Generate new token (classic)" をクリック
-3. スコープを選択:
-   - `repo`（リポジトリへのフルアクセス）
-   - `project`（Projects v2 の読み書き）
-4. トークンを生成してコピー
-
-```bash
-# GitHub Personal Access Token を設定
-export GITHUB_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxx"
-
-# または .env ファイルに記載
-echo "GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx" > .env
-```
-
-注意: Fine-grained Personal Access Token は個人アカウントの Projects v2 には対応していません。Organization の Projects を使用する場合のみ Fine-grained PAT が利用可能です。
-
-### ブランチ作成の動作
-
-cc-craft-kit では、仕様書作成時に自動的にブランチが作成されます。ブランチは **BASE_BRANCH 環境変数（デフォルト: `develop`）** から派生します。
-
-```bash
-# BASE_BRANCH を設定（オプション、デフォルトは develop）
-echo "BASE_BRANCH=develop" >> .env
-```
-
-**動作:**
-- ブランチ作成時に「Creating branch from BASE_BRANCH (develop)...」と表示されます
-- ブランチは BASE_BRANCH から派生します（カレントブランチからは派生しません）
-- 保護ブランチ（main、develop など）から仕様書を作成すると、`feature/spec-<id>` ブランチが自動作成されます
 
 ### プロジェクト初期化
 
@@ -97,7 +60,7 @@ Claude Code のチャットで以下のスラッシュコマンドを実行し�
 /cft:init
 ```
 
-## 📚 使い方
+## 使い方
 
 ### 基本コマンド
 
@@ -108,50 +71,53 @@ Claude Code のチャットで以下のスラッシュコマンドを実行し�
 /cft:status
 
 # 仕様書作成
-/cft:spec-create "ユーザー認証機能" "メール/パスワード認証とOAuth2.0対応"
+/cft:spec create "ユーザー認証機能" "メール/パスワード認証とOAuth2.0対応"
 
 # 仕様書一覧
-/cft:spec-list
-/cft:spec-list requirements  # フェーズでフィルタ
+/cft:spec list
+/cft:spec list requirements  # フェーズでフィルタ
 
 # 仕様書詳細表示
-/cft:spec-get <spec-id>
+/cft:spec get <spec-id>
 
 # フェーズ移行
-/cft:spec-phase <spec-id> design
+/cft:spec phase <spec-id> design
 ```
 
-### GitHub統合
+### GitHub 統合
 
 ```sh
-# GitHub初期化
-/cft:github-init <owner> <repo>
+# GitHub 初期化
+/cft:github init <owner> <repo>
 
-# Issue作成（仕様書作成時に自動作成される）
-/cft:github-issue-create <spec-id>
-
-# Project自動追加の設定（.envファイルに追加）
-echo "GITHUB_PROJECT_NAME=My Project Board" >> .env
+# Issue 作成
+/cft:github issue-create <spec-id>
 
 # 双方向同期
-/cft:github-sync to-github <spec-id>
-/cft:github-sync from-github <spec-id>
-
-# 手動でProjectボード追加
-/cft:github-project-add <spec-id> <project-number>
+/cft:github sync to-github <spec-id>
+/cft:github sync from-github <spec-id>
 ```
 
-#### Issue & Project 自動化
+### タスク管理
 
-仕様書作成時に以下が自動実行されます。
+```sh
+# タスク一覧表示
+/cft:task list <spec-id>
 
-1. **GitHub Issue 自動作成**: 仕様書の内容を Issue body として使用
-2. **Project 自動追加**: `GITHUB_PROJECT_NAME` 環境変数または `project_id` が設定されている場合、自動的に Projects ボードに追加
-3. **ラベル自動付与**: フェーズに応じたラベル（`phase:requirements` など）を自動設定
+# タスク開始
+/cft:task start <issue-number>
 
-Project 追加が失敗した場合でも Issue 作成は成功し、警告メッセージが表示されます。
+# タスク完了
+/cft:task done <issue-number>
 
-### ナレッジベース記録
+# タスク分割
+/cft:task split <spec-id>
+
+# 進捗レポート
+/cft:task report <spec-id>
+```
+
+### ナレッジベース
 
 ```sh
 # 進捗記録
@@ -160,306 +126,220 @@ Project 追加が失敗した場合でも Issue 作成は成功し、警告メ�
 # エラー解決策記録
 /cft:knowledge error <spec-id> "CORSエラーが発生" "Access-Control-Allow-Originヘッダーを追加"
 
-# Tips記録
+# Tips 記録
 /cft:knowledge tip <spec-id> "performance" "useMemoを使ってレンダリングを最適化"
 ```
 
-### 全コマンド一覧（24コマンド）
+### セッション管理
 
-cc-craft-kit v0.1.2 では、関連機能を統合コマンドにまとめ、42個から24個へコマンド数を削減しました。
+```sh
+# セッション開始（コンテキスト確立）
+/cft:session start [spec-id]
 
-#### プロジェクト管理
+# セッション終了（進捗記録）
+/cft:session end [spec-id]
+```
+
+### コードレビュー・テスト
+
+```sh
+# コードレビュー
+/cft:review src/**/*.ts
+
+# テスト生成
+/cft:test generate src/utils/*.ts
+
+# カバレッジ分析
+/cft:test coverage src/
+```
+
+## 全コマンド一覧
+
+cc-craft-kit v0.2.0 では、12 個の統合スラッシュコマンドで全機能を提供します。
+
+### プロジェクト管理
 
 | コマンド | 説明 |
 |---------|------|
 | `/cft:init` | プロジェクト初期化 |
 | `/cft:status` | プロジェクト状態表示 |
 
-#### 仕様書管理
+### 仕様書管理（統合コマンド）
 
 | コマンド | 説明 |
 |---------|------|
-| `/cft:spec-create <name> [description]` | 仕様書作成（自動ブランチ作成） |
-| `/cft:spec-list [phase] [limit]` | 仕様書一覧表示 |
-| `/cft:spec-get <spec-id>` | 仕様書詳細表示 |
-| `/cft:spec-phase <spec-id> <phase>` | フェーズ更新（design で自動タスク分割） |
-| `/cft:spec-update` | 仕様書変更を GitHub Issue に通知 |
-| `/cft:spec-delete <spec-id>` | 仕様書削除 |
+| `/cft:spec create <name> [desc]` | 仕様書作成 |
+| `/cft:spec list [phase] [limit]` | 仕様書一覧 |
+| `/cft:spec get <spec-id>` | 仕様書詳細 |
+| `/cft:spec phase <spec-id> <phase>` | フェーズ更新 |
+| `/cft:spec delete <spec-id>` | 仕様書削除 |
 
-#### タスク管理（統合コマンド）
+### タスク管理（統合コマンド）
 
 | コマンド | 説明 |
 |---------|------|
-| `/cft:task list <spec-id>` | Sub Issue 一覧表示 |
-| `/cft:task start <issue-number>` | タスク開始（ブランチ作成） |
+| `/cft:task list <spec-id>` | タスク一覧 |
+| `/cft:task start <issue-number>` | タスク開始 |
 | `/cft:task done <issue-number>` | タスク完了 |
-| `/cft:task update <issue-number> <status>` | タスク状態更新 |
+| `/cft:task update <issue-number> <status>` | 状態更新 |
 | `/cft:task split <spec-id>` | タスク分割 |
-| `/cft:task report <spec-id>` | 進捗レポート生成 |
+| `/cft:task report <spec-id>` | 進捗レポート |
 
-#### GitHub 統合
-
-| コマンド | 説明 |
-|---------|------|
-| `/cft:github-init <owner> <repo>` | GitHub 統合初期化 |
-| `/cft:github-issue-create <spec-id>` | Issue 作成 |
-| `/cft:github-sync <direction> <spec-id>` | 双方向同期（to-github / from-github） |
-| `/cft:pr-cleanup <spec-id>` | PR マージ後のブランチ削除 |
-
-#### 品質管理
+### GitHub 統合（統合コマンド）
 
 | コマンド | 説明 |
 |---------|------|
-| `/cft:code-review <file-pattern>` | コードレビュー実行 |
-| `/cft:test-generate <file-pattern>` | テスト自動生成 |
-| `/cft:refactor <file-pattern>` | リファクタリング支援 |
-| `/cft:lint-check` | TypeScript/ESLint チェック |
-| `/cft:schema-validate` | データベーススキーマ検証 |
+| `/cft:github init <owner> <repo>` | GitHub 初期化 |
+| `/cft:github issue-create <spec-id>` | Issue 作成 |
+| `/cft:github sync <direction> <spec-id>` | 双方向同期 |
 
-#### ナレッジベース（統合コマンド）
+### セッション管理（統合コマンド）
 
 | コマンド | 説明 |
 |---------|------|
-| `/cft:knowledge progress <spec-id> <message>` | 進捗記録 |
-| `/cft:knowledge error <spec-id> <error> <solution>` | エラー解決策記録 |
-| `/cft:knowledge tip <spec-id> <category> <tip>` | Tips 記録 |
+| `/cft:session start [spec-id]` | セッション開始 |
+| `/cft:session end [spec-id]` | セッション終了 |
 
-#### セッション管理
-
-| コマンド | 説明 |
-|---------|------|
-| `/cft:session-start [spec-id]` | セッション開始プロトコル実行 |
-| `/cft:session-end [spec-id]` | セッション終了プロトコル実行 |
-
-#### 同期管理（統合コマンド）
+### ナレッジベース（統合コマンド）
 
 | コマンド | 説明 |
 |---------|------|
-| `/cft:sync check` | ソース同期状態チェック |
-| `/cft:sync repair` | ソース同期修復 |
+| `/cft:knowledge progress <spec-id> <msg>` | 進捗記録 |
+| `/cft:knowledge error <spec-id> <err> <sol>` | エラー記録 |
+| `/cft:knowledge tip <spec-id> <cat> <tip>` | Tips 記録 |
 
-#### 品質ルール管理（統合コマンド）
+### 品質管理（統合コマンド）
 
 | コマンド | 説明 |
 |---------|------|
+| `/cft:review <file-pattern>` | コードレビュー |
+| `/cft:test generate <file-pattern>` | テスト生成 |
+| `/cft:test coverage <file-pattern>` | カバレッジ分析 |
+
+### 同期・品質（統合コマンド）
+
+| コマンド | 説明 |
+|---------|------|
+| `/cft:sync check` | 整合性チェック |
+| `/cft:sync repair` | 整合性修復 |
 | `/cft:quality init` | 品質ルール初期化 |
-| `/cft:quality check` | 品質ルールチェック |
-| `/cft:quality generate` | 品質レポート生成 |
+| `/cft:quality check` | 品質チェック |
 
-#### カスタムツール管理（統合コマンド）
+### カスタムツール（統合コマンド）
 
 | コマンド | 説明 |
 |---------|------|
-| `/cft:custom-tools skill list` | スキル一覧表示 |
+| `/cft:custom-tools skill list` | スキル一覧 |
 | `/cft:custom-tools skill create <name>` | スキル作成 |
-| `/cft:custom-tools agent list` | サブエージェント一覧表示 |
-| `/cft:custom-tools agent create <name>` | サブエージェント作成 |
+| `/cft:custom-tools agent list` | エージェント一覧 |
+| `/cft:custom-tools agent create <name>` | エージェント作成 |
 
-## 🏗️ アーキテクチャ
+## アーキテクチャ
 
 ### ディレクトリ構造
 
 ```text
 project-root/
-├── .claude/                       # Claude Code 標準ディレクトリ
-│   ├── commands/
-│   │   └── cft/                   # スラッシュコマンド（直接配置）
-│   │       ├── task.md
-│   │       ├── spec-create.md
-│   │       └── ...
-│   ├── skills/                    # スキル（直接配置）
-│   │   ├── database-schema-validator/
-│   │   ├── typescript-eslint/
-│   │   ├── pr-creator/
-│   │   └── git-operations/
-│   ├── agents/                    # エージェント（直接配置）
-│   │   ├── refactoring-assistant.md
-│   │   ├── test-generator.md
-│   │   └── code-reviewer.md
+├── .claude/                      # Claude Code 標準ディレクトリ
+│   ├── commands/cft/             # スラッシュコマンド
+│   │   ├── spec.md               # 仕様書管理
+│   │   ├── task.md               # タスク管理
+│   │   ├── github.md             # GitHub 統合
+│   │   ├── session.md            # セッション管理
+│   │   ├── knowledge.md          # ナレッジベース
+│   │   ├── review.md             # コードレビュー
+│   │   ├── test.md               # テスト生成
+│   │   ├── status.md             # 状態表示
+│   │   ├── sync.md               # 同期管理
+│   │   ├── quality.md            # 品質管理
+│   │   ├── custom-tools.md       # カスタムツール
+│   │   └── init.md               # 初期化
+│   ├── skills/                   # スキル
+│   │   ├── pr-creator/           # PR 自動作成
+│   │   ├── typescript-eslint/    # TypeScript/ESLint チェック
+│   │   ├── database-schema-validator/  # スキーマ検証
+│   │   └── git-operations/       # Git 操作ヘルパー
+│   ├── agents/                   # サブエージェント
+│   │   ├── requirements-analyzer.md
+│   │   └── architect-designer.md
 │   └── settings.json
 │
-├── .cc-craft-kit/                 # ランタイム専用（プロジェクトデータ）
-│   ├── core/                      # TypeScript 実装
-│   │   ├── database/              # Kysely + SQLite
-│   │   ├── workflow/              # EventBus + Git統合
-│   │   └── templates/             # Handlebars
-│   ├── integrations/              # 外部連携
-│   │   └── github/                # GitHub API (REST + GraphQL)
-│   ├── commands/                  # CLI コマンド実装
-│   ├── specs/                     # 仕様書データ（Git 管理対象）
-│   └── cc-craft-kit.db            # データベース（Git 除外）
+├── .cc-craft-kit/                # プロジェクトデータ
+│   ├── specs/                    # 仕様書（YAML フロントマター形式）
+│   └── config.json               # プロジェクト設定
 │
-└── src/                           # 開発用ソース（マスター）
-    ├── slash-commands/            # スラッシュコマンド定義
-    ├── skills/                    # スキル定義
-    ├── agents/                    # エージェント定義
-    ├── commands/                  # コマンド実装
-    ├── core/                      # コアライブラリ
-    ├── integrations/              # 外部統合
-    ├── plugins/                   # プラグインシステム
-    └── scripts/                   # ビルド・同期スクリプト
+├── scripts/                      # ユーティリティスクリプト
+│   └── install.sh                # インストーラー
+│
+└── README.md
+```
+
+### 仕様書フォーマット（YAML フロントマター）
+
+仕様書は Markdown ファイルに YAML メタデータを埋め込んだ形式です。
+
+```markdown
+---
+id: "abc123-def456-..."
+name: "ユーザー認証機能"
+phase: "implementation"
+branch_name: "feature/spec-abc123-user-auth"
+github_issue_number: 42
+pr_url: null
+created_at: "2025-01-01T00:00:00.000Z"
+updated_at: "2025-01-02T00:00:00.000Z"
+---
+
+# ユーザー認証機能
+
+## 1. 背景と目的
+
+...
 ```
 
 ### 技術スタック
 
-| カテゴリ     | 技術            | 用途                       |
-| ------------ | --------------- | -------------------------- |
-| 言語         | TypeScript 5.0+ | 型安全な開発               |
-| ランタイム   | Node.js 18+     | CLI実行                    |
-| データベース | SQLite + Kysely | ローカルデータ管理         |
-| GitHub API   | Octokit         | REST + GraphQL統合         |
-| DI           | TSyringe        | 依存性注入                 |
-| イベント     | EventEmitter2   | イベント駆動アーキテクチャ |
-| CLI          | Node.js parseArgs | コマンドライン引数パース |
+| カテゴリ | 技術 | 用途 |
+|----------|------|------|
+| CLI | Claude Code | AI アシスタント |
+| GitHub | gh CLI | Issue/PR 操作 |
+| ファイル | Glob/Read/Edit | ファイル操作 |
+| 検索 | Grep | コンテンツ検索 |
+| 設定 | JSON | プロジェクト設定 |
+| 仕様書 | YAML + Markdown | メタデータ + 本文 |
 
-### データベーススキーマ
+## 開発（コントリビューター向け）
 
-```sql
--- 仕様書
-CREATE TABLE specs (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  description TEXT,
-  phase TEXT NOT NULL, -- requirements/design/implementation/completed（4フェーズモデル）
-  github_issue_id INTEGER,
-  github_project_id TEXT,
-  github_milestone_id INTEGER,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-
--- タスク
-CREATE TABLE tasks (
-  id TEXT PRIMARY KEY,
-  spec_id TEXT NOT NULL REFERENCES specs(id),
-  title TEXT NOT NULL,
-  description TEXT,
-  status TEXT NOT NULL, -- todo/in_progress/blocked/review/done
-  priority INTEGER NOT NULL,
-  github_issue_id INTEGER,
-  github_issue_number INTEGER,
-  assignee TEXT,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-
--- ログ
-CREATE TABLE logs (
-  id TEXT PRIMARY KEY,
-  task_id TEXT REFERENCES tasks(id),
-  spec_id TEXT REFERENCES specs(id),
-  action TEXT NOT NULL,
-  level TEXT NOT NULL, -- debug/info/warn/error
-  message TEXT NOT NULL,
-  metadata TEXT, -- JSON
-  timestamp TEXT NOT NULL
-);
-
--- GitHub同期
-CREATE TABLE github_sync (
-  id TEXT PRIMARY KEY,
-  entity_type TEXT NOT NULL, -- spec/task
-  entity_id TEXT NOT NULL,
-  github_id TEXT NOT NULL,
-  github_number INTEGER,
-  last_synced_at TEXT NOT NULL,
-  sync_status TEXT NOT NULL, -- success/failed/pending
-  error_message TEXT
-);
-```
-
-## 🛠️ 開発
-
-### スクリプト
+### リポジトリクローン
 
 ```bash
-# 開発
-# cc-craft-kit は TypeScript を直接実行するため、ビルド不要です
-# すべてのコマンドは npx tsx で直接実行されます
+git clone https://github.com/B16B1RD/cc-craft-kit.git
+cd cc-craft-kit
+```
 
-# テスト
-npm test
-npm run test:watch
-npm run test:coverage
+### ファイル構成の確認
 
-# リント・フォーマット
-npm run lint
-npm run lint:fix
-npm run format
+```bash
+# スラッシュコマンド一覧
+ls -la .claude/commands/cft/
 
-# 型チェック
-npm run typecheck
+# スキル一覧
+ls -la .claude/skills/
 
-# データベースマイグレーション
-npm run db:migrate        # マイグレーション実行
-npm run db:migrate down   # ロールバック
+# 仕様書一覧
+ls -la .cc-craft-kit/specs/
 ```
 
 ### テスト
 
-```bash
-# 全テスト実行
-npm test
+手動テスト手順:
 
-# カバレッジレポート生成
-npm run test:coverage
+1. Claude Code でプロジェクトを開く
+2. `/cft:status` で動作確認
+3. `/cft:spec create "テスト機能" "テスト用"` で仕様書作成
+4. `/cft:spec list` で一覧確認
 
-# ウォッチモード
-npm run test:watch
-```
-
-## 📋 実装ロードマップ
-
-### ✅ Phase 1: コア基盤 (Week 1-3) - 完了
-
-- [x] プロジェクト初期化
-- [x] Kysely + SQLite セットアップ
-- [x] CLI インターフェース実装
-- [x] 基本 CLI コマンド (`init`, `spec create/list/get`, `status`)
-- [x] テンプレートエンジン統合 (Handlebars)
-- [x] E2E テスト実装
-
-### ✅ Phase 2: GitHub 統合 (Week 4-6) - 完了
-
-- [x] Octokit 統合 (REST + GraphQL)
-- [x] Issue 自動作成・更新
-- [x] Projects v2 ボード管理
-- [x] Issue ナレッジベース化機能
-- [x] 双方向の同期機構
-- [x] Webhook 統合
-
-### ✅ Phase 3: サブエージェント + スキル (Week 7-10) - 完了
-
-- [x] 7 つのコアサブエージェント実装
-  - RequirementsAnalyzer, TaskBreakdowner, CodeReviewer
-  - ArchitectDesigner, CodeGenerator, TestCreator, DocumentationWriter
-- [x] 5 つのコアスキル実装
-  - RequirementsDocGenerator, ArchitectureDiagramGenerator
-  - CodeQualityAnalyzer, TestCoverageReporter, GitHubIssueSync
-- [x] イベント駆動ワークフロー (EventBus, 12 種類のイベント)
-- [x] Story-to-Done パイプライン (自動ワークフロー)
-
-### ✅ Phase 4: プラグイン + UI (Week 11-14) - 完了
-
-- [x] プラグインアーキテクチャ (Registry + Loader)
-- [x] 公式プラグイン実装
-  - Backlog 統合プラグイン
-  - Slack 通知プラグイン
-- [x] プラグインライフサイクル管理
-- [x] イベントハンドラー拡張機能
-
-### ✅ Phase 5: 最適化 (Week 15+) - 完了
-
-- [x] パフォーマンスプロファイラー実装
-- [x] キャッシュ機構実装
-- [x] セキュリティバリデーター実装
-- [x] CI/CD 統合 (GitHub Actions)
-- [x] 型安全性の向上 (121 個の`any`型を全て削除)
-- [x] ESLint 警告 0 個達成
-- [ ] WebUI ダッシュボード (オプション)
-- [ ] コミュニティエコシステム
-
-## 🤝 コントリビューション
+## コントリビューション
 
 コントリビューションを歓迎します。以下の手順でお願いします。
 
@@ -477,32 +357,19 @@ Conventional Commits 形式を推奨します。
 - `fix:` - バグ修正
 - `refactor:` - リファクタリング
 - `docs:` - ドキュメント変更
-- `test:` - テスト追加・修正
 - `chore:` - 雑務
 
-## 📄 ライセンス
+## ライセンス
 
 MIT License - 詳細は [LICENSE](LICENSE) を参照してください。
 
-## 🙏 謝辞
+## 謝辞
 
 本プロジェクトは以下のプロジェクトから着想を得ています。
 
 - **Kiro AI** - 仕様駆動 IDE のパイオニア
 - **cc-sdd** - 構造化ワークフローの実装
-- **spec-workflow-mcp** - 仕様駆動開発のアイデア
-- **GitHub Spec Kit** - constitution.md コンセプト
-
-また、以下の哲学・手法を実装に反映しています。
-
-- **Kent Beck** - Canon TDD
-- **t-wada (和田卓人)** - 3 レベル TDD 理解
-- **Martin Fowler** - リファクタリングカタログ
-
-## 📮 コンタクト
-
-質問・提案・バグ報告は [Issues](https://github.com/yourusername/cc-craft-kit/issues) へお願いします。
 
 ---
 
-**cc-craft-kit (匠)** - 匠の技で、開発ワークフローを磨き上げる。
+**cc-craft-kit** - 匠の技で、開発ワークフローを磨き上げる。
