@@ -201,7 +201,40 @@ git add ".cc-craft-kit/specs/$SPEC_ID.md"
 git commit -m "feat: $2 の仕様書を作成"
 ```
 
-#### Step 9: 元ブランチに復帰
+#### Step 9: GitHub Issue 作成（オプション）
+
+gh CLI が利用可能な場合、GitHub Issue を自動作成:
+
+1. **gh CLI チェック:**
+   ```bash
+   command -v gh >/dev/null 2>&1
+   ```
+   失敗した場合は警告を表示して続行（Issue 作成をスキップ）。
+
+2. **Issue 作成:**
+   ```bash
+   gh issue create --title "$SPEC_NAME" --body "$ISSUE_BODY"
+   ```
+
+   `$ISSUE_BODY` の内容:
+   仕様書（要求仕様書）の YAML フロントマター以降の本文をそのまま使用。
+
+3. **Issue 番号を仕様書に記録:**
+   Edit ツールで仕様書の YAML フロントマターを更新:
+   ```
+   github_issue_number: null → github_issue_number: <作成された Issue 番号>
+   ```
+
+4. **追加コミット:**
+   ```bash
+   git add ".cc-craft-kit/specs/$SPEC_ID.md"
+   git commit --amend --no-edit
+   ```
+
+5. **GitHub Projects に追加**（config.json に設定がある場合）:
+   design フェーズと同様の処理を実行。失敗時は警告のみで続行。
+
+#### Step 10: 元ブランチに復帰
 
 ```bash
 git checkout "$ORIGINAL_BRANCH"
@@ -217,11 +250,11 @@ git checkout "$ORIGINAL_BRANCH"
 フェーズ: requirements
 ファイル: .cc-craft-kit/specs/$SPEC_ID.md
 ブランチ: $BRANCH_NAME
+GitHub Issue: #$GITHUB_ISSUE_NUMBER
 
 次のステップ:
 - 仕様書を確認: /cft:spec get <短縮ID>
 - 設計フェーズへ: /cft:spec phase <短縮ID> design
-- GitHub Issue 作成: /cft:github issue <短縮ID>
 ```
 
 ---
