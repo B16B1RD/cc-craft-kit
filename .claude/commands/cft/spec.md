@@ -389,7 +389,8 @@ git commit -m "feat: $SPEC_NAME の<フェーズ日本語名>を完了"
 - PR 作成（`gh pr create`）
 
 **completed フェーズ:**
-- ブランチ削除（`git branch -d`）
+- ベースブランチ（develop）に切り替え・最新化（`git checkout develop && git pull origin develop`）
+- ローカル作業ブランチを削除（`git branch -D "$BRANCH_NAME"`）
 - GitHub Issue クローズ（`gh issue close`）
 
 ### 成功メッセージ
